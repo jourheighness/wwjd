@@ -37,6 +37,7 @@ The project's palette wins. This command decides where the colour goes.
   - Desaturate accents slightly, and put accent on text rather than faded fills (which go dirty in dark).
   - Balance cold and warm.
   - Dim images slightly. Recolour charts; never invert them.
+- **The root is painted, not just the body.** `html` gets the ground colour and `:root` declares `color-scheme` (plus `<meta name="color-scheme" content="light dark">` and a `theme-color` per scheme). Otherwise macOS and iOS rubber-band overscroll flashes white in dark mode.
 - **Themes:** follow the system setting when both themes ship, and check each on its own: dividers visible, state parity, contrast. A dark-only product is a deliberate project decision recorded in `DESIGN.md`.
 - **Contrast:** AA for body text, 7:1 preferred for long reading. 3:1 for large text, icons, component edges and focus rings.
   - By construction: a contrast matrix of every text token against every background it is declared on, each at least AA, kept as a workshop story or a CI check.

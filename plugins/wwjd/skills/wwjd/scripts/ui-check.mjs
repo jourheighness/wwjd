@@ -173,6 +173,11 @@ for (const f of uiFiles) {
   const usesHidden = /\shidden(\s|>|=|\})|\.hidden\s*=|toggleAttribute\(\s*["']hidden/.test(text);
   const setsDisplay = /\{[^}]*\bdisplay:\s*(grid|flex|block|inline-flex|inline-grid)/.test(text);
   const guarded = /(^|[\s,}])\[hidden\](:not\([^)]*\))?\s*\{[^}]*display:\s*none/m.test(text);
+  const hasDark = /prefers-color-scheme:\s*dark|data-theme=["']?dark|light-dark\(/.test(text);
+  const paintsRoot = /(^|[\s,}])(html|:root)(\[[^\]]*\])?\s*\{[^}]*\bbackground(-color)?\s*:/m.test(text);
+  const paintsBody = /(^|[\s,}])body\s*\{[^}]*\bbackground(-color)?\s*:/m.test(text);
+  if (cfg.rules?.["root-background"] !== "off" && /\.(html|css|scss)$/.test(f) && hasDark && paintsBody && !paintsRoot)
+    findings.push({ file: f, line: 1, rule: "root-background", severity: "warn", message: "dark theme paints body but not html; overscroll/rubber-band flashes white. Put the ground colour on html" });
   if (/\.(html|svelte|vue|astro)$/.test(f) && usesHidden && setsDisplay && !guarded)
     findings.push({ file: f, line: 1, rule: "hidden-guard", severity: "error", message: "hidden attribute used with display rules but no global [hidden] { display: none !important }; hidden states will show" });
 }

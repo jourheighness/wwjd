@@ -74,7 +74,7 @@ Use this whenever the project has no design system. It's the look and the compon
 - **Shadows** only on overlays, in two layers: `--shadow-1` for popups, tooltips and toasts; `--shadow-2` for dialogs and drawers.
 - **Motion:** easings `--ease-out`, `--ease-move`, `--ease-drawer`. Durations 120ms for press and colour, 160ms for popups, 220ms for modals. Exits are faster.
 - **Density:** controls 28 / 32 / 36 and rows 32 / 36 / 44 for compact / regular / comfortable, set with `data-density`.
-- **Themes:** every colour is `light-dark(light, dark)`. `data-theme` forces one theme; otherwise it follows the system.
+- **Themes:** every colour is `light-dark(light, dark)`. `data-theme` forces one theme; otherwise it follows the system. `html` carries the ground colour (not only `body`), so overscroll never flashes white in dark mode.
 
 ## 3. Fonts
 - **Product UI:** Inter variable (optical sizes 14–32, weights 400–600), with a system fallback stack. Or the system stack alone when the product should feel native.
