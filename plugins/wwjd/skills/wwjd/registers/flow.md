@@ -18,6 +18,15 @@ Success: the person finishes the sequence without thinking about the form.
 - **Counts that are decision inputs stay** (remaining characters on a limited field).
 - **Back keeps the data.** Long flows save and resume.
 
+## Action bar and exits
+- **Back sits at the top,** never next to the primary. It's a quiet "‹ Previous step name" above the step heading, or the previous step in the stepper. Back and the primary action side by side read as two equal choices.
+- **The action bar has one anatomy on every step,** aligned to the content column's edges:
+  - Start: the summary (total, item count) in the same place on every step.
+  - End: the primary.
+  - Only the primary's label changes ("Continue" → "Review" → "Place order and pay").
+  - The total never moves into the button. It stays in its slot, and the button sits next to it.
+- **There is always a way out.** On every step the wordmark links home, and a quiet "Back to <site>" (or Cancel) leaves while the draft is kept. Coming back restores the step and its data. A flow that traps the person is a dead end.
+
 ## Input
 - **Attributes:** `autocomplete` on every field (WCAG 1.3.5), the right `type` and `inputmode`. Paste and password managers always work.
 - **Mobile:** inputs at least 16px so iOS doesn't zoom. Native date and select pickers are fine on touch.
