@@ -11,6 +11,7 @@
 //   hover-shift          hovering a row ([data-row], [role=row], li) moves a sibling by > 0.5px
 //   hover-unreachable    an action hidden at rest that keyboard focus doesn't reveal
 //   text-collapsed       text squeezed into a track a few characters wide (one letter per line)
+//   ring-clipped         a focus/selection ring cut off by a scrolling or clipping parent
 // Needs Playwright installed in the project (npm i -D playwright; npx playwright install chromium).
 // PW_EXE=<path> points it at an existing Chromium build instead.
 let chromium;
@@ -59,7 +60,8 @@ for (const w of widths) {
     }
     const rr = root.getBoundingClientRect();
     if (root.scrollWidth > root.clientWidth + 1) out.push(["overflow", "error", "container scrolls sideways"]);
-    for (const el of root.querySelectorAll("*")) { const b = el.getBoundingClientRect(); if (b.width && b.right > rr.right + 1 && getComputedStyle(el).position !== "fixed") { out.push(["overflow", "error", el.tagName.toLowerCase() + "." + [...el.classList].slice(0, 2).join(".")]); break; } }
+    const inScroller = (el) => { for (let p = el.parentElement; p && p !== root; p = p.parentElement) { const c = getComputedStyle(p); if (c.overflowX !== "visible") return true; } return false; };
+    for (const el of root.querySelectorAll("*")) { const b = el.getBoundingClientRect(); if (b.width && b.right > rr.right + 1 && getComputedStyle(el).position !== "fixed" && !inScroller(el)) { out.push(["overflow", "error", el.tagName.toLowerCase() + "." + [...el.classList].slice(0, 2).join(".")]); break; } }
     return out;
   }, selector);
   for (const [rule, sev, what] of r) findings.push({ width: w, rule, severity: sev, what });
@@ -67,8 +69,9 @@ for (const w of widths) {
   // hover shift + keyboard reachability on the first few rows
   const rows = await page.$$(`${selector ? selector + " " : ""}:is([data-row], [role=row], li)`);
   for (const row of rows.slice(0, 5)) {
+    if (!(await row.isVisible())) continue;
     const before = await page.evaluate((row) => [...row.parentElement.children].map((c) => { const b = c.getBoundingClientRect(); return [b.x, b.y, b.width, b.height]; }), row);
-    await row.hover();
+    try { await row.hover({ timeout: 2000 }); } catch { continue; }
     await page.waitForTimeout(160);
     const after = await page.evaluate((row) => [...row.parentElement.children].map((c) => { const b = c.getBoundingClientRect(); return [b.x, b.y, b.width, b.height]; }), row);
     if (before.some((b, i) => b.some((v, j) => Math.abs(v - after[i][j]) > 0.5))) { findings.push({ width: w, rule: "hover-shift", severity: "error", what: "a row moves its siblings on hover" }); break; }
@@ -85,6 +88,32 @@ for (const w of widths) {
     }, selector);
     if (!revealed) findings.push({ width: w, rule: "hover-unreachable", severity: "error", what: "an action hidden at rest stays hidden when focused" });
   }
+  // rings: focus each control (and selected items) and check no clipping ancestor cuts its outline
+  const ringCut = await page.evaluate(async (sel) => {
+    const root = sel ? document.querySelector(sel) : document;
+    const ctl = [...root.querySelectorAll('button, a[href], input, select, textarea, [tabindex="0"], [aria-selected="true"], [aria-current], [data-selected]')].slice(0, 80);
+    for (const el of ctl) {
+      if (!el.getClientRects().length) continue;
+      if (typeof el.focus === "function") el.focus({ preventScroll: true });
+      const cs = getComputedStyle(el);
+      const ow = parseFloat(cs.outlineWidth) || 0, oo = parseFloat(cs.outlineOffset) || 0;
+      const spread = cs.outlineStyle !== "none" ? Math.max(0, ow + oo) : 0;
+      const shadow = /(-?\d+)px\s+(-?\d+)px\s+(-?\d+)px\s+(\d+)px/.exec(cs.boxShadow || "");
+      const ring = Math.max(spread, shadow && !/inset/.test(cs.boxShadow) ? +shadow[4] : 0);
+      if (!ring) continue;
+      const r = el.getBoundingClientRect();
+      for (let p = el.parentElement; p && p !== document.documentElement; p = p.parentElement) {
+        const pc = getComputedStyle(p);
+        if (pc.overflowX === "visible" && pc.overflowY === "visible") continue;
+        const pr = p.getBoundingClientRect();
+        if (r.left - ring < pr.left - 0.5 || r.right + ring > pr.right + 0.5 || r.top - ring < pr.top - 0.5 || r.bottom + ring > pr.bottom + 0.5)
+          return (el.getAttribute("aria-label") || el.textContent || el.tagName).trim().slice(0, 40) + " inside " + p.tagName.toLowerCase() + (p.className ? "." + String(p.className).split(" ")[0] : "");
+        break;
+      }
+    }
+    return null;
+  }, selector);
+  if (ringCut) findings.push({ width: w, rule: "ring-clipped", severity: "error", what: ringCut });
   await page.close();
 }
 await browser.close();

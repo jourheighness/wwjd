@@ -23,6 +23,11 @@ Use when a region has too many actions, the hierarchy is unclear, or things don'
 - **Not pressable never looks pressable:** status is a dot or muted text, not a pill. Status labels are `<span>`s, not buttons.
 - **Links navigate and buttons act:** `<a>` and `<button>`, never a clickable `<div>`.
 - **Icons do exactly what they show,** and each one has a tooltip.
+- **Toggles show their state and their next action.**
+  - A toggle button (zoom, mute, fullscreen, follow, expand) flips its icon, label and tooltip with the state: "+ Zoom in" becomes "− Zoom out".
+  - It carries `aria-pressed` or an updated accessible name.
+  - Its pressed state is visible (the filled resting container).
+  - A control whose icon still shows "+" while it zooms out is desynced, and that's a defect.
 - **Disabled means "not yet":** give the reason in a tooltip (with `aria-disabled`, still focusable) or inline. Hide what can never apply. Read-only looks different from disabled.
 - **Hover is never the only path.** Touch has none.
 

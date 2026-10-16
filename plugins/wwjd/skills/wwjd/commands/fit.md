@@ -73,7 +73,11 @@ A component lives in many slots: a sidebar, a list, a dialog, a phone. Design ho
 - **Components never carry their own placement.** `grid-area`, `grid-column`, `order` and positioning margins that only make sense inside one parent belong on that parent's child selector (`.row > .check { grid-area: check }`), never on the component class. A reused component otherwise lands in an implicit track of its new grid, and its neighbours fall into the wrong columns.
 - **Text never sits in an auto or icon-sized track.** Every container that holds text has a definite or floored width: panels `inline-size: min(480px, 100%)`, text tracks `minmax(12ch, 1fr)`. Place conditional or optional grid children by name, so a missing or extra child can't shift the rest.
 - **Text wrapping:** `text-wrap: balance` on titles, `pretty` on descriptions, never set globally.
-- **Rounded cards** use `overflow: clip` with `overflow-clip-margin` equal to the ring width, never `overflow: hidden`, which clips focus rings and diacritics.
+- **Rings, outlines and selection borders are never clipped by a parent.**
+  - Any `overflow` other than `visible` clips on both axes. A sideways-scrolling rail (`overflow-x: auto`) also clips vertically.
+  - **Inside scroll and clip containers** (rails, carousels, tables, sheets), draw item rings and selection borders inset (`outline-offset: -2px` or an inset `box-shadow`). Alternatively, give the container padding of at least the ring width plus offset on every side, with matching `scroll-padding`.
+  - **Rounded cards** use `overflow: clip` with `overflow-clip-margin` equal to the ring width, never `overflow: hidden`, which clips focus rings and diacritics.
+  - **Check:** `fit-check` focuses every control and fails on any ring that a parent cuts.
 
 ## 5. Hover-revealed actions
 - **Only shortcuts hide.** Everything a hover reveals is also in the always-visible ⋯ or the detail view. The primary action and ⋯ never hide.
