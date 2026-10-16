@@ -26,7 +26,7 @@ Review the way an experienced designer does: in one glance, by cutting. Find wha
    - **Visual:** colour as attention, surfaces, both themes, contrast.
    - **Flow:** A → B is clear, no dead ends, every state designed.
    - **Craft:** at the register's bar; not tame, not slop (`references/bans.md`).
-   - Weight by register: Operate weights stability and system. Editorial weights reading. Converse weights state coverage. Transact weights decision clarity and trust. Persuade weights idea and composition.
+   - Weight by register: Operate weights stability and system. Monitor weights the 5-second answer and signal. Reference weights findability. Editorial weights reading. Converse weights state coverage. Transact weights decision clarity and trust. Flow weights completion and errors. Persuade weights idea and composition. Showcase weights the work leading.
 4. **Run the UX laws pass** below.
 5. **Findings, ranked.** Each one:
    - names the element
@@ -47,7 +47,7 @@ Review the way an experienced designer does: in one glance, by cutting. Find wha
 8. Layers: the core task can be finished at the first layer, and options appear only once they can apply.
 9. Nothing used daily is buried in ⋯, and nothing critical lives only in a tooltip.
 10. No step asks for what the system knows. Input is accepted generously.
-11. Response: acknowledged in 100ms; a skeleton by 400ms; progress past 3 seconds.
+11. Response: acknowledged in 100ms. Past ~1s progress in place; past ~10s determinate progress when the duration is known, otherwise a live status line. Never fake progress.
 12. The action sits next to its object.
 13. The flow map has no orphans, duplicate routes, dead ends or circular paths.
 14. An interrupted flow resumes exactly.
@@ -58,3 +58,4 @@ Review the way an experienced designer does: in one glance, by cutting. Find wha
 - **Expert lenses:** UI (visual and system), UX (flow and disclosure), and interaction (stability and affordance). Each reviews separately, then the findings merge.
 - **Personas** get only a role and a goal, no prior knowledge. Examples: a first-time admin, a busy specialist, a non-technical buyer, a keyboard-only user. They click through and report where they hesitated, misread or got stuck.
 - **Gates follow the phase:** heavy in rebuilds, light in polish. Don't add gates the user didn't ask for.
+- **Background, never blocking:** expert and persona reviews run after the work is shown; their findings arrive as a follow-up.

@@ -21,7 +21,7 @@ People scan along edges. Misaligned starts, zig-zag reading and text that wraps 
   ```
 - **Leading icons and bullets hang into the gutter,** so text keeps the column edge.
 - **Collapse the bleed** when the page margin is narrower than the padding; cards then go edge to edge.
-- **Column and breakout:** a named-line grid keeps reading text at `content` (45–75ch), while tables, charts and media take `feature` or `full`.
+- **Column and breakout:** a named-line grid keeps reading text at `content` (the measure), while tables, charts and media take `feature` or `full`. The measure is set in `typeset.md`.
   ```css
   .page { display: grid; grid-template-columns:
     [full-start] minmax(var(--gap), 1fr) [feature-start] minmax(0, 6rem)
@@ -31,7 +31,7 @@ People scan along edges. Misaligned starts, zig-zag reading and text that wraps 
   ```
 - **Sibling cards** align their insides with subgrid, so titles, meta and actions share a line and the actions pin to the bottom.
 - **Start-aligned by default.** Centre only what is genuinely centred: an icon in a button, a canvas empty state, the register's one centred moment.
-- **No reserved slots.** If an optional badge or meta is absent, the content moves to the start. Omit the line for a missing field instead of showing "—".
+- **No reserved slots.** If an optional badge or meta is absent, the content moves to the start. An absent optional meta line is omitted, not shown as "—" (table cells are different: `harden.md`).
 - **Optical alignment:**
   - A checkbox or icon aligns to the first line of text.
   - Play and arrow glyphs nudge about 2px towards their direction.
@@ -59,7 +59,7 @@ People scan along edges. Misaligned starts, zig-zag reading and text that wraps 
   - Avatars, icons and badges get `flex-shrink: 0`.
   - Long URLs and IDs get `overflow-wrap: anywhere`, never `break-all`.
 - **When text can wrap,** top-align the row so the icon stays with the first line.
-- **Clickable text never wraps:** shorten the label first, then `nowrap`.
+- **Clickable text:** shorten first; it may wrap; never clip.
 - **Headings and prose:** `text-wrap: balance` on headings with a max inline size, `pretty` on prose; never applied globally.
 - **Translation:** budget +30–40% width for sentences and up to 200–300% for strings under 10 characters. Use non-breaking spaces between values and units.
 

@@ -2,18 +2,18 @@
 
 Generated UI drifts to the most probable output. Banning a default isn't enough, because the model falls to the next default. So every ban here names its replacement, and the drift lanes below name where models go after a ban.
 
-`[P]` product UI, `[M]` marketing, `[P+M]` both.
+Last column: `P` product UI, `M` marketing, `P+M` both.
 
 ## Ban → instead
 | Ban | Instead | |
 |---|---|---|
-| Explainer, helper or reassurance text | Nothing; the label or the action says it | P+M |
-| "N of M", counts, zero counts | Progress mark, dot or nothing | P |
+| Explainer, reassurance or helper text that restates the label | Nothing. Format hints and "why we ask" stay | P+M |
+| "N of M", counts, zero counts | Progress mark, dot or nothing; decision-input counts stay (SKILL.md) | P |
 | Five actions on a card | Primary, secondary, ⋯ | P |
-| Gradient backgrounds, buttons or text | Flat colour; emphasis by weight | P+M |
+| Gradient backgrounds, buttons or text | Flat by default; a gradient only when the project's look owns it. Emphasis by weight | P+M |
 | Indigo, violet or purple accent | The project accent | P+M |
 | Unmodified shadcn or library defaults | The repo kit's own variants | P+M |
-| Glass or backdrop-blur panels | An opaque surface one tone step off the ground | P+M |
+| Glass or backdrop-blur panels | An opaque surface one tone step off the ground; one frosted sticky bar is fine | P+M |
 | Coloured left or top accent stripe on cards | State glyph plus word, or a tone step | P+M |
 | 3 or 6 identical icon-topped cards | Rows, a list, or one composed section | P+M |
 | Rounded icon tile above a heading | Icon inline beside the text, or none | P+M |
@@ -31,8 +31,8 @@ Generated UI drifts to the most probable output. Banning a default isn't enough,
 | Fake dashboard of grey bars | A real interface fragment, or no image | M |
 | Emoji as icons | One icon library | P+M |
 | Spinner in the middle | A skeleton matching the final layout | P |
-| Confirm dialog | Undo | P |
-| Native select, date or checkbox styled by the OS on desktop | The kit's control (native pickers are fine on touch) | P |
+| Confirm dialog for routine actions | Undo; the floor's exceptions get a review sheet with real choices | P |
+| Raw OS-styled select, date or checkbox next to kit controls | Kit controls built on native elements or APG primitives (native pickers are fine on touch) | P |
 | Bounce or elastic easing, `scale(0)` entrances | Ease-out from 0.95–0.98 and opacity | P+M |
 | Stagger, bubble-in, fade-up on every block | One orchestrated moment or none | P+M |
 | `→` appended to every link, "A · B · C" meta strings | Plain label | P+M |

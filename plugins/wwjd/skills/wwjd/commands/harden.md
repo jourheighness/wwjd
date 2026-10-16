@@ -8,11 +8,11 @@ Every interactive component needs all eight states, each designed: default, hove
 ## Data states, per view
 | State | Treatment |
 |---|---|
-| First use | Seeded example plus one action; a placeholder may teach once |
+| First use | Seeded example content plus one action; it may teach once |
 | One item | Doesn't look broken or lonely |
-| Many | Virtualise past ~50; priority stays visible |
+| Many | Priority stays visible. Virtualise only when measured slow (it breaks find-in-page, print and screen-reader counts) |
 | Longest real text | See `layout.md` |
-| Empty | One line plus one action. An empty region disappears instead |
+| Empty | One line plus one action. A secondary region may collapse when empty; in a table a missing value shows '—' with accessible text 'None' |
 | Filtered empty | Echo the query, offer to clear the filters, suggest the next query |
 | Loading | A skeleton matching the final layout; a spinner only inside a button, keeping its label. Delay ~200ms, then show for at least ~400ms |
 | Error | What happened plus retry, in place. One failing part never blocks the page |
@@ -28,7 +28,7 @@ Every interactive component needs all eight states, each designed: default, hove
   | 404 | The not-found state |
   | 429 | A rate-limit line |
   | Timeout | Retry |
-- **Responsiveness:** acknowledge in 100ms. A skeleton or progress appears in place by 400ms. Past 3 seconds, determinate progress.
+- **Responsiveness:** acknowledge in 100ms. Past ~1s show progress in place; past ~10s determinate progress when the duration is known, otherwise a live status line. Never fake progress.
 - **Optimistic updates:** use them where success is likely. Reconcile with the server, and on failure roll back with an inline error.
 - **Interrupted flows** resume exactly where they were. Drafts survive a reload, except payment data.
 
@@ -64,12 +64,12 @@ Seed realistic data. Provide a dev-only data switch (`?data=demo|worst|empty|one
 | Squashed avatar or icon | `flex-shrink: 0` |
 | Text overflowing its box | `min-width: 0` |
 | URL or email pushes siblings out | `overflow-wrap: anywhere` |
-| Badge wraps | `nowrap` plus `flex-shrink: 0` |
+| Squashed badge | `flex-shrink: 0`; the row may wrap, never clip |
 | Wrong initials | An avatar fallback, or `Intl.Segmenter` |
-| Orphan "—" for a missing field | Omit the line |
+| Orphan "—" for a missing optional meta line | Omit the line (table cells keep '—') |
 | Raw `NaN` or `1284` | `Intl.NumberFormat`, plus a null state |
 | Clipped diacritics | Looser line-height; no `overflow: hidden` on text |
-| Button overflows when translated | `min-width`, not `width`; a shorter label |
+| Button overflows when translated | `min-width`, not `width`. Shorten first; it may wrap; never clip |
 
 ## i18n
 - **Direction:** logical properties (`margin-inline-start`) so RTL works.

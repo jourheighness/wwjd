@@ -37,8 +37,9 @@ The eyebrow restates the obvious, the sentence narrates the card, and the reassu
   <Button>Archive</Button><Button variant="danger">Delete</Button>
 </Row>
 
-// After: the whole row opens the item; the primary is the next step
-<Row onClick={open}>
+// After: the title link is stretched over the row; inner actions sit above it
+<Row>
+  <RowLink href={item.url}>{item.name}</RowLink>
   <Button variant="primary">Share</Button>
   <RowActionsMenu items={[edit, duplicate, archive, del]} />
 </Row>
@@ -49,11 +50,11 @@ The eyebrow restates the obvious, the sentence narrates the card, and the reassu
 |---|---|
 | Submit | Send invite to Anna |
 | Delete selected | Delete 5 items |
-| Are you sure? [Yes] [No] | Deleted. [Undo] (hide now, commit after ~5s) |
+| Are you sure? [Yes] [No] | Deleted. [Undo] (hide now; undo until the next action, announced, keyboard-reachable) |
 | Invalid date | Enter a date as YYYY-MM-DD |
 | Oops! Something went wrong! | Couldn't save. [Retry] |
-| Owner: Sara Lind | ⟨avatar, with the name in a tooltip⟩ |
-| Updated 2026-10-14 09:32 | Yesterday (full date on hover) |
+| `Owner: Sara Lind` as grey label text in a list row | ⟨avatar + name chip⟩ in the owner column |
+| Updated 2026-10-14 09:32 | Yesterday (full timestamp in a tooltip) |
 
 ## 5. A hover fill that doesn't move anything
 ```css

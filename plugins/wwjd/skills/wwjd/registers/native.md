@@ -11,18 +11,18 @@ Apply this on top of the register whenever the surface is a mobile web view or a
 - **Capitalisation** follows the platform's guidance.
 
 ## Touch
-- **Targets** of at least 44pt on iOS and 48dp on Android. Primary actions sit in the thumb zone, sticky above the keyboard.
-- **Hover doesn't exist.** Every hover affordance needs a visible or long-press equivalent.
+- **Targets:** the floor's touch sizes. Primary actions sit in the thumb zone, sticky above the keyboard.
+- **Hover doesn't exist.** On touch, a visible control (⋯); long-press only as a shortcut.
 - **Gestures** always have a visible alternative.
 
 ## Layout
 - **Safe areas:** respect them, the home indicator, and the keyboard.
-- **Text scaling:** Dynamic Type and font scaling up to 200% reflow the layout without clipping.
+- **Text scaling:** Dynamic Type and font scaling up to the platform's largest accessibility size (~310% on iOS) reflow the layout without clipping. The web equivalent is 200%.
 - **Compose the narrow width on its own;** don't just stack the desktop layout.
 
 ## Behaviour
 - **Offline:** offline and poor-network states are designed. Pull to refresh where content updates.
-- **Permissions:** a priming screen before each prompt that says what it is for.
+- **Permissions:** ask in context, with a clear purpose string. An explainer screen is optional and only leads into the system prompt.
 - **Haptics** only paired with a state change.
 - **Motion:** the platform's own transitions (push and pop, sheets, critically damped springs).
 

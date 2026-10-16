@@ -15,7 +15,7 @@ Success: the person knows the state in 5 seconds and knows where to look next.
   - Text 12–14px, sticky header, locked first column, `tabular-nums`, right-aligned numbers.
   - Drill into a row, with a breadcrumb back.
   - Lock column widths so nothing jumps on sort or refresh.
-- **Charts:** follow the chart rules in `commands/colour.md` and the integrity rules in `references/faux-pas.md`. Each chart has a table alternative for screen readers.
+- **Charts:** follow the chart rules in `commands/colour.md` (no donuts here) and the integrity rules in `references/faux-pas.md`. Each chart has a table alternative for screen readers.
 - **Layout:** balance the charts so none sits lonely in dead space. Lines run edge to edge at a fixed aspect ratio; nothing stretches vertically with the grid.
 
 ## Tells to avoid

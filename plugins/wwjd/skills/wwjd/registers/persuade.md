@@ -14,17 +14,17 @@ Success: the visitor decides and acts. A persuade page argues one claim and earn
 - **Spacing:** the gap between sections is larger than any gap inside one.
 - **Above the fold at 1280×800:** the headline, a lede of at most 2 lines and the CTA.
 - **Alignment:** start-aligned by default. The hero may be the page's one centred moment, at most 2 elements, with the CTA placed off-axis.
-- **Carry the idea through** pricing, FAQ and footer, not just the hero.
+- **Carry the idea through** pricing, FAQ and footer, not just the hero. Answer objections in the argument; a FAQ you keep uses `<details>` (`commands/prioritize.md`).
 - **Nav and footer:**
   - Nav is a plain bar: wordmark, 3–5 links, one action.
-  - The footer is a designed close (the name at full width, or one quiet line), not a link farm.
+  - The footer is a designed close (the name at full width, or one quiet line), not a link farm. Legal links (imprint, privacy, cookie settings, accessibility statement) always stay.
 - **Mobile is first-class:** most landing traffic is mobile. Compose 390 on its own; don't just stack desktop.
 
 ## Type and colour
 - **Headlines:** at most 2 lines at every width (about 32–50 characters). Fix in this order: cut words, widen the measure, shrink the size.
 - **Type scale:** fluid `clamp()` display type, display at least 3× body, body 17–20px. Use the project's faces; at most a display face plus a text face.
 - **Colour is identity here.** A committed ground and fields of colour are allowed. The accent still marks the action.
-- **Gradients:** flat by default. Use one only when the project's look owns it, never as decoration.
+- **Gradients:** flat by default; a gradient only when the project's look owns it.
 
 ## Imagery
 - **Source:** real raster first (the subject's own, then generated, then open collections, then honest stock). One crop ratio and one grade.
@@ -52,5 +52,5 @@ Success: the visitor decides and acts. A persuade page argues one claim and earn
 - A fake logo strip; "Trusted by 10,000+ teams".
 - A stat banner of round numbers.
 - Fade-up on everything.
-- A FAQ accordion standing in for answers.
+- A FAQ accordion standing in for answers the argument should give.
 - A link-farm footer.

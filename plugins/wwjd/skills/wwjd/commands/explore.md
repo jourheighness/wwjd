@@ -27,14 +27,15 @@ Check every flow for dead ends and circular paths before drawing it.
 - **How many:** about 5, labelled A–E, and genuinely different in structure, not in tint.
   - **Persuade and Showcase:** each variant pushes further than the last, never cleaner.
   - **Operate, Monitor and Reference:** variants change the organisation; they don't add decoration.
+- **The intended flow, not the current limits:** prototypes show every step, state and transition of the right experience, whatever the API can do today. Note what would need backend support.
 - **Real material:** the project's tokens and type, real component shapes, realistic messy data (long names, one item, many, empty).
 - **Context:** show each variant where it lives, at the sizes it appears, next to its neighbours.
 - **States:** light and dark when the work is visual; interactive when the feel matters.
 - **One comparison page:**
-  - It can be a shareable prototype (an HTML file, an Artifact, a Storybook story, a sandbox).
+  - It can be a shareable prototype (an HTML file, a hosted HTML page (e.g. a Claude Artifact), a Storybook story, a sandbox).
   - A letter and a short name per variant, with no explanatory prose on the page; reasoning goes in the message.
   - Show screens on a neutral dark surround so the page's white doesn't distract.
-- **Before sharing:** run the SKILL.md audit on every variant. When a comparison page gets cluttered, start a fresh one with only the live candidates.
+- **Before sharing:** run the handover check in SKILL.md on every variant. When a comparison page gets cluttered, start a fresh one with only the live candidates.
 
 ## 4. Picking
 - **The user picks and remixes by letter** ("A and D", "B everywhere"). Merge exactly what they named, and keep what they liked while consolidating.

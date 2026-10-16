@@ -9,7 +9,7 @@ Most of the rules began as a correction he had to give an agent more than once. 
 ```
 plugins/wwjd/
   skills/wwjd/
-    SKILL.md          the floor, the rules, the register and command routers, the pre-handover audit
+    SKILL.md          the floor, the rules, the register and command routers, the handover check
     registers/        persuade · showcase · editorial · reference · operate · monitor ·
                       converse · transact · flow · native (platform overlay)
     commands/         explore · build · critique · audit · polish · distill · prioritize ·
@@ -43,16 +43,17 @@ Before designing, building or reviewing any interface, read the wwjd skill
 
 ## Make it yours: the profile
 
-The skill reads `~/.config/wwjd/profile.md` (or `$WWJD_PROFILE`) when it exists. Use it for personal additions that don't belong in a shared skill:
+The skill reads `~/.config/wwjd/profile.md` (or `$WWJD_PROFILE`) when it exists. It covers workflow and locale only:
 - your locale and copy conventions
 - your preview and review workflow
-- rules you've decided that apply across your projects
+
+Design rules don't go in the profile. Project rules go in the project's decision log or `DESIGN.md`; a rule that should hold across projects is proposed as a change to this skill.
 
 **Precedence:**
 1. The floor (accessibility, honesty, stability).
 2. The project's own decisions and `DESIGN.md`.
-3. The wwjd rules.
-4. Your profile.
+3. The wwjd rules; the more specific file wins (register and command files refine `SKILL.md` for their scope).
+4. Your profile, for workflow and locale only; it never overrides a design rule.
 
 ## ui-check
 
@@ -62,8 +63,9 @@ node plugins/wwjd/skills/wwjd/scripts/ui-check.mjs [paths] --register operate [-
 - **Default scope:** with no paths, it scans files changed against HEAD.
 - **Severity per project:** set it in `.wwjd.json`:
   ```json
-  { "register": "persuade", "rules": { "gradient": "off", "eyebrow": "error" } }
+  { "register": "persuade", "locale": ["sv", "en"], "rules": { "gradient": "off", "eyebrow": "error" } }
   ```
+- **Locale:** English-only copy rules (the dash rule) run only when every listed locale is English (default `["en"]`).
 - **One-off exceptions:** ignore a single line with `ui-check-ignore: <reason>`.
 
 ## Evals

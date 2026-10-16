@@ -19,8 +19,8 @@ Success: the person buys with confidence and without surprises. Design mobile-fi
 - **Checkout:**
   - Guest checkout, express pay shown first, then `flow.md` rules for the form.
   - A review step before the order.
-  - The order button says it commits to pay ("Pay €124", "Place order and pay").
-- **No dark patterns:** no countdown timers, no fake scarcity, no pre-ticked add-ons, no confirmshaming, no costs revealed at the last step.
+  - The order button says it commits to pay ("Pay €124", "Place order and pay"). Legally required wording is never shortened.
+- **No dark patterns:** no fake countdowns or fake scarcity; a true delivery cutoff ("Order within 3 h for Friday delivery") and true stock are decision numbers. No pre-ticked add-ons, no confirmshaming, no costs revealed at the last step.
 
 ## Colour and imagery
 - **Product photography carries the colour;** the UI stays neutral.

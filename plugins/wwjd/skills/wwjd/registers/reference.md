@@ -13,12 +13,12 @@ Each page type has its own shape (Diátaxis). Don't mix them on one page.
 | Explanation | Understanding why |
 
 ## Layout
-- **Three panes:** a nav tree, content at 65–80ch, an on-page contents list. Code may break out wider than the text.
+- **Three panes:** a nav tree, a content column of 65–80ch, an on-page contents list. That is a column width that includes code; prose inside it keeps the measure from `commands/typeset.md`, and code may break out wider.
 - **Body text** 16–17px. Use mono only for code and identifiers.
 - **Wayfinding on every page:** breadcrumbs, previous and next, a version switcher where versions exist, a last-updated date, and "edit this page".
 
 ## Search is the front door
-- **Opens with ⌘K or `/`.** Results show section breadcrumbs.
+- **Opens with ⌘K / Ctrl+K or `/`.** A single-key shortcut like `/` can be turned off or remapped. Results show section breadcrumbs.
 - **Zero results** suggest the nearest page and keep the query in the field.
 - **Headings** have stable slugs with copy-link on hover. Renames get redirects so deep links survive.
 
@@ -27,7 +27,7 @@ Each page type has its own shape (Diátaxis). Don't mix them on one page.
   - Highlighting tuned for both themes.
   - A copy button, and a filename or language tab.
   - Line highlights and diffs.
-  - They scroll horizontally inside the block, never the page.
+  - They scroll horizontally inside the block, never the page, and the block is focusable and labelled.
 - **Synced tabs** (language, package manager) remember the choice across pages.
 - **API tables:** name, type, required, default, description, with every row present.
 

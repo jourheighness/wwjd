@@ -13,6 +13,8 @@ Motion explains a change, or it goes.
 2. **What does it explain?** Where something came from or went, a state change, or cause and effect. "Looks nice" is not a reason. Nothing appears out of the blue: a moved item travels to its new place.
 3. **Which register?**
    - **Operate, Monitor, Reference, Flow:** functional motion only.
+   - **Transact:** functional only; the sticky buy bar slides in.
+   - **Editorial:** none in the reading column.
    - **Persuade, Showcase:** one orchestrated moment (400–1200ms) and scroll-linked motion that carries the idea.
    - **Converse:** streaming is the motion.
    - **Native:** the platform's own transitions.
@@ -43,7 +45,7 @@ Motion explains a change, or it goes.
   - Abort on interrupt and never lock clicks while animating.
   - Never rely on `animationend` to set the final state.
 - **Implementation:**
-  - Animate `transform` and `opacity` only, never `transition: all`.
+  - Animate `transform` and `opacity`; colour on hover and `grid-template-rows` for height are the allowed exceptions. Never width, height, top, left, margin or padding, and never `transition: all`.
   - Height via `grid-template-rows: 0fr → 1fr`, or FLIP.
   - One shared set of motion tokens.
   - Gate hover motion behind `(hover: hover) and (pointer: fine)`.

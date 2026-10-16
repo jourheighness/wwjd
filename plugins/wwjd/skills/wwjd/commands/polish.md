@@ -30,5 +30,5 @@ Work through these in order, using the command file for each:
 13. Code clean-up
 
 ## 3. Finish
-- **Run the audit** from SKILL.md, then `scripts/ui-check.mjs`.
+- **Run the handover check in SKILL.md** (it includes `scripts/ui-check.mjs --register <register>`, in this skill's folder).
 - **A clean first pass is a valid result.** Don't invent defects to show iteration.

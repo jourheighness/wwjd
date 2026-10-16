@@ -6,8 +6,8 @@ Each width is its own composition. Never just stack the desktop layout.
 | Register | Primary width |
 |---|---|
 | Operate, Monitor | Desktop 1440 first, with the narrow width still working |
-| Persuade, Transact, consumer Converse | Mobile 390 first; most of the traffic is mobile |
-| Editorial, Reference | Both. Measure decides, not breakpoints |
+| Persuade, Transact, Flow, consumer Converse | Mobile 390 first; most of the traffic is mobile |
+| Editorial, Reference, Showcase | Both. Measure decides, not breakpoints |
 | Native | Read `registers/native.md` |
 
 Check 320, 390, 768, 1440 and 1920. No horizontal page scroll anywhere.
@@ -23,14 +23,14 @@ Check 320, 390, 768, 1440 and 1920. No horizontal page scroll anywhere.
 - **Phone composition:** compose 390 on its own. Order content by priority, not by the desktop's reading order.
 
 ## Touch
-- **Targets:** at least 44pt (iOS) or 48dp (Android); expand hit areas with padding or a pseudo-element.
+- **Targets:** the floor's touch sizes; expand hit areas with padding or a pseudo-element.
 - **Placement:** primary actions in the thumb zone, sticky above the keyboard.
-- **No hover:** every hover affordance (⋯, toolbars, previews) has a visible or long-press equivalent.
+- **No hover:** on touch, every hover affordance (⋯, toolbars, previews) gets a visible control (⋯); long-press only as a shortcut.
 - **Forms:** inputs at least 16px so iOS doesn't zoom. Native pickers for date and select are right on touch.
 - **Safe areas:** respect safe-area insets and the on-screen keyboard. Use `100dvh`.
 
 ## Text scaling
-- Text up to 200% (Dynamic Type, font scaling, browser zoom) reflows without clipping or overlap.
+- Web text up to 200% reflows without clipping or overlap. Native apps scale to the platform's largest accessibility size (`registers/native.md`).
 
 ## Platform
 - **Native apps follow the platform's navigation, controls, materials and transitions** (`registers/native.md`). Web conventions don't override them.

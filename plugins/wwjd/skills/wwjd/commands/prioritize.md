@@ -17,12 +17,12 @@ Use when a region has too many actions, the hierarchy is unclear, or things don'
 - **Choices:** about 3 visible options per group. Clear options beat few options: merge or rename overlapping ones before cutting.
 
 ## Affordance
-- **The whole row or card is the target,** with hover and keyboard focus. No nested button does the same job; inner actions are icon buttons.
+- **The whole row or card is the target:** its title is a link or button stretched over it, with hover and keyboard focus; inner actions sit above it as icon buttons. Never an `onClick` on the container. No nested button does the same job.
 - **Pressable looks pressable:** a filled or bordered button, or a row with a hover fill and a chevron.
 - **Not pressable never looks pressable:** status is a dot or muted text, not a pill. Status labels are `<span>`s, not buttons.
 - **Links navigate and buttons act:** `<a>` and `<button>`, never a clickable `<div>`.
 - **Icons do exactly what they show,** and each one has a tooltip.
-- **Disabled means "not yet":** give the reason in a tooltip or inline. Hide what can never apply. Read-only looks different from disabled.
+- **Disabled means "not yet":** give the reason in a tooltip (with `aria-disabled`, still focusable) or inline. Hide what can never apply. Read-only looks different from disabled.
 - **Hover is never the only path.** Touch has none.
 
 ## Disclosure layers
@@ -30,7 +30,7 @@ Use when a region has too many actions, the hierarchy is unclear, or things don'
 |---|---|
 | L1 | What about 80% of people need, always visible |
 | L2 | One click away |
-| L3 | Behind ⋯ or ⌘K |
+| L3 | Behind ⋯ or ⌘K / Ctrl+K |
 | L4 | Shortcuts and configuration |
 
 - **Test:** the core task can be done entirely at L1.
@@ -44,11 +44,13 @@ Use when a region has too many actions, the hierarchy is unclear, or things don'
   | Drawer | Secondary content that needs space |
   | Tabs | Parallel views |
   | Modal | Only after inline and drawer are ruled out |
-- **In Operate and Monitor, disclosure never moves the layout.** In Persuade, Reference and Transact, accordions are the right pattern for FAQs, details and specs.
-- **Never double trays:** don't open a panel to open another panel.
+- **In Operate and Monitor, disclosure never moves the layout,** except trees and rows the person expands.
+- **Accordions** are right for Transact specs and Reference. In Persuade answer objections in the argument; a FAQ you keep uses `<details>` (with `hidden=until-found` where supported).
+- **Never open a panel from a panel.**
 
 ## Decisions and undo
 - **Default instead of asking.** Enter does the obvious thing; Esc steps back one level and never destroys work.
 - **Undo, not "are you sure".** Remove `confirm()` and "Are you sure?" dialogs.
-  - If the data layer has no undo yet, hide the item at once and show an undo toast. Commit the delete when the toast expires (about 5 seconds) or the person navigates away.
-  - Irreversible actions that reach other people, money or legal state get a review sheet with real choices ("Send to 12 suppliers" / "Save draft").
+  - Undo stays available until the next action (not a 5-second race), is announced (`role=status`) and is reachable by keyboard.
+  - If the data layer has no undo, never keep the confirm: put an undo adapter in front (SKILL.md section 3), hide at once, undo through the adapter, commit when the undo expires or the person moves on, and flag the missing API in the handover.
+  - Money, legal commitments, account deletion and anything sent to other people get a review sheet with real choices ("Send to 12 suppliers" / "Save draft").

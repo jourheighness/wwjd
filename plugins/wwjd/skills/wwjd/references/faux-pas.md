@@ -7,7 +7,7 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 ## The 25 highest-impact ★ items
 1. **Low-contrast grey text**: WebAIM26: 83.9% of pages, the #1 failure.
 2. **Icon-only or empty buttons and links with no accessible name**: WebAIM26: 30.6% empty buttons, 46.3% empty links.
-3. **Placeholder or floating labels instead of real labels**: WebAIM26: 51% of pages missing labels.
+3. **Placeholder labels, or floating labels on the web, instead of real labels**: WebAIM26: 51% of pages missing labels.
 4. **`div onClick` and hand-rolled controls instead of native/APG primitives.**
 5. **Explainer, reassurance and narration copy.**
 6. **Five actions per card, two filled primaries per region.**
@@ -15,7 +15,7 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 8. **Template look**: purple accent, gradients, glass, glow, accent stripe.
 9. **Identical icon-topped card grids and the stock section stack.**
 10. **Invented proof**: stats, testimonials, logos.
-11. **Generic "Invalid input" errors and premature as-you-type validation**: BAY: 94% lack adaptive errors.
+11. **Generic "Invalid input" errors and premature as-you-type validation**: BAY: 98% lack adaptive errors.
 12. **Submit disabled until the form is valid.**
 13. **Hover-only actions unreachable on touch.**
 14. **Missing or wrong `type`/`inputmode`/`autocomplete`.**
@@ -38,15 +38,15 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
   - `[visual]` needs screenshot judgement
   - `[review]` needs human or LLM reasoning
 - **Registers:**
-  - L landing/marketing
-  - E editorial/long-form
-  - P product app
-  - D dashboard/data-dense
-  - C chat/AI
-  - M mobile
-  - S e-commerce
-  - Doc docs
-  - F forms
+  - L Persuade
+  - E Editorial
+  - Doc Reference
+  - P Operate
+  - D Monitor
+  - C Converse
+  - S Transact
+  - F Flow
+  - M Native and mobile
   - \* all
 - **Source shorthand:**
   - NNg = Nielsen Norman Group; BAY = Baymard (2025 checkout benchmark unless stated); WebAIM26 = WebAIM Million 2026
@@ -54,36 +54,13 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
   - Krebs26 = adriankrebs.ch design-slop audit of 1,590 Show HN sites; AFD = Anthropic frontend-design
   - HM = impeccable anti-pattern registry; VWG = Vercel web-interface-guidelines
   - CWV = Core Web Vitals; APG = WAI-ARIA Authoring Practices Guide; conv = convention or expert consensus, no study
-- **Already in the skill:** `` names the reference file that covers it.
+  - LukeW = Luke Wroblewski (form research); taste-skill = the taste-skill design rules; shapeof = shapeof.ai AI UX patterns; AI Elements = Vercel AI Elements
+  - HIG = Apple Human Interface Guidelines; M3 = Material 3
+  - wwjd = this skill's own rule, from design reviews; no external study
 
 ---
 
-
-## Contents
-- [1. Copy & content](#1-copy--content)
-- [2. Information architecture & navigation](#2-information-architecture--navigation)
-- [3. Actions & affordance](#3-actions--affordance)
-- [4. Forms & input](#4-forms--input)
-- [5. Feedback, states & errors](#5-feedback-states--errors)
-- [6. Layout & alignment](#6-layout--alignment)
-- [7. Visual hierarchy & colour](#7-visual-hierarchy--colour)
-- [8. Typography](#8-typography)
-- [9. Motion](#9-motion)
-- [10. Stability & performance perception](#10-stability--performance-perception)
-- [11. Accessibility](#11-accessibility)
-- [12. Trust, privacy & dark patterns](#12-trust-privacy--dark-patterns)
-- [13. Onboarding & empty states](#13-onboarding--empty-states)
-- [14. Search & filtering](#14-search--filtering)
-- [15. Data display & charts](#15-data-display--charts)
-- [16. Chat / AI interfaces](#16-chat--ai-interfaces)
-- [17. Mobile & touch](#17-mobile--touch)
-- [18. E-commerce & checkout](#18-e-commerce--checkout)
-- [19. Editorial, long-form & docs](#19-editorial-long-form--docs)
-- [20. Landing & marketing](#20-landing--marketing)
-- [21. Dashboards & data-dense](#21-dashboards--data-dense)
-- [22. Notifications & interruptions](#22-notifications--interruptions)
-- [23. i18n / localization](#23-i18n--localization)
-- [24. Settings & preferences](#24-settings--preferences)
+Sections: grep `^## ` and read only the ones you need.
 
 ## 1. Copy & content
 - ★ **Explainer intro line**: "This page shows your projects" above the list → users read ~20–28% of words (NNg); the prose is skipped and pushes content down (wwjd) → delete it; let the heading and content carry it → [review] [P D L]
@@ -99,7 +76,7 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - ★ **Aphoristic tagline fragments**: "No setup. Just results." → generated tell that says nothing (AFD) → one concrete sentence of what it does → [static] [L]
 - **Filler-first headings and links**: "Welcome to…", "Information about…" → scanners read the first 2 words (NNg F-pattern) → keyword first → [review] [*]
 - **Wall-of-text paragraphs in UI**: NNg: scannable copy +47% → chunk, ≤1 sentence per description → [visual] [Doc E P]
-- **Ambiguous dates**: "03/04/26", no timezone → US/EU misread → relative time plus a tooltip with the locale date and timezone → [static] [D P] (relative time)
+- **Ambiguous dates**: "03/04/26", no timezone → US/EU misread → relative for about the last week, absolute after that and always in logs, audits and anything sorted or compared; full timestamp with timezone in a tooltip → [static] [D P]
 - ★ **Placeholder content shipped**: lorem, Jane Doe, Acme, "Coming soon" → App Store 2.1 rejects placeholder content; the layout can't be judged → realistic seeded data; hide unfinished sections → [static] [*]
 - ★ **Invented proof**: made-up stats, testimonials, logos → FTC fake-reviews rule (in force Oct 2024) covers AI-written testimonials → real data, or drop the slot → [review] [L S]
 - **Branded or clever feature names**: "Think carefully", "Magic" → NNg prompt-controls study: users can't predict the function → name by what it does ("Text to video") → [review] [C P]
@@ -115,8 +92,8 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - **Hidden primary navigation (hamburger) on desktop or mobile**: NNg: combo nav used 89% vs hidden 44% on mobile; desktop discoverability roughly halved → visible top nav on desktop, tab bar on mobile → [runtime] [L P M]
 - ★ **Junk-drawer "More"/⋯ holding daily features**: NNg app mistake #9 → frequent actions visible, rare ones in ⋯ → [review] [P]
 - **Org-chart IA**: menus mirror internal teams → users search by task (NNg) → task-based IA, validated by card sort or tree test → [review] [L P Doc]
-- **Active location not shown, or colour-only**: WCAG 1.4.1; no wayfinding → weight + indicator + `aria-current` → [static] [*] (partly)
-- **Broken Back button**: SPA steps, modals and filters missing from history → historically NNg's #1 web mistake → URL state, pushState per step → [runtime] [P S] (URL)
+- **Active location not shown, or colour-only**: WCAG 1.4.1; no wayfinding → weight + indicator + `aria-current` → [static] [*]
+- **Broken Back button**: SPA steps, modals and filters missing from history → historically NNg's #1 web mistake → URL state, pushState per step → [runtime] [P S]
 - **Links forced into new tabs**: `target=_blank` everywhere → breaks Back, disorients (NNg) → same tab; new tab only for help mid-form, with an icon and a label → [static] [*]
 - **Unlabelled file links**: PDF or download looks like a page → NNg: PDFs unfit for screen reading → "(PDF, 2 MB)" in the link → [static] [Doc E]
 - **Mega menu without hover intent**: opens on pass-through, closes on diagonal moves → NNg: ~0.3–0.5 s hover delay, safe triangle → hover intent + click to open → [runtime] [L S]
@@ -157,13 +134,13 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 
 ## 4. Forms & input
 - ★ **Placeholder as the only label**: NNg "placeholders are harmful"; WebAIM26 missing labels 51% → visible label above → [static] [F]
-- ★ **Floating labels**: label shrinks to tiny, low-contrast text and clips → static label above (wwjd) → [static] [F]
+- ★ **Floating labels on the web**: label shrinks to tiny, low-contrast text and clips → static label above; native apps follow the platform (wwjd) → [static] [F]
 - **Labels left-aligned far from the field**: eye-tracking (Penzo/LukeW): top-aligned labels are fastest → top-aligned → [visual] [F]
 - **Multi-column forms**: fields get skipped (BAY) → one column; only short related pairs (postcode + city) share a row → [visual] [F S]
 - **Only required fields marked, asterisk without a key**: BAY: 61% don't mark both; GOVUK: "(optional)" and no asterisks → mark optional, or mark both → [static] [F]
 - ★ **Validation while typing the first characters**: premature errors (LukeW/Etre) → validate on blur, then live once the field is in error → [runtime] [F]
 - **No inline validation at all**: BAY: 31% lack it; LukeW: +22% success, −42% completion time → per-field on blur → [runtime] [F]
-- ★ **Generic error messages**: "Invalid input" → BAY: 94% lack adaptive errors; GOVUK → one message per failure type, worded from the label → [static] [F]
+- ★ **Generic error messages**: "Invalid input" → BAY: 98% lack adaptive errors; GOVUK → one message per failure type, worded from the label → [static] [F]
 - **Error shown only by colour or only at the top**: WCAG 1.4.1, 3.3.1 → text at the field + summary list + icon → [runtime] [F]
 - **Paste blocked**: password, email confirm, OTP → WCAG 3.3.8; NIST 800-63B-4 (2025) → allow paste and password managers → [static] [F]
 - **"Confirm email/password" double fields**: WCAG 3.3.7 Redundant Entry; BAY extra fields → single field + show-password → [static] [F]
@@ -187,7 +164,7 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - **Autofocus on mobile**: keyboard pops and hides context (VWG) → autofocus only on desktop single-input views → [runtime] [M F]
 - **Auto-dismissing or far-away validation toast**: NNg prompt-controls study: users retried blindly → persistent message next to the control → [runtime] [F C]
 - **File limits revealed after upload**: NNg (Ernie, 10 MB case) → state type and size up front, validate client-side, per-file error and progress → [runtime] [F C]
-- **Multi-step form loses data on Back or reload**: → persist every step; Back keeps answers → [runtime] [F] (drafts)
+- **Multi-step form loses data on Back or reload**: → persist every step; Back keeps answers → [runtime] [F]
 - **Per-field "Apply" buttons**: BAY: 22% of sites → apply on change or blur → [static] [F S]
 - **Wrong control for optional input**: BAY: 32% of sites → text field, or a collapsed "+ Add" → [review] [F]
 - **Autocapitalise/autocorrect on email, username, code**: VWG → `autocapitalize="none"`, `spellcheck=false` → [static] [F M]
@@ -222,12 +199,12 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - **Modal taller than the viewport, actions pushed off-screen**: → internal scroll body, sticky footer actions → [runtime] [P M]
 - **Three fixed-width panes crush the main column at 1280**: → collapsible, resizable panes; container queries → [runtime] [P D]
 - **Misaligned CTAs across sibling cards**: → subgrid, CTA pinned to the bottom → [visual] [L S]
-- **Reserved empty slots ("—" placeholders)**: (wwjd) → collapse, run text left → [visual] [P D]
+- **Reserved empty slots ("—" for absent optional meta)**: (wwjd) → collapse, run text left; table cells keep "—" with accessible text "None" → [visual] [P D]
 - **Avoidance aesthetic**: a stripped grey wireframe → fewer elements, stronger hierarchy → [visual] [*]
 - **One-off component or className override at the call site**: (wwjd) → add a kit variant → [static] [P]
 
 ## 7. Visual hierarchy & colour
-- ★ **No focal point, flat hierarchy**: squint test fails (design-deslop) → one dominant element per view → [visual] [*]
+- ★ **No focal point, flat hierarchy**: squint test fails (conv) → one dominant element per view → [visual] [*]
 - ★ **Default indigo/violet accent**: Krebs26 "VibeCode purple", traced to Tailwind's indigo-500 default → project accent → [static] [*]
 - ★ **Gradient text, buttons or backgrounds**: Krebs26/HM top tell → flat colour, emphasis by weight → [static] [*]
 - ★ **Coloured glow shadows**: Krebs26 → no resting shadow; elevation by surface step → [static] [*]
@@ -238,8 +215,8 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - **Brand colour too light for text-bearing buttons**: white on yellow, orange or mint → WebAIM26 contrast → darker shade for text uses → [runtime] [L S]
 - **Error red reused as brand or CTA red**: semantic collision → reserve red for needs-action → [review] [*]
 - **Christmas tree**: every state coloured → (wwjd) → no signal, no colour → [visual] [D P]
-- ★ **Pure #000/#fff grounds**: halation in dark, glare in light (HM; wwjd) → tinted neutrals → [static] [*]
-- ★ **Perma-dark with no light theme, ignoring `prefers-color-scheme`**: Krebs26 tell → follow the system setting, offer a toggle → [runtime] [L P]
+- ★ **Untinted #000/#fff grounds by reflex**: (wwjd preference) → prefer tinted neutrals; pure white is allowed when the brand needs it → [static] [*]
+- ★ **Perma-dark by default, ignoring `prefers-color-scheme`**: Krebs26 tell → follow the system setting when both themes ship; dark-only is a deliberate decision recorded in `DESIGN.md` → [runtime] [L P]
 - **Theme flash on load**: wrong theme painted first → set theme and `color-scheme` before first paint → [runtime] [*]
 - **`color-scheme` missing in dark**: native scrollbars and inputs stay white (VWG) → `color-scheme: dark` → [static] [*]
 - ★ **Mixed icon libraries or stroke weights**: (HM) → one library, one weight → [static] [*]
@@ -257,7 +234,7 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - **Size mud**: 14/15/16 px used as hierarchy → ~5 roles with clear steps → [static] [*]
 - **FOIT or font-swap shift**: invisible text, then layout jump → `font-display: swap` + metric-matched fallback (`size-adjust`) → [runtime] [*]
 - **Faux bold/italic**: the weight was never loaded, so the browser synthesises it → load the real weights; `font-synthesis: none` → [static] [E L]
-- **Justified text without hyphenation**: rivers of space (BUT) → ragged-right, or `hyphens: auto` → [static] [E]
+- **Justified text without hyphenation**: rivers of space (BUT) → ragged-right by default; justify only with hyphenation and a correct `lang` → [static] [E]
 - **Underline used for emphasis**: reads as a link (BUT) → italic or weight → [static] [E Doc]
 - **Bold + italic together, or bold whole paragraphs**: BUT → one emphasis, used sparingly → [static] [E]
 - **Tracked lowercase, untracked caps**: BUT: 5–12% tracking on caps only → [static] [*]
@@ -265,15 +242,15 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - **Headings skipped or faked**: `div.text-2xl` → WCAG 1.3.1; screen-reader navigation fails → real `h1`–`h6` in order → [static] [*]
 - **Hard `<br>` in headlines**: breaks wrongly at other widths → `text-wrap: balance` → [static] [L]
 - **vw-only font sizes, px root size**: WCAG 1.4.4; ignores the user's font setting → `clamp()` with `rem` → [static] [*]
-- **Double spaces, "--", "..."**: (BUT; HM) → single space, real dash, "…" → [static] [E] (HM)
+- **Double spaces, "--", "..."**: (BUT; HM) → single space, real dash, "…" → [static] [E]
 
 ## 9. Motion
-- ★ **Fade-up on every section**: Krebs/AFD/HM tell → one orchestrated moment, or none → [static] [L]
+- ★ **Fade-up on every section**: Krebs26/AFD/HM tell → one orchestrated moment, or none → [static] [L]
 - ★ **Bounce or elastic easing**: dated (HM) → ease-out curves → [static] [*]
 - ★ **`transition: all`**: animates focus and layout (VWG) → list properties → [static] [*]
 - ★ **`hover:scale-105` on every card**: (HM) → one hover signal (fill or colour) → [static] [L P]
 - **Ignoring `prefers-reduced-motion`**: vestibular disorders; WCAG 2.3.3 → crossfade ≤150 ms → [static] [*]
-- **Scroll-jacking or forced parallax**: NNg scrolljacking; the YC 2026 slop list → native scroll → [runtime] [L E]
+- **Scroll-jacking or forced parallax**: NNg scrolljacking → native scroll → [runtime] [L E]
 - **Auto-rotating carousel**: WCAG 2.2.2; Notre Dame data: ~1% click, 84% of those on slide 1 → static hero, or manual with pause → [runtime] [L S]
 - ★ **Content invisible until JS animates it**: initial `opacity:0`; script fails, page is blank; delays LCP (taste-skill) → visible by default; enhance progressively → [static] [L]
 - **Flashing more than 3 times per second**: WCAG 2.3.1 seizure risk → none → [runtime] [*]
@@ -304,7 +281,7 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - ★ **Missing form labels**: WebAIM26: 51% → `<label>` bound to each input → [static] [F]
 - ★ **Empty links**: icon or logo links → WebAIM26: 46.3% → accessible name → [static] [*]
 - ★ **Empty buttons**: WebAIM26: 30.6% → `aria-label` matching the tooltip → [static] [*]
-- **Missing `lang`**: WebAIM26: 13.5%; inline Swedish/English unmarked → `<html lang>` plus `lang` on phrases → [static] [*]
+- **Missing `lang`**: WebAIM26: 13.5%; inline phrases in another language unmarked → `<html lang>` plus `lang` on phrases → [static] [*]
 - ★ **ARIA instead of native elements**: WebAIM26: pages with ARIA average 59.1 errors vs 42 without; 22% of `role=menu` uses broken → native first; no `role=menu` for site nav → [static] [*]
 - ★ **Hand-rolled select, combobox, dialog or tabs**: no arrows, Esc or focus return (APG) → headless accessible primitive or kit component → [runtime] [P]
 - **Focus hidden under sticky header or cookie bar**: WCAG 2.4.11 (AA, 2.2) → `scroll-padding-top`, non-overlapping chrome → [runtime] [*]
@@ -354,7 +331,7 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - **Coach marks everywhere at once**: → one hint, in context, dismissable forever → [runtime] [P]
 - **Long setup wizard before value**: delays time-to-value → defaults; ask only what only the user knows → [review] [P]
 - **Persona questions that change nothing**: wasted steps → ask only if the answer branches the product → [review] [P]
-- **Empty dashboard of zeros and empty axes**: → empty region disappears; one line + one action (import, sample data) → [visual] [D P]
+- **Empty dashboard of zeros and empty axes**: → a secondary region may collapse; one line + one action (import, example content) → [visual] [D P]
 - **Illustration + "Nothing here yet" with no action**: → one action → [visual] [P]
 - **Email verification before any use**: friction → let them use it; verify before risky actions → [review] [P]
 - **Pressure checklists**: "You're 40% set up" → (wwjd) → named steps with a done mark → [visual] [P]
@@ -368,20 +345,20 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - **Ambiguous search scope**: → default to the whole site; scope chip removable → [review] [P Doc]
 - **Autocomplete highlights the typed part**: BAY → highlight the completion; ≤8–10 suggestions; no reordering while typing → [runtime] [S]
 - **Every filter tap reloads and resets scroll on mobile**: BAY → batch-apply on mobile ("Show 42 results"), live on desktop → [runtime] [S D]
-- **Active filters invisible, no clear-all**: (behaviour) → chips + clear all → [visual] [S D]
+- **Active filters invisible, no clear-all**: (conv) → chips + clear all → [visual] [S D]
 - **Facets with 0 results offered**: → hide them, or show the count → [runtime] [S]
 - **Results lost on Back from detail**: (VWG) → restore query, filters and scroll → [runtime] [S D]
 - **Only generic filters (price, brand)**: BAY: category-specific attributes matter → per-category facets → [review] [S]
 - **Long facet lists without search**: → top ~10 + "Show all" + in-facet search → [runtime] [S]
 - **No match highlighting or snippet in results**: → highlighted snippet → [visual] [Doc E]
-- **Docs search missing ⌘K, headings or code**: → ⌘K/"/" shortcut, index headings and code → [runtime] [Doc]
+- **Docs search missing ⌘K / Ctrl+K, headings or code**: → ⌘K / Ctrl+K or "/" (which can be turned off), index headings and code → [runtime] [Doc]
 - **Search, sort and filters on short lists**: (wwjd) → none → [visual] [P]
 
 ## 15. Data display & charts
-- **Truncated bar axis, dual axes, pie over 5 slices, 3D**: → integrity rules → [static] [D]
+- **Truncated bar axis, dual axes, a donut or pie over 3 parts, 3D**: → integrity rules → [static] [D]
 - **Rainbow/jet colormap**: perceptually non-uniform, bad for colour-blind readers (Borland & Taylor 2007) → perceptual sequential ramp → [static] [D]
 - **Red/green-only diverging scale**: ~8% of men can't tell them apart → blue/orange + direction glyph → [static] [D]
-- **Legend far from marks**: (visual) → direct labels → [visual] [D]
+- **Legend far from marks**: (conv) → direct labels → [visual] [D]
 - **Numbers left-aligned or misaligned in tables**: → right-align numbers, `tabular-nums`; left-align text → [static] [D]
 - **Long table without sticky header, wide table without frozen first column**: → sticky header + first column → [runtime] [D]
 - **Values only in tooltips**: touch and a11y lose them → direct-label the key values → [review] [D]
@@ -418,7 +395,7 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - **Model picker exposing code names**: jargon → auto-routing; plain labels if a picker exists → [review] [C]
 - **Mid-stream error wipes the answer**: "Something went wrong" → keep the partial; retry from there → [runtime] [C]
 - **Enter/Shift+Enter inconsistent; mobile return sends**: → desktop Enter sends; mobile return = newline + send button → [runtime] [C M]
-- **Composer that never grows, or grows over the thread**: → auto-grow to ~40% of the viewport, then scroll → [runtime] [C]
+- **Composer that never grows, or grows over the thread**: → auto-grow to about 8 lines, never more than ~40% of the viewport, then scroll → [runtime] [C]
 - **Context or quota hit with no warning**: shapeof cost estimates; AI Elements Context → near-limit indicator → [runtime] [C]
 - **Invisible memory**: the model remembers without saying → shapeof Memory/Data ownership; GDPR → viewable, editable memory; incognito mode → [review] [C]
 - **50 conversations titled "New chat"**: → auto-title from content; searchable history → [runtime] [C]
@@ -473,7 +450,7 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - **Infinite scroll on product lists**: BAY → "Load more" hybrid → [runtime] [S]
 - **Non-linear checkout**: steps jump or branch → BAY: keep checkout linear → [review] [S]
 - **Upsell modal between cart and checkout**: interrupts → small inline cross-sell → [runtime] [S]
-- **Thin order confirmation**: no summary, delivery date or next step → peak-end; the result screen (behaviour) → full summary + tracking → [review] [S]
+- **Thin order confirmation**: no summary, delivery date or next step → peak-end; the result screen (conv) → full summary + tracking → [review] [S]
 - **Cart not persisted across sessions/devices; remove without undo**: → persist + undo → [runtime] [S]
 
 ## 19. Editorial, long-form & docs
@@ -484,7 +461,7 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - **No byline, published or updated date**: Fogg credibility; docs staleness → visible date and author → [static] [E Doc]
 - **Articles split over pages for ad views**: → single page → [runtime] [E]
 - **Long text without headings or TOC**: → scannable headings; "On this page" for long docs → [review] [E Doc]
-- ★ **Pull quote or intro sentence as giant display type**: AFD/taste tell → body size; one real quote at most → [visual] [E L]
+- ★ **Pull quote or intro sentence as giant display type**: AFD/taste-skill tell → body size; one real quote at most → [visual] [E L]
 - **Footnotes without back-links**: → bidirectional links or sidenotes → [static] [E Doc]
 - **Thin serif body in dark mode**: hairlines break up; light-on-dark reads thinner → weight up slightly, add line-height → [visual] [E]
 - **No print stylesheet for long reads and docs**: → `@media print` → [static] [E Doc]
@@ -495,7 +472,7 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 
 ## 20. Landing & marketing
 - ★ **Vague hero promise**: "The future of work" → NNg: visitors leave in 10–20 s without a clear value → what it is, for whom, in large type → [review] [L]
-- ★ **Template section stack**: hero, logos, 3 features, testimonial, pricing, CTA → AFD/taste tell → argument-ordered sections → [review] [L]
+- ★ **Template section stack**: hero, logos, 3 features, testimonial, pricing, CTA → AFD/taste-skill tell → argument-ordered sections → [review] [L]
 - ★ **Centred Inter hero with a pill badge above the H1**: Krebs26 (22% of Show HN sites carry 4+ tells) → left-anchored, no badge → [static] [L]
 - ★ **Fabricated stat banner or logo strip**: Krebs26 stat-banner → real numbers or no slot → [review] [L]
 - ★ **Numbered 1-2-3 "how it works" row**: Krebs26 → only for true sequences → [static] [L]
@@ -509,7 +486,7 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - **Exit-intent or scroll-triggered popups**: NNg → inline offer → [runtime] [L E]
 - **Trial form asking company size, phone, role**: → email (+ password/SSO) only → [review] [L F]
 - **Testimonials without name, role or photo**: credibility → attributed and real → [review] [L]
-- ★ **Aurora blobs, floating orbs, decorative 3D**: HM → none; real imagery → [static] [L] (HM)
+- ★ **Aurora blobs, floating orbs, decorative 3D**: HM → none; real imagery → [static] [L]
 - **"Scroll to explore" bouncing chevron**: → none → [static] [L]
 
 ## 21. Dashboards & data-dense
@@ -526,7 +503,7 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - **Lonely chart in dead space; oversized heatmap**: (wwjd) → balanced grid → [visual] [D]
 
 ## 22. Notifications & interruptions
-- **Push permission prompt on page load**: Mozilla: 1.45B prompts/month, ~99% not accepted, 48% denied; Firefox 72 requires a user gesture → pre-prompt after intent → [runtime] [*]
+- **Push permission prompt on page load**: Mozilla: 1.45B prompts/month, ~99% not accepted, 48% denied; Firefox 72 requires a user gesture → ask in context, after intent → [runtime] [*]
 - **Marketing pushed into the red badge**: pressure; nagging (DD) → badge or dot only for needs-you → [review] [P M]
 - **Notification without a deep link**: → open the exact object → [runtime] [P M]
 - **All-or-nothing notification settings**: users switch everything off → per type × channel; digest option → [review] [P M]
@@ -552,7 +529,7 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - **Font missing glyphs for target scripts**: tofu, or mixed fallback faces → subset check per locale → [runtime] [*]
 - **Brand names auto-translated**: (VWG) → `translate="no"` → [static] [*]
 - **Phone input assuming one country**: → libphonenumber, E.164, country picker → [static] [F]
-- **Machine-translated "swinglish"**: (wwjd) → native review → [review] [*]
+- **Machine-translated UI**: word-for-word phrasing (wwjd) → native review → [review] [*]
 
 ## 24. Settings & preferences
 - **Mixed save models on one page**: some instant, some need Save → NNg toggle guidance → one model: instant + undo → [runtime] [P]
@@ -563,7 +540,7 @@ Don't read this whole file. Jump to the categories for the work in hand. For a r
 - **Labels describe implementation**: "Enable webhook retries" → describe the outcome → [review] [P]
 - **Negative toggles**: "Disable notifications" ON → double negative (DD trick wording) → positive phrasing → [static] [P]
 - **Change needs a reload, or shows no effect**: → apply live; preview where possible → [runtime] [P]
-- **Preferences scattered**: across profile, settings and ⋯ → one settings home; ⌘K reaches each → [review] [P]
+- **Preferences scattered**: across profile, settings and ⋯ → one settings home; ⌘K / Ctrl+K reaches each → [review] [P]
 - **No reset, no marking of non-default values**: → "Reset to default" per section → [review] [P]
 - **Settings modal loses edits on outside click**: → autosave, or keep the draft → [runtime] [P]
 

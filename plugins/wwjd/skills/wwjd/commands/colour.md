@@ -10,6 +10,8 @@ The project's palette wins. This command decides where the colour goes.
 | Editorial | Colour lives in the frame and the figures, not the text |
 | Transact | Product photography carries the colour; the UI stays neutral |
 | Converse | Neutral; the content leads |
+| Flow | Neutral; the accent marks only the primary action |
+| Native | The platform's own colour roles and materials |
 
 ## Rules
 - **One ground, one ink, one accent,** plus status colours used only on status.
@@ -25,14 +27,14 @@ The project's palette wins. This command decides where the colour goes.
   - Shadows only on real overlays: menus, dialogs, sticky bars.
   - Keep a `1px solid transparent` border so forced-colors mode can draw it.
   - Panes get their own surface, so nothing melts together.
-- **Flat by default:** no decorative gradients, glass or glow. A project look may own a gradient or a material. The only generic exception is a neutral scrim over a photo.
-- **Light theme:** avoid harsh pure-white grounds. A slightly warm or tinted neutral reads calmer, from low-chroma stone, never yellow cream.
+- **Flat by default:** no decorative gradients, glass or glow. A project look may own a gradient or a material. The generic exceptions are a neutral scrim over a photo and one frosted sticky bar (`references/bans.md`).
+- **Light theme:** prefer a tinted neutral ground, from low-chroma stone, never yellow cream; pure white is allowed when the brand needs it.
 - **Dark theme:**
   - Depth comes from lighter surfaces in about 3 steps.
   - Desaturate accents slightly, and put accent on text rather than faded fills (which go dirty in dark).
   - Balance cold and warm.
   - Dim images slightly. Recolour charts; never invert them.
-- **Themes:** when both ship, check each on its own: dividers visible, state parity, contrast. Dark-first products may ship dark only.
+- **Themes:** follow the system setting when both themes ship, and check each on its own: dividers visible, state parity, contrast. A dark-only product is a deliberate project decision recorded in `DESIGN.md`.
 - **Contrast:** AA for body text, 7:1 preferred for long reading. 3:1 for large text, icons, component edges and focus rings.
 - **Focus ring:** one shared ring, `:focus-visible`, 2px with an offset, at least 3:1 against what surrounds it, and it appears instantly.
 - **Not the library default:** never ship an untouched default accent (the stock indigo or violet).
@@ -41,9 +43,9 @@ The project's palette wins. This command decides where the colour goes.
 - **Form follows the job:**
   - trend → line
   - comparison → bar
-  - part of a whole → bar, unless it has 5 or fewer parts
+  - part of a whole → bars by default; a single donut or pie only for 2–3 parts. Monitor: no donuts
 - **Series** differ by more than hue: dashed, dotted, marker shape. Use a colour-blind-safe categorical palette. Movement uses a diverging pair plus a direction glyph.
-- **Every point** is hoverable and focusable, with one tooltip system across all charts.
+- **Interaction:** one tab stop for the chart with arrow keys between points, plus a data table. One tooltip system across all charts.
 - **Labels:**
   - Label directly instead of using a legend that restates.
   - Gridlines are low contrast.

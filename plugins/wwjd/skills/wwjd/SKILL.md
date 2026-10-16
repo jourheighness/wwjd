@@ -1,7 +1,7 @@
 ---
 name: wwjd
 description: What Would Johannes Do. An opinionated UI/UX rule set and design workflow that designs, builds, reviews and polishes interfaces, covering landing pages, editorial and docs, product apps, dashboards, chat and AI assistant panels, commerce, forms, onboarding and mobile. Use before adding or changing any user-facing screen, panel, component, layout, styling or UI copy, and for mockups, DESIGN.md or UI review.
-compatibility: Scripts need Node 20+. Screenshots need Playwright (npx). Works in any agent that can read files; hooks and the critic agent are Claude Code extras.
+compatibility: Scripts need Node 20.10+ and bash; screenshots need Playwright (npx). Works in any agent that can read files; hooks and the critic agent are Claude Code extras.
 ---
 
 # What Would Johannes Do
@@ -13,15 +13,15 @@ The rules are opinions backed by use, not physics. If a rule would make a specif
 ## 1. Start here, every time
 
 1. **Load context:**
-   - Read the user profile at `$WWJD_PROFILE`, or `~/.config/wwjd/profile.md` if that is unset. Then read the project's own files: `DESIGN.md`, `PRODUCT.md`, the decision log (`docs/decisions/` or similar), and the UI sections of `AGENTS.md` or `CLAUDE.md`.
+   - Read the user profile at `$WWJD_PROFILE`, or `~/.config/wwjd/profile.md` if that is unset (workflow and locale). Then read the project's own files: `DESIGN.md`, `PRODUCT.md`, the decision log (`docs/decisions/` or similar), and the UI sections of `AGENTS.md` or `CLAUDE.md`.
    - Find the kit: the shared component package, its tokens, and its workshop (Storybook or similar). Recorded decisions must survive this session.
 2. **Pick the register** from the table in section 4, using the surface you are working on, not the product as a whole. State it in one line ("Register: Persuade, pricing page"). For a hybrid, the outer register owns the frame and the inner one owns its region.
 3. **Pick the command** from the table in section 5 and read its file before acting.
 4. **Precedence**, highest first:
    1. **The floor** (section 2). Nothing overrides it.
    2. **The project's recorded decisions and `DESIGN.md`.** Follow its brand (colour, type, radius, density, voice) and its dated decisions.
-   3. **These rules**, then the register file, then the command file.
-   4. **The user profile**, for that user's own workflow and locale.
+   3. **The wwjd rules.** The more specific file wins: register and command files refine this file for their scope.
+   4. **The user profile**, for workflow and locale only. It never overrides a design rule.
 
    Where the project's existing UI breaks these rules, apply the rules inside the scope you are touching. Flag everything else and fix it only when asked. Name every conflict; never resolve one silently.
 
@@ -29,12 +29,16 @@ The rules are opinions backed by use, not physics. If a rule would make a specif
 
 - **Access:**
   - Contrast meets WCAG AA. Focus is visible, with a ring of at least 3:1.
-  - Zoom is never disabled. Targets are at least 24px on desktop and 44px on touch.
+  - Zoom is never disabled. Targets are at least 24px on desktop, 44pt on iOS and 48dp on Android.
   - Colour never carries meaning alone. Links inside running text are underlined.
   - Reduced motion is respected.
+  - Text may wrap or the UI may grow; nothing clips at 200% zoom or with text-spacing overrides.
+  - Anything shown in a tooltip is reachable on focus and tap; a disabled control that explains itself uses `aria-disabled` and stays focusable. Essential information never lives only in a tooltip.
+  - Every drag has a non-drag alternative (keyboard on resize separators, a close button on sheets).
+  - Scrollable regions (code blocks, wide tables) are focusable and labelled.
 - **Stability:** nothing shifts, jumps, re-sorts or reflows unless the person caused it.
-- **Honesty:** no dark patterns. That means no fake urgency or scarcity, no pre-ticked add-ons, no confirmshaming, no hidden costs. No invented proof, people or numbers. Legal, consent, pricing and safety text always stays.
-- **Reversibility:** money, legal commitments, account deletion and anything sent to other people get an explicit review or confirmation step. Everything else is undoable.
+- **Honesty:** no dark patterns. That means no fake urgency or scarcity, no pre-ticked add-ons, no confirmshaming, no hidden costs. No invented proof, people or numbers. Legal, consent, pricing and safety text always stays. Legal links (imprint, privacy, cookie settings, accessibility statement) always stay.
+- **Reversibility:** money, legal commitments, account deletion and anything sent to other people get an explicit review step. Everything else is undoable. Undo stays available until the next action (not a 5-second race), is announced (`role=status`) and is reachable by keyboard; if the data layer has no undo, hide at once and commit when the undo expires or the person moves on.
 - **Data:** judge UI only with realistic data, never with broken or placeholder data.
 
 ## 3. The rules
@@ -43,9 +47,10 @@ The rules are opinions backed by use, not physics. If a rule would make a specif
 - Every element earns its place where it sits. Removing makes a screen better more often than adding does.
 - No text that explains, narrates or reassures the interface ("This page shows…", "Nothing is ever lost", "Click here to start…"). If the UI needs a caption, redesign it. One sentence at most where text is truly needed.
 - Nothing twice: no two controls for one job, no repeated status, no duplicate path to the same place.
-- Every number must change a decision. Otherwise use a dot, a progress mark, or nothing. No "3 of 13", no zero counts, no pressure counts. Proof numbers on a landing page and prices in commerce do change decisions.
+- Every number must change a decision. Otherwise use a dot, a progress mark, or nothing. No "3 of 13", no zero counts, no pressure counts. Proof numbers on a landing page and prices in commerce do change decisions. Counts that are decision inputs stay: search results, remaining characters, cart items, unread.
 - Labels are short: a verb plus its target. Use sentence case and the product's words, never system words.
 - Build what was asked for. Designing every state is part of the job, not an addition.
+- **The intended flow comes first; the backend never shrinks it.** Design and build every step, state and transition of the right experience, even where the API or data layer can't do it yet (undo, a field, an endpoint, presence, a bulk action): build against a small named adapter with a local stub, fixture or optimistic implementation, marked `// TODO(api): …`. Never fall back to the worse pattern (keeping `confirm()` because there is no undo). Real wiring waits, or ask "build now or later?".
 
 **One system**
 - Use the project's kit and tokens. A missing look becomes a variant in the kit, never a one-off on the page.
@@ -64,12 +69,12 @@ The rules are opinions backed by use, not physics. If a rule would make a specif
 - Each region gets one primary action and one secondary. A tertiary is allowed only when you can say why. Everything else goes behind ⋯, a hover toolbar or the detail view. Never five actions on one card.
 - Show the next action, not every action. Details, reasons and history go one step away: tooltip, popover, drawer or drill-in.
 - The whole row or card is the click target. What is pressable looks pressable; what is not, never does.
-- Default instead of asking. Undo instead of "are you sure": remove `confirm()` and instead hide at once, show an undo toast, and commit when it expires. The floor names the exceptions.
+- Default instead of asking. Undo instead of "are you sure": remove `confirm()`. The floor sets how undo behaves and names the exceptions.
 
 **Stable under the hand**
 - State changes only on intent. Looking, hovering and scrolling change nothing.
 - Scroll and focus move only when the person acts. Overlays never cover the thing being worked on.
-- Motion explains a change, or it goes. It is interruptible and animates transform and opacity only.
+- Motion explains a change, or it goes, and it is interruptible. Animate transform and opacity; colour on hover and `grid-template-rows` for height are the allowed exceptions. Never width, height, top, left, margin or padding.
 
 **Visual**
 - Colour means attention: no signal, no colour. A needs-you signal must still be findable at a glance.
@@ -116,7 +121,7 @@ The rules are opinions backed by use, not physics. If a rule would make a specif
 | harden | states, worst-case data, errors, i18n | `commands/harden.md` |
 | adapt | responsive, mobile, native, platform | `commands/adapt.md` |
 
-A small change in existing UI needs no command file. Apply the rules, then run the audit below.
+A small change in existing UI needs no command file. Apply the rules, then run the handover check (section 6).
 
 **References:**
 - `references/bans.md`: bans and what to do instead
@@ -124,21 +129,18 @@ A small change in existing UI needs no command file. Apply the rules, then run t
 - `references/examples.md`: before and after
 - `references/glossary.md`: terms used here
 
-## 6. Before handing anything over
+## 6. Handover check
 
-1. Read every string. Delete what explains, reassures, restates or repeats.
-2. Justify every number, or turn it into a dot or nothing.
-3. Each region has one primary and at most a secondary and a justified tertiary.
-4. Everything sits on the grid's edges. Nothing centred by accident, no reserved empty slots, no misaligned wraps.
-5. The same job uses the same component as everywhere else.
-6. Nothing moves on hover, select, load or toggle.
-7. Colour appears only where something needs attention.
-8. Check light and dark, the narrow width, the empty state and the longest real text.
-9. Run `scripts/ui-check.mjs` on the changed files. Fix each finding or justify it.
-10. Look at the actual render yourself: `scripts/shoot.sh` or any screenshot tool. Another agent's report is not evidence.
+1. Re-check section 3 against the screen: strings, numbers, actions, edges, sameness, stability, colour.
+2. Check light and dark, the narrow width, the empty state and the longest real text.
+3. Run `scripts/ui-check.mjs --register <register>` (in this skill's folder) on the changed files. Fix each finding or justify it.
+4. Look at the actual render yourself: `scripts/shoot.sh` or any screenshot tool. Another agent's report is not evidence.
+5. List every mocked API (`TODO(api)`) with what the backend must provide, and ask "build now or later?".
+
+**Show first, review after.** Never make the user wait on a review to see the work: hand over the link, screenshots and what changed right away, and let any critic or long verification run in the background and report after. Cold critics and long gates are for big autonomous loops; with the user actively working, skip them unless asked.
 
 ## 7. Corrections become rules
 
 - When the user says "rule", "always", "never", or gives the same correction twice, write it down the same turn: dated, with their words quoted.
-- It goes in the project's decision log or `DESIGN.md`, or in the user profile if it applies across projects.
+- Project rules go in the project's decision log or `DESIGN.md`. A correction that should hold across projects is proposed as a change to the wwjd skill, never stored in the profile.
 - If it conflicts with an earlier rule, the newest wins: mark the old one superseded. Help phrase it when the user is reaching for the words.

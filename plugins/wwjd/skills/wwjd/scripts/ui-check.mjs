@@ -6,7 +6,9 @@
 //   Registers: persuade showcase editorial reference operate monitor converse transact flow native
 //   Config (first found): --config, ./.wwjd.json, ~/.config/wwjd/ui-check.json
 //     { "register": "operate", "rules": { "<id>": "off"|"warn"|"error" },
-//       "kitDirs": ["packages/ui"], "tokenFiles": "regex" }
+//       "kitDirs": ["packages/ui"], "tokenFiles": "regex", "locale": ["en"] }
+//   locale: the UI's languages (default ["en"]). English-only copy rules (ai-dash)
+//   run only when every locale is English.
 //   Ignore one line with a trailing comment containing `ui-check-ignore: <reason>`.
 // Findings are leads, not verdicts: fix each one or justify it.
 import { execSync } from "node:child_process";
@@ -28,7 +30,12 @@ for (let i = 0; i < argv.length; i++) {
   if (a === "--json") opt.json = true;
   else if (a === "--register") opt.register = argv[++i];
   else if (a === "--config") opt.config = argv[++i];
-  else if (a === "-h" || a === "--help") { console.log(readFileSync(new URL(import.meta.url)).toString().split("\n").slice(1, 13).join("\n").replace(/^\/\/ ?/gm, "")); process.exit(0); }
+  else if (a === "-h" || a === "--help") {
+    const head = [];
+    for (const l of readFileSync(new URL(import.meta.url), "utf8").split("\n").slice(1)) { if (!l.startsWith("//")) break; head.push(l.replace(/^\/\/ ?/, "")); }
+    console.log(head.join("\n"));
+    process.exit(0);
+  }
   else opt.paths.push(a);
 }
 let cfg = {};
@@ -37,6 +44,8 @@ for (const p of [opt.config, ".wwjd.json", join(process.env.XDG_CONFIG_HOME || j
 }
 const REGISTER = (opt.register || cfg.register || "operate").toLowerCase();
 const KIT_DIRS = (cfg.kitDirs || ["packages/ui", "components/ui", "src/components/ui", "src/ui", "kit", "primitives"]).map((d) => d.replace(/\/$/, ""));
+const LOCALES = [].concat(cfg.locale || ["en"]).map(String);
+const ENGLISH_ONLY = LOCALES.length > 0 && LOCALES.every((l) => /^en([-_]|$)/i.test(l));
 const TOKEN_FILE = new RegExp(cfg.tokenFiles || "(tokens?|theme|palette|colou?rs?|variables|globals?)\\.(css|scss|ts|js|json)$|(^|/)tokens?/", "i");
 
 const UI_EXT = new Set([".tsx", ".jsx", ".vue", ".svelte", ".astro", ".html", ".mdx", ".css", ".scss"]);
@@ -56,20 +65,22 @@ const rules = [
   // ── floor: accessibility and honesty ──
   { id: "no-zoom", sev: "error", re: /user-scalable\s*=\s*no|maximum-scale\s*=\s*1(\.0)?\b/, msg: "zoom disabled" },
   { id: "tabindex-positive", sev: "error", re: /tabIndex=\{?["']?[1-9]/, msg: "positive tabIndex breaks keyboard order" },
-  { id: "div-click", sev: "error", re: /<(div|span|li)\b[^>]*\bonClick=/, only: /\.(tsx|jsx)$/, msg: "clickable div/span; use a button, a link or the kit's item" },
+  { id: "div-click", sev: "error", re: /<(div|span|li|tr|td|article|Row|Card)\b[^>]*\bonClick=/, only: /\.(tsx|jsx)$/, msg: "clickable container; make the title a link/button stretched over the row, with inner actions above it" },
+  { id: "icon-button-name", sev: "error", re: /<button\b(?![^>]*aria-label)[^>]*>\s*<(svg|[A-Z]\w*Icon|Icon)\b/, unless: /(\/>|<\/svg>|<\/\w*Icon>)\s*(\{|[^\s<])|sr-only|visually-hidden|VisuallyHidden/, only: MARKUP, msg: "icon-only button without aria-label" },
+  { id: "input-label", sev: "warn", re: /<input\b(?![^>]*(aria-label|aria-labelledby|id=))(?![^>]*type=["'](hidden|submit|button|reset|image)["'])[^>]*>/, unless: /<label\b|\{\.\.\./, only: MARKUP, msg: "input without a label association" },
   { id: "dead-link", sev: "error", re: /href=["']#["']/, msg: 'dead link href="#"; give it a real target or make it a button' },
   { id: "alert", sev: "error", re: /\bwindow\.alert\(|\balert\(\s*["'`]/, msg: "alert(); show the error inline" },
-  { id: "focus-removed", sev: "warn", re: /outline:\s*none|\boutline-none\b|\boutline-0\b/, unless: /focus(-visible)?:(ring|outline)|:focus-visible/, msg: "focus outline removed without a visible focus-visible replacement" },
+  { id: "focus-removed", sev: "error", re: /outline:\s*none|\boutline-none\b|\boutline-0\b/, unless: /focus(-visible)?:(ring|outline)|:focus-visible/, msg: "focus outline removed without a visible focus-visible replacement" },
   { id: "img-dimensions", sev: "warn", re: /<img\b(?![^>]*\b(width|height)=)(?![^>]*aspect-)[^>]*>/, only: MARKUP, msg: "image without dimensions shifts layout as it loads" },
-  { id: "fake-urgency", sev: "error", re: /\b(only \d+ left|hurry|offer ends in|limited time only|\d+ people are (viewing|looking))\b/i, only: MARKUP, msg: "urgency/scarcity copy; only if true and verifiable" },
+  { id: "fake-urgency", sev: "warn", re: /\b(only \d+ left|hurry|offer ends in|limited time only|\d+ people are (viewing|looking))\b/i, only: MARKUP, off: R("transact"), msg: "urgency/scarcity copy; only if true and verifiable" },
   // ── copy ──
   { id: "explainer-copy", sev: "warn", re: /\b(nothing is (ever )?(lost|saved|shared)|everything is (private|saved|safe)|don['’]t worry|no need to worry|rest assured|simply (click|drag|select)|just (click|drag|select)|click here|here you can|this (page|section|view|panel|feature|card) (lets|allows|shows|helps|will)|you can (now|always|easily)|we['’]ll (start|begin|automatically)|this will (start|begin|automatically))\b/i, only: MARKUP, msg: "explaining or reassuring copy; the UI should explain itself" },
   { id: "banned-label", sev: "warn", re: />\s*(Submit|OK|Ok|Click here|Learn more|Get started|Read more)\s*</, only: MARKUP, msg: "generic label; name the action and its target" },
   { id: "oops", sev: "warn", re: /\b(Oops|Whoops|Uh oh)\b|["'`>][^"'`<\n]{2,80}!\s*["'`<]/, only: MARKUP, skip: (f) => STORY.test(f), off: EXPRESSIVE, msg: "'Oops' or an exclamation in UI copy; keep it plain and calm" },
   { id: "buzzword", sev: "warn", re: /\b(supercharge|unleash|harness the power|best-in-class|industry-leading|world-class|next-generation|cutting-edge|revolutioni[sz]e|game-?changer|future-proof|seamless(ly)?|effortless(ly)?|delve|tapestry)\b/i, only: MARKUP, msg: "marketing buzzword" },
-  { id: "ai-dash", sev: "warn", re: />[^<{}]*\s[—–]\s[^<{}]*<|["'`][^"'`\n]*\s[—–]\s[^"'`\n]*["'`]/, only: MARKUP, skip: (f) => STORY.test(f), off: R("editorial", "persuade", "showcase"), msg: "dash in a UI string reads as AI copy (fine in prose)" },
+  { id: "ai-dash", sev: "warn", re: />[^<{}]*\s[—–]\s[^<{}]*<|["'`][^"'`\n]*\s[—–]\s[^"'`\n]*["'`]/, only: MARKUP, skip: (f) => STORY.test(f), off: R("editorial", "persuade", "showcase"), english: true, msg: "dash in a UI string reads as AI copy (fine in prose)" },
   { id: "count-of", sev: "warn", re: /\{[^}]+\}\s*(of|\/)\s*\{[^}]+\}|\$\{[^}]+\}\s*(of|\/)\s*\$\{[^}]+\}/, only: MARKUP, off: R("transact", "persuade", "showcase"), msg: "'N of M' count; justify it, or use a progress mark or dot" },
-  { id: "confirm-dialog", sev: "warn", re: /\bwindow\.confirm\(|\bconfirm\(\s*["'`]|are you sure/i, off: R("transact", "flow"), msg: "confirm dialog; use undo (a review step only for money, legal or sending to others)" },
+  { id: "confirm-dialog", sev: "warn", re: /\bwindow\.confirm\(|\bconfirm\(\s*["'`]|are you sure/i, off: R("transact", "flow"), msg: "confirm dialog; use undo (a review step only for money, legal commitments, account deletion or sending to others)" },
   { id: "locale-format", sev: "warn", re: /\.toLocale(Date|Time)?String\(\)|\.toFixed\(/, only: COMPONENT, msg: "ad-hoc formatting; use Intl.* with the app locale" },
   // ── system ──
   { id: "hex-in-ui", sev: "warn", re: /#[0-9a-fA-F]{3,8}\b(?![\w-])/, only: COMPONENT, skip: (f) => TOKEN_FILE.test(f) || /icon/i.test(f), msg: "raw hex in a component or page; use a token" },
@@ -77,7 +88,7 @@ const rules = [
   { id: "arbitrary-value", sev: "warn", re: /\b(?:[a-z]+-)+\[(?:#|\d+(?:\.\d+)?(?:px|rem|em|%)|rgb|hsl|oklch)[^\]]*\]/, only: MARKUP, skip: (f) => inKit(f), msg: "arbitrary Tailwind value; use the scale or a token" },
   { id: "inline-style", sev: "warn", re: /\bstyle=\{\{[^}]*(color|margin|padding|font|background)|\bstyle="[^"]*(color|margin|padding|font|background)/, only: COMPONENT, skip: (f) => STORY.test(f) || inKit(f), msg: "inline style; put the look in a kit variant" },
   { id: "callsite-override", sev: "warn", re: /<(Button|Card|Badge|Chip|Tooltip|Avatar|Input|Select|Dialog|Sheet)\b[^>]*\bclassName=["'{`][^"'}`]*\b(bg-|text-(?!left|right|center|start|end)|border-|rounded|p[xytrbl]?-\d|shadow|font-)/, only: /\.(tsx|jsx)$/, skip: (f) => inKit(f) || STORY.test(f), msg: "styling a kit component at the call site; add a variant in the kit" },
-  { id: "native-control", sev: "warn", re: /<(select|datalist)\b|<input[^>]*type=["'](date|time|datetime-local|color|range)["']/, only: MARKUP, skip: (f) => inKit(f), off: R("native", "flow", "transact"), msg: "native OS control on desktop UI; use the kit's control if one exists" },
+  { id: "native-control", sev: "warn", re: /<(select|datalist)\b|<input[^>]*type=["'](date|time|datetime-local|color|range)["']/, only: MARKUP, skip: (f) => inKit(f), off: R("native", "flow", "transact"), msg: "native control styled by the OS; prefer the kit's control built on the native element/APG primitive" },
   { id: "important", sev: "warn", re: /!important\b/, msg: "!important; fix the cascade or the variant" },
   { id: "native-title", sev: "warn", re: /<(?!svg\b|title\b|iframe\b|abbr\b|link\b|frame\b|object\b)[a-z][a-z0-9]*\b[^>]*\stitle=["{]/, only: MARKUP, msg: "native title tooltip; use the kit tooltip (works on focus and touch)" },
   // ── layout ──
@@ -104,7 +115,7 @@ const rules = [
 
 for (const r of rules) {
   const o = cfg.rules?.[r.id];
-  r.level = o || (r.off?.has(REGISTER) ? "off" : r.sev);
+  r.level = o || (r.off?.has(REGISTER) || (r.english && !ENGLISH_ONLY) ? "off" : r.sev);
 }
 
 // ── files ──────────────────────────────────────────────────────────

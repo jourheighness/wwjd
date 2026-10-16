@@ -5,7 +5,7 @@ Success: the reader reads to the end. Typography is the interface.
 ## Reading
 - **Measure:** 60–75 characters (about 66 is ideal). Body 18–21px on desktop, 17–18px on phones. Leading 1.5–1.65.
 - **Face:** a text face chosen for long reading, with real italics. Old-style figures in prose; lining tabular figures in tables.
-- **One reading column,** centred as a column. Text inside it is start-aligned. Justify only with `hyphens: auto` and a correct `lang`.
+- **One reading column,** centred as a column. Text inside it is start-aligned: ragged-right by default (easier for dyslexic readers); justify only with hyphenation and a correct `lang`.
 - **Microtypography:**
   - Smart quotes and real dashes (em dashes are correct in prose), non-breaking spaces between values and units.
   - `hanging-punctuation` where supported.

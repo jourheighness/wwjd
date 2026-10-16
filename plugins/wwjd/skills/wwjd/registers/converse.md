@@ -22,7 +22,7 @@ Success: the person gets work done through dialogue and trusts what came back.
 - **Streaming without jank:** no per-token fades, and tables and code blocks don't reflow mid-stream.
 
 ## Composer
-- **Size:** autogrows to about 8 lines.
+- **Size:** autogrows to about 8 lines, never more than ~40% of the viewport, then scrolls inside.
 - **Keys:** on desktop Enter sends and Shift+Enter adds a line; on mobile Enter adds a line.
 - **Drafts and attachments:** the draft survives reload. Attachments show as chips.
 - **Context:** shown as one line at the top of the composer, only when present ("Replying to …"), with an × to clear it.
@@ -38,7 +38,7 @@ Success: the person gets work done through dialogue and trusts what came back.
   - No step counters or lasting receipts unless the person opens them.
 
 ## Message actions
-- **The set:** copy, regenerate, and edit to branch, on hover or focus. On touch they are always visible or on long-press.
+- **The set:** copy, regenerate, and edit to branch, on hover or focus. On touch, a visible control (⋯); long-press only as a shortcut.
 - **Regenerated versions:** step through them with arrows; the "2 / 3" count sits in a tooltip.
 - **One shared menu** for every assistant message.
 
