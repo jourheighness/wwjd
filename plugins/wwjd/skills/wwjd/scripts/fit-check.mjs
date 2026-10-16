@@ -10,8 +10,8 @@
 //   overflow             anything wider than the container
 //   hover-shift          hovering a row ([data-row], [role=row], li) moves a sibling by > 0.5px
 //   hover-unreachable    an action hidden at rest that keyboard focus doesn't reveal
-// Needs Playwright: run inside a project that has it, or `npx -y -p playwright node fit-check.mjs …`
-// after `npx playwright install chromium`.
+// Needs Playwright installed in the project (npm i -D playwright; npx playwright install chromium).
+// PW_EXE=<path> points it at an existing Chromium build instead.
 let chromium;
 try { ({ chromium } = await import("playwright")); }
 catch { console.error("fit-check needs the playwright package (npm i -D playwright, or npx -p playwright)"); process.exit(2); }
@@ -24,7 +24,7 @@ const widths = opt("--widths", "240,320,480,720").split(",").map(Number);
 const selector = opt("--selector", null);
 const json = args.includes("--json");
 
-const browser = await chromium.launch();
+const browser = await chromium.launch({ executablePath: process.env.PW_EXE || undefined });
 const findings = [];
 for (const w of widths) {
   const page = await browser.newPage({ viewport: { width: selector ? 1280 : w, height: 900 } });

@@ -6,7 +6,7 @@ compatibility: Scripts need Node 20.10+ and bash; screenshots need Playwright (n
 
 # What Would Johannes Do
 
-Johannes's rules for building interfaces. The aim is that a decision made once stays made: nobody has to come back and undo your choices. Most rules here began as a correction he had to give more than once.
+Johannes's rules for designing, building and reviewing interfaces. Follow them so a design decision is made once and stays made.
 
 The rules are opinions backed by use, not physics. If a rule would make a specific case worse for the person using the product, say so, propose the exception, and apply it only once it is agreed. Never apply a rule silently against its own purpose.
 

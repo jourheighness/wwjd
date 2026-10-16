@@ -1,8 +1,16 @@
 # wwjd: What Would Johannes Do
 
-Johannes Carlsten's design rules for coding agents. It is one skill that tells an agent how Johannes would design, build and review an interface. It covers landing pages, editorial and docs, product apps, dashboards, chat and AI, commerce, forms and onboarding, and mobile.
+A design skill for coding agents. When an agent designs, builds or reviews an interface, wwjd tells it how Johannes would do it: what to cut, where actions go, how layouts align and resize, which numbers to show, and how to check the result before handing it over.
 
-Most of the rules began as a correction he had to give an agent more than once. The aim is that a design decision made once stays made.
+It covers landing pages, editorial and docs, product apps, dashboards, chat and AI interfaces, commerce, forms and onboarding, and mobile. It works in Claude Code, Codex and any agent that reads skill files.
+
+## What it does
+
+- **Picks the rules for the job.** A landing page, a dashboard and a checkout follow different rules; the agent chooses by the surface it is working on.
+- **Runs one focused command at a time:** explore, build, critique, audit, polish, distill, prioritize, clarify, layout, fit, typeset, colour, animate, harden, adapt.
+- **Holds a floor nothing overrides:** accessibility, layout stability, no dark patterns, real data.
+- **Checks its own work:** a static lint (`ui-check.mjs`), screenshots at desktop and phone (`shoot.sh`), and a resize check (`fit-check.mjs`).
+- **Respects the project:** the repo's design system and recorded decisions come first, and corrections you give become rules in the project.
 
 ## What's inside
 
@@ -13,10 +21,10 @@ plugins/wwjd/
     registers/        persuade · showcase · editorial · reference · operate · monitor ·
                       converse · transact · flow · native (platform overlay)
     commands/         explore · build · critique · audit · polish · distill · prioritize ·
-                      clarify · layout · typeset · colour · animate · harden · adapt
+                      clarify · layout · fit · typeset · colour · animate · harden · adapt
     references/       bans (never this, do that instead) · faux-pas catalogue ·
                       before/after examples · glossary
-    scripts/          ui-check.mjs (static lint) · shoot.sh (screenshots)
+    scripts/          ui-check.mjs (static lint) · shoot.sh (screenshots) · fit-check.mjs (resize check)
   agents/wwjd-critic.md   cold, read-only design review (Claude Code)
   hooks/                  prompt hook that routes UI work to the skill (Claude Code)
   evals/                  trigger and quality evals for `claude plugin eval`
@@ -75,15 +83,3 @@ cd plugins/wwjd
 claude plugin eval . --case 'pos-*' --case 'neg-*'      # does the skill trigger, and only on UI work
 claude plugin eval . --case 'cleanup-card' --scaffold   # does it change the output
 ```
-
-## Sources
-
-The rules come from Johannes's own design reviews. Where they overlap with published work, they were checked against:
-- impeccable, taste-skill, Anthropic's frontend-design, Hallmark
-- Vercel's web interface guidelines, Emil Kowalski's motion work, gstack
-- interface-design, the Laws of UX
-- NN/g, Baymard, GOV.UK, WebAIM, deceptive.design
-- Butterick's Practical Typography
-- the Apple and Material guidelines
-
-Where Johannes's taste conflicted with accessibility, the rule was rewritten so both hold.
