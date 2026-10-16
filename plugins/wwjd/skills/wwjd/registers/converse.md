@@ -1,5 +1,7 @@
 # Converse: chat, assistants, agent panels, copilots
 
+For AI behaviour beyond the chat surface (agents, approvals, autonomy, language, disclosure, memory) read `references/ai.md`.
+
 Success: the person gets work done through dialogue and trusts what came back.
 
 ## States (design every one)
@@ -18,7 +20,7 @@ Success: the person gets work done through dialogue and trusts what came back.
   - The assistant's output is a document, not a bubble. Use reading type (about 16px, about 70ch) and the code-block rules from `reference.md`.
   - The person's turns are compact and distinct.
   - Messages arrive in order, one at a time, never two or three at once.
-- **Scroll:** while streaming, follow the bottom only if the person is already there. Otherwise show "jump to latest". Never yank the scroll.
+- **Scroll:** on send, pin the person's message near the top and stream the answer below it without following the bottom. "Jump to latest" appears only if they scroll away. Never yank the scroll.
 - **Streaming without jank:** no per-token fades, and tables and code blocks don't reflow mid-stream.
 
 ## Composer
@@ -44,7 +46,7 @@ Success: the person gets work done through dialogue and trusts what came back.
 
 ## Trust
 - **Cite** sources inline, linked.
-- **Disclose AI** once, not on every message.
+- **Disclose AI** once on an AI-only surface (near the input), never on every message. Where AI and human content mix, mark each AI item (`references/ai.md`).
 - **Memory** is visible and editable.
 - **Never present guesses as facts.** Uncertainty is stated in the answer's own words.
 

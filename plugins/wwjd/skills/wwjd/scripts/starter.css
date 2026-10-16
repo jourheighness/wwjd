@@ -1,0 +1,301 @@
+/* starter.css: product UI ground for a project with no design system.
+   Interactive parts: Base UI (@base-ui/react 1.x) via className, or native HTML in single-file prototypes. Same classes for both.
+   Theme follows the system; <html data-theme="light|dark"> forces one. Density: <html data-density="compact|comfortable">.
+   Base UI: wrap the app in <div class="root"> so portals stack above it. Font (optional):
+   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..600&display=swap" rel="stylesheet">
+   Changing --a (accent hue)? Re-check every text token on every surface: 4.5:1 text, 3:1 edges and focus. */
+:root {
+  color-scheme: light dark;
+  --n: 70;   /* neutral hue bias: low-chroma stone */
+  --a: 258;  /* accent hue */
+
+  --surface-1: light-dark(oklch(.970 .003 var(--n)), oklch(.185 .003 var(--n)));   /* ground, sidebar */
+  --surface-2: light-dark(oklch(.995 .0015 var(--n)), oklch(.210 .003 var(--n)));  /* pane, card, table, input */
+  --surface-3: light-dark(oklch(1 0 0), oklch(.250 .004 var(--n)));                 /* popup, dialog, toast */
+  --fill: light-dark(oklch(.935 .004 var(--n)), oklch(.280 .004 var(--n)));         /* quiet button, track, badge */
+  --fill-strong: light-dark(oklch(.905 .005 var(--n)), oklch(.320 .005 var(--n)));
+  --hover: light-dark(oklch(.25 .01 var(--n) / .05), oklch(.98 .005 var(--n) / .06)); /* state layers */
+  --press: light-dark(oklch(.25 .01 var(--n) / .09), oklch(.98 .005 var(--n) / .10));
+  --selected: light-dark(color-mix(in oklab, oklch(.53 .19 var(--a)) 9%, var(--surface-2)), oklch(.98 .005 var(--n) / .09));
+  --border: light-dark(oklch(.905 .004 var(--n)), oklch(.300 .004 var(--n)));
+  --border-strong: light-dark(oklch(.860 .005 var(--n)), oklch(.350 .005 var(--n)));
+  --border-control: light-dark(oklch(.645 .006 var(--n)), oklch(.540 .006 var(--n)));  /* 3:1 edge */
+  --scrim: light-dark(oklch(.22 .01 var(--n) / .35), oklch(0 0 0 / .6));
+
+  --text: light-dark(oklch(.22 .008 var(--n)), oklch(.95 .003 var(--n)));
+  --text-2: light-dark(oklch(.45 .008 var(--n)), oklch(.77 .005 var(--n)));
+  --text-3: light-dark(oklch(.53 .007 var(--n)), oklch(.67 .005 var(--n)));  /* on surfaces only, not on --fill */
+  --text-disabled: light-dark(oklch(.72 .005 var(--n)), oklch(.45 .005 var(--n)));
+
+  --accent: light-dark(oklch(.53 .19 var(--a)), oklch(.55 .17 var(--a)));
+  --accent-hover: light-dark(oklch(.49 .18 var(--a)), oklch(.51 .17 var(--a)));
+  --accent-text: light-dark(oklch(.51 .18 var(--a)), oklch(.76 .12 var(--a)));
+  --on-accent: oklch(1 0 0);
+  --focus: var(--accent-text);
+
+  --danger: light-dark(oklch(.55 .20 27), oklch(.71 .17 25));
+  --danger-solid: light-dark(oklch(.54 .20 27), oklch(.55 .19 27));
+  --danger-solid-hover: light-dark(oklch(.50 .19 27), oklch(.51 .18 27));
+  --warning: light-dark(oklch(.64 .145 62), oklch(.80 .14 80));  /* glyph only in light (3:1) */
+  --success: light-dark(oklch(.53 .13 150), oklch(.74 .14 150));
+  --info: light-dark(oklch(.53 .13 245), oklch(.75 .11 245));
+
+  --shadow-1: 0 1px 2px light-dark(oklch(.2 .01 var(--n) / .06), oklch(0 0 0 / .3)),
+              0 8px 20px -6px light-dark(oklch(.2 .01 var(--n) / .14), oklch(0 0 0 / .5));
+  --shadow-2: 0 2px 6px light-dark(oklch(.2 .01 var(--n) / .06), oklch(0 0 0 / .3)),
+              0 24px 48px -12px light-dark(oklch(.2 .01 var(--n) / .22), oklch(0 0 0 / .6));
+
+  --r-1: 4px; --r-2: 6px; --r-3: 8px; --r-4: 12px; --r-full: 999px;
+  --space-0-5: 2px; --space-1: 4px; --space-1-5: 6px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px; --space-16: 64px;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+  --text-caption: 12px; --lh-caption: 16px;
+  --text-body: 14px;    --lh-body: 20px;
+  --text-heading: 16px; --lh-heading: 24px;
+  --text-title: 20px;   --lh-title: 28px;
+  --text-display: 28px; --lh-display: 34px;
+
+  --ease-out: cubic-bezier(.23, 1, .32, 1); --ease-move: cubic-bezier(.77, 0, .175, 1); --ease-drawer: cubic-bezier(.32, .72, 0, 1);
+  --dur-fast: 120ms; --dur-pop: 160ms; --dur-modal: 220ms;
+
+  --control-h: 32px; --row-h: 36px;
+  --z-sticky: 10; --z-popup: 20; --z-modal: 30; --z-toast: 40; --z-tooltip: 50;
+}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-density="compact"] { --control-h: 28px; --row-h: 32px; --text-body: 13px; }
+:root[data-density="comfortable"] { --control-h: 36px; --row-h: 44px; }
+
+/* Base */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scrollbar-color: var(--border-strong) transparent; }
+body { margin: 0; background: var(--surface-1); color: var(--text); font: var(--text-body)/var(--lh-body) var(--font-sans);
+  font-optical-sizing: auto; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+.root { isolation: isolate; }
+h1, h2, h3, h4, p { margin: 0; }
+h1, h2, h3 { font-weight: 600; text-wrap: balance; }
+.t-display { font-size: var(--text-display); line-height: var(--lh-display); font-weight: 600; letter-spacing: -.02em; }
+.t-title { font-size: var(--text-title); line-height: var(--lh-title); font-weight: 600; letter-spacing: -.012em; }
+.t-heading { font-size: var(--text-heading); line-height: var(--lh-heading); font-weight: 600; }
+.t-caption { font-size: var(--text-caption); line-height: var(--lh-caption); }
+.t-2 { color: var(--text-2); } .t-3 { color: var(--text-3); }
+.num, .t-display { font-variant-numeric: tabular-nums; }
+.prose { max-width: 68ch; line-height: 1.5; text-wrap: pretty; }
+code, .mono { font-family: var(--font-mono); font-size: .92em; }
+a { color: var(--accent-text); text-underline-offset: 2px; }
+.icon { width: 16px; height: 16px; flex-shrink: 0; stroke-width: 1.5; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+::selection { background: color-mix(in oklab, var(--accent) 28%, transparent); }
+
+/* Button (plain class; Base UI Button or <button>). Secondary is the default; one primary per region */
+.btn { --bg: var(--fill); --bg-h: var(--fill-strong); --fg: var(--text);
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1-5); flex-shrink: 0;
+  height: var(--control-h); padding: 0 var(--space-3); border: 1px solid transparent; border-radius: var(--r-2);
+  background: var(--bg); color: var(--fg); font: 500 var(--text-body)/1 var(--font-sans); white-space: nowrap;
+  cursor: pointer; user-select: none; touch-action: manipulation; text-decoration: none;
+  transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out); }
+.btn-primary { --bg: var(--accent); --bg-h: var(--accent-hover); --fg: var(--on-accent); }
+.btn-danger { --bg: var(--danger-solid); --bg-h: var(--danger-solid-hover); --fg: var(--on-accent); }
+.btn-tertiary, .btn-icon { --bg: transparent; --bg-h: var(--hover); --fg: var(--text-2); --fg-h: var(--text); }
+.btn-icon { width: var(--control-h); padding: 0; }
+.btn-icon.is-filled { --bg: var(--fill); --bg-h: var(--fill-strong); }
+.btn-sm { --control-h: 28px; padding: 0 var(--space-2); }
+.btn-lg { --control-h: 36px; padding: 0 var(--space-4); }
+.btn-sm.btn-icon, .btn-lg.btn-icon { padding: 0; }
+.btn:is([data-popup-open], [data-pressed]) { background: var(--bg-h); color: var(--fg-h, var(--fg)); }
+.btn:not(:disabled, [data-disabled], [aria-disabled="true"]):active { transform: scale(.98); background: var(--bg-h); }
+.btn:is(:disabled, [data-disabled], [aria-disabled="true"]) { opacity: .45; cursor: not-allowed; }
+
+/* Field + Input + Select trigger (Field.Root/Label/Description/Error, Input, Select.Trigger, Combobox.Input, or native) */
+.input, .select, .textarea { appearance: none; display: flex; align-items: center; gap: var(--space-2); width: 100%; min-width: 0;
+  height: var(--control-h); padding: 0 var(--space-3); border: 1px solid var(--border-control); border-radius: var(--r-2);
+  background: var(--surface-2); color: var(--text); font: inherit; text-align: start; transition: border-color var(--dur-fast) ease; }
+.textarea { display: block; height: auto; min-height: calc(var(--lh-body) * 3 + var(--space-2) * 2 + 2px); padding: var(--space-2) var(--space-3); resize: vertical; }
+:is(.input, .textarea)::placeholder, .select [data-placeholder] { color: var(--text-3); }
+.select { padding-right: var(--space-8); cursor: pointer;
+  background: linear-gradient(45deg, transparent 50%, var(--text-2) 50%) right 17px center / 5px 5px no-repeat, /* ui-check-ignore: chevron drawn with gradients */
+              linear-gradient(135deg, var(--text-2) 50%, transparent 50%) right 12px center / 5px 5px no-repeat, var(--surface-2); } /* ui-check-ignore: chevron */
+.select option { background: var(--surface-3); color: var(--text); }
+:is(.input, .select, .textarea):focus-visible, .select[data-popup-open] { outline: 2px solid var(--focus); outline-offset: -1px; border-color: transparent; }
+:is(.input, .select, .textarea):is([data-invalid], [aria-invalid="true"]) { border-color: var(--danger); outline-color: var(--danger); }
+:is(.input, .select, .textarea):is(:disabled, [data-disabled]) { background-color: var(--fill); color: var(--text-disabled); border-color: var(--border); cursor: not-allowed; }
+.field { display: grid; gap: var(--space-1-5); }
+.field-label { font-weight: 500; }
+.field-description { color: var(--text-2); font-size: var(--text-caption); line-height: var(--lh-caption); }
+.field-error { color: var(--danger); font-size: var(--text-caption); line-height: var(--lh-caption); }
+@media (pointer: coarse) { .input, .select, .textarea { font-size: 16px; } }
+
+/* Segmented control = ToggleGroup + Toggle ([data-pressed]); native: buttons with aria-pressed. Radius 6 = 4 + 2 */
+.segmented { display: inline-flex; gap: var(--space-0-5); padding: var(--space-0-5); border-radius: var(--r-2); background: var(--fill); }
+.segment { height: calc(var(--control-h) - 4px); padding: 0 var(--space-3); border: 1px solid transparent; border-radius: var(--r-1);
+  background: none; color: var(--text-2); font: 500 var(--text-body)/1 var(--font-sans); cursor: pointer; }
+.segment:is([data-pressed], [aria-pressed="true"]) { background: light-dark(var(--surface-3), var(--fill-strong)); color: var(--text); border-color: light-dark(var(--border), transparent); }
+
+/* Checkbox / Radio / Switch: Base UI Root ([data-checked]) or native input. Indicators are drawn by the root */
+.checkbox, .radio, .switch { appearance: none; position: relative; display: inline-grid; place-content: center; flex-shrink: 0;
+  margin: 2px 0 0; padding: 0; border: 1px solid var(--border-control); background: var(--surface-2); cursor: pointer; }
+.checkbox { width: 16px; height: 16px; border-radius: var(--r-1); }
+.radio { width: 16px; height: 16px; border-radius: 50%; }
+.checkbox:is(:checked, :indeterminate, [data-checked], [data-indeterminate]), .radio:is(:checked, [data-checked]) { background: var(--accent); border-color: var(--accent); }
+.checkbox:is(:checked, [data-checked])::before { content: ""; width: 10px; height: 10px; background: var(--on-accent); clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0, 43% 62%); }
+.checkbox:is(:indeterminate, [data-indeterminate])::before { content: ""; width: 8px; height: 2px; background: var(--on-accent); clip-path: none; }
+.radio:is(:checked, [data-checked])::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--on-accent); }
+.switch { display: inline-block; width: 32px; height: 20px; margin-top: 0; border: 0; border-radius: var(--r-full); background: var(--border-control); transition: background-color var(--dur-fast) ease; }
+input.switch::before, .switch-thumb { content: ""; position: absolute; inset: 2px auto auto 2px; width: 16px; height: 16px; border-radius: 50%; background: oklch(1 0 0); transition: transform var(--dur-fast) var(--ease-out); }
+.switch:is(:checked, [data-checked]) { background: var(--accent); }
+input.switch:checked::before, .switch-thumb[data-checked] { transform: translateX(12px); }
+:is(.checkbox, .radio, .switch):is(:disabled, [data-disabled]) { opacity: .45; cursor: not-allowed; }
+.choice { display: flex; align-items: flex-start; gap: var(--space-2); cursor: pointer; }
+
+/* Status mark (shape + word) and badge: plain classes */
+.status { display: inline-flex; align-items: center; gap: var(--space-1-5); color: var(--text-2); white-space: nowrap; }
+.status::before { content: ""; flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--tone, transparent); box-shadow: inset 0 0 0 1.5px var(--tone, var(--text-3)); }
+.status[data-tone="success"] { --tone: var(--success); }
+.status[data-tone="info"] { --tone: var(--info); }
+.status[data-tone="warning"] { --tone: var(--warning); }
+.status[data-tone="danger"] { --tone: var(--danger); }
+.status[data-tone="warning"]::before { width: 10px; height: 9px; border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.status[data-tone="danger"]::before { width: 9px; height: 9px; border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.badge { display: inline-flex; align-items: center; height: 20px; padding: 0 var(--space-1-5); border-radius: var(--r-1);
+  background: var(--fill); color: var(--text-2); font-size: var(--text-caption); font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
+
+/* Avatar (Avatar.Root/Image/Fallback or span > img) and stack */
+.avatar { --size: 24px; display: inline-grid; place-items: center; flex-shrink: 0; width: var(--size); height: var(--size); overflow: hidden;
+  border-radius: 50%; background: var(--fill-strong); color: var(--text-2); font-size: calc(var(--size) * .42); font-weight: 500;
+  outline: 1px solid light-dark(oklch(0 0 0 / .08), oklch(1 0 0 / .1)); outline-offset: -1px; user-select: none; }
+.avatar > img { width: 100%; height: 100%; object-fit: cover; }
+.avatar[data-shape="square"] { border-radius: var(--r-1); }
+.avatar-stack { display: flex; }
+.avatar-stack > .avatar { box-shadow: 0 0 0 2px var(--stack-bg, var(--surface-2)); }
+.avatar-stack > .avatar + .avatar { margin-left: calc(var(--size) * -.25); }
+
+/* Progress (Progress.Track/Indicator or native <progress class="progress">). Width is set by Base UI; never animated */
+.progress-track, progress.progress { appearance: none; display: block; width: 100%; height: 4px; overflow: hidden; border: 0; border-radius: var(--r-full); background: var(--fill); }
+.progress-indicator { height: 100%; background: var(--accent); }
+progress.progress::-webkit-progress-bar { background: var(--fill); }
+progress.progress::-webkit-progress-value { background: var(--accent); }
+progress.progress::-moz-progress-bar { background: var(--accent); }
+
+/* Popup: Menu/Select/Combobox/Popover .Popup, or <div popover class="popup"> anchored with anchor-name / position-anchor */
+.popup { z-index: var(--z-popup); min-width: max(180px, var(--anchor-width, 0px)); max-height: var(--available-height, 60dvh); overflow-y: auto;
+  padding: var(--space-1); border: 1px solid var(--border); border-radius: var(--r-3); outline: 0;
+  background: var(--surface-3); color: var(--text); box-shadow: var(--shadow-1); transform-origin: var(--transform-origin, top left); }
+.popup.is-padded { padding: var(--space-3); }
+[popover].popup { inset: auto; margin: var(--space-1) 0 0; position-area: block-end span-inline-end; position-try-fallbacks: flip-block, flip-inline; }
+.item { display: flex; align-items: center; gap: var(--space-2); width: 100%; min-height: var(--control-h); padding: 0 var(--space-2);
+  border: 0; border-radius: var(--r-1); outline: 0; background: none; color: inherit; font: inherit; text-align: start; cursor: default; user-select: none; }
+.item:is([data-highlighted], [data-popup-open]) { background: var(--hover); }
+.item:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.item > .icon { color: var(--text-2); }
+.item > :is(kbd, .meta, .item-indicator) { margin-left: auto; border: 0; background: none; color: var(--text-3); }
+.item[data-danger], .item[data-danger] > .icon { color: var(--danger); }
+.item[data-disabled] { color: var(--text-disabled); }
+.sep { height: 1px; margin: var(--space-1) calc(var(--space-1) * -1); border: 0; background: var(--border); }
+.group-label { padding: var(--space-1-5) var(--space-2) var(--space-1); color: var(--text-3); font-size: var(--text-caption); font-weight: 500; }
+.popup-empty { padding: var(--space-2); color: var(--text-2); }
+
+/* Tooltip: Tooltip.Popup (Provider delay 500), or .tip > .tooltip in a prototype */
+.tooltip { z-index: var(--z-tooltip); max-width: 240px; padding: var(--space-1) var(--space-2); border-radius: var(--r-2);
+  background: light-dark(oklch(.24 .008 var(--n)), oklch(.32 .005 var(--n))); color: light-dark(oklch(.97 .002 var(--n)), var(--text));
+  font-size: var(--text-caption); line-height: var(--lh-caption); box-shadow: var(--shadow-1); transform-origin: var(--transform-origin, center bottom); }
+.tip { position: relative; display: inline-flex; }
+.tip > .tooltip { position: absolute; bottom: calc(100% + var(--space-1-5)); left: 50%; translate: -50% 0; width: max-content; pointer-events: none;
+  opacity: 0; transition: opacity var(--dur-fast) ease; }
+.tip:is(:hover, :has(:focus-visible)) > .tooltip { opacity: 1; transition-delay: 500ms; }
+
+/* Dialog + Drawer: Dialog/Drawer .Backdrop/.Popup, or native <dialog class="dialog|drawer"> */
+.backdrop { position: fixed; inset: 0; z-index: var(--z-modal); background: var(--scrim); opacity: calc(1 - var(--drawer-swipe-progress, 0)); }
+:is(.dialog, .drawer)::backdrop { background: var(--scrim); }
+.dialog, .drawer { z-index: var(--z-modal); padding: 0; border: 1px solid var(--border); outline: 0;
+  background: var(--surface-3); color: var(--text); box-shadow: var(--shadow-2); }
+:is(.dialog, .drawer):not(dialog), dialog:is(.dialog, .drawer)[open] { display: flex; flex-direction: column; }
+.dialog { width: min(480px, calc(100vw - 32px)); max-height: 85dvh; border-radius: var(--r-4); overflow: auto; }
+.dialog:not(dialog) { position: fixed; top: 50%; left: 50%; translate: -50% -50%; }
+.drawer { position: fixed; inset: 0 0 0 auto; width: min(480px, 100vw); height: 100dvh; max-width: 100vw; max-height: none; margin: 0; border-width: 0 0 0 1px;
+  transform: translateX(var(--drawer-swipe-movement-x, 0px)); }
+.dialog-header { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-5) var(--space-5) 0; }
+.dialog-header > .btn-icon:last-child { margin: -4px -8px 0 auto; }
+.dialog-body { flex: 1; padding: var(--space-4) var(--space-5); overflow: auto; }
+.dialog-footer { display: flex; justify-content: flex-end; gap: var(--space-2); padding: var(--space-2) var(--space-5) var(--space-5); }
+
+/* Toast: Toast.Viewport/Root/Title/Description/Action/Close, or a role="status" region in a prototype */
+.toast-viewport { position: fixed; right: var(--space-4); bottom: var(--space-4); z-index: var(--z-toast); display: flex; flex-direction: column; gap: var(--space-2);
+  width: min(360px, calc(100vw - 32px)); outline: 0; }
+.toast { display: flex; align-items: center; gap: var(--space-3); min-height: 48px; padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border: 1px solid var(--border); border-radius: var(--r-3); background: var(--surface-3); box-shadow: var(--shadow-1);
+  transform: translate(var(--toast-swipe-movement-x, 0px), var(--toast-swipe-movement-y, 0px)); }
+.toast > .btn:first-of-type { margin-left: auto; }
+
+/* Motion: one vocabulary for every overlay. Base UI uses data-starting/ending-style; native uses @starting-style */
+:is(.popup, .tooltip, .dialog, .drawer, .backdrop, .toast) { transition: opacity var(--dur-pop) var(--ease-out), transform var(--dur-pop) var(--ease-out); }
+:is(.popup, .tooltip, .dialog):is([data-starting-style], [data-ending-style]) { opacity: 0; transform: scale(.97); }
+:is(.backdrop, .toast):is([data-starting-style], [data-ending-style]) { opacity: 0; }
+.toast[data-starting-style] { transform: translateY(8px); }
+.drawer { transition-duration: var(--dur-modal); transition-timing-function: var(--ease-drawer); }
+.drawer:is([data-starting-style], [data-ending-style]) { transform: translateX(100%); }
+:is(.drawer, .toast, .backdrop)[data-swiping], .tooltip[data-instant] { transition-duration: 0ms; }
+[data-ending-style] { transition-duration: var(--dur-fast); }
+:is(dialog.dialog, dialog.drawer, [popover].popup) { transition-property: opacity, transform, overlay, display; transition-behavior: allow-discrete; opacity: 0; }
+:is(dialog.dialog, [popover].popup) { transform: scale(.97); }
+dialog.drawer { transform: translateX(100%); }
+:is(dialog.dialog, dialog.drawer)[open], [popover].popup:popover-open { opacity: 1; transform: none; }
+@starting-style { dialog.dialog[open], [popover].popup:popover-open { opacity: 0; transform: scale(.97); } dialog.drawer[open] { transform: translateX(100%); } }
+
+/* Tabs: Tabs.List/Tab ([data-active]) or role="tablist" + aria-selected */
+.tabs { display: flex; gap: var(--space-4); border-bottom: 1px solid var(--border); }
+.tab { position: relative; height: 36px; padding: 0; border: 0; background: none; color: var(--text-2); font: 500 var(--text-body)/1 var(--font-sans); cursor: pointer; }
+.tab:is([data-active], [aria-selected="true"]) { color: var(--text); }
+.tab:is([data-active], [aria-selected="true"])::after { content: ""; position: absolute; inset: auto 0 -1px; height: 2px; border-radius: 2px 2px 0 0; background: var(--text); }
+.tab:is(:disabled, [data-disabled]) { color: var(--text-disabled); cursor: not-allowed; }
+
+/* ScrollArea: Root/Viewport/Scrollbar/Thumb. Native overflow uses the themed scrollbar-color above */
+.scroll-area { position: relative; overflow: hidden; }
+.scroll-area-viewport { height: 100%; overscroll-behavior: contain; }
+.scrollbar { display: flex; justify-content: center; width: 10px; padding: 2px; opacity: 0; transition: opacity var(--dur-pop) ease; }
+.scrollbar[data-orientation="horizontal"] { flex-direction: column; width: auto; height: 10px; }
+.scrollbar:is([data-hovering], [data-scrolling]) { opacity: 1; }
+.scrollbar-thumb { width: 100%; border-radius: var(--r-full); background: var(--border-strong); }
+
+/* Table, list row, group header: plain classes */
+.table { width: 100%; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
+.table th { position: sticky; top: 0; z-index: var(--z-sticky); height: 32px; padding: 0 var(--space-3); border-bottom: 1px solid var(--border);
+  background: var(--surface-2); color: var(--text-2); font-size: var(--text-caption); font-weight: 500; text-align: start; white-space: nowrap; }
+.table td { height: var(--row-h); padding: 0 var(--space-3); border-bottom: 1px solid var(--border); }
+.table :is(th, td):first-child { padding-left: var(--space-4); }
+.table :is(th, td):last-child { padding-right: var(--space-4); }
+.table tbody tr:last-child td { border-bottom: 0; }
+.table :is(th, td).num { text-align: end; }
+.row { display: flex; align-items: center; gap: var(--space-3); min-height: var(--row-h); padding: 0 var(--space-4); color: inherit; text-decoration: none; }
+.row > .grow { flex: 1; min-width: 0; }
+:is(.table tr, .row):is([aria-selected="true"], [data-selected]) { background: var(--selected); }
+.group-header { position: sticky; top: 0; z-index: var(--z-sticky); display: flex; align-items: center; gap: var(--space-2); height: 32px; padding: 0 var(--space-4);
+  background: var(--surface-1); color: var(--text-2); font-size: var(--text-caption); font-weight: 500; }
+.group-header > .count { color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+/* Card, empty state, skeleton, kbd: plain classes */
+.card { padding: var(--space-4); border: 1px solid transparent; border-radius: var(--r-3); background: var(--surface-2); }
+.card.is-outlined { border-color: var(--border); }
+.empty { display: grid; justify-items: start; gap: var(--space-2); max-width: 48ch; padding: var(--space-10) var(--space-4); }
+.empty > h3 { font-size: var(--text-body); }
+.empty > p { color: var(--text-2); }
+.empty > .btn { margin-top: var(--space-2); }
+.skeleton { display: block; height: var(--h, 12px); border-radius: var(--r-1); background: var(--fill); }
+kbd, .kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 var(--space-1); border: 1px solid var(--border);
+  border-radius: var(--r-1); background: var(--surface-2); color: var(--text-2); font: 500 var(--text-caption)/1 var(--font-sans); }
+
+/* Hover only where a pointer can hover */
+@media (hover: hover) and (pointer: fine) {
+  .btn:not(:disabled, [data-disabled], [aria-disabled="true"]):hover { background: var(--bg-h); color: var(--fg-h, var(--fg)); }
+  :is(.input, .select, .textarea):not(:disabled, [data-disabled], :focus-visible, [data-invalid], [aria-invalid="true"]):hover { border-color: var(--text-3); }
+  .segment:not([data-pressed], [aria-pressed="true"]):hover, .tab:not(:disabled, [data-disabled]):hover { color: var(--text); }
+  [popover].popup .item:hover, .table tbody tr:hover, :is(a, button).row:hover { background: var(--hover); }
+  a.card:hover, .card.is-link:hover { border-color: var(--border-strong); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-pop: 120ms; --dur-modal: 120ms; }
+  :is(.popup, .tooltip, .dialog, .btn, dialog.drawer) { transform: none !important; } /* ui-check-ignore: reduced motion must win */
+  .drawer:is([data-starting-style], [data-ending-style]) { transform: none; opacity: 0; }
+}
+@media (forced-colors: active) { :is(.checkbox, .radio)::before, .switch-thumb, input.switch::before { background: CanvasText; } }

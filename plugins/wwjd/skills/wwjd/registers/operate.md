@@ -41,7 +41,7 @@ Success: the person completes the task and gets back to work. This is where the 
 - **Status** is a dot or a shape plus a word, one marker vocabulary in one size everywhere. Status is never a button-looking pill.
 
 ## AI inside the product
-- **The assistant does the work:** no "Start AI" buttons, no "AI is analysing…" receipts.
+- **The assistant does the work:** no "Start AI" buttons, no generic or lasting "AI is analysing…" receipts. A run over ~2s shows one specific, transient status line ("Reading invoices 12/40") that disappears when the result lands. Patterns, agents and language: `references/ai.md`.
 - **Changes land where they apply,** marked, with keep, change and undo on the spot. The product stays complete with AI off.
 
 ## Tells to avoid

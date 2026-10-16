@@ -131,6 +131,8 @@ A small change in existing UI needs no command file. Apply the rules, then run t
 
 **References:**
 - `references/product-types.md`: 27 product types (CRM, booking, helpdesk, billing…): objects, first screen, do's and don'ts
+- `references/baseline.md`: the ground when there's no design system: primitives per stack (Base UI for React), tokens, components, polish details; `scripts/starter.css` implements it
+- `references/ai.md`: AI features (inline, transform, copilot, chat, agents, search, summaries), agent behaviour, AI language and disclosure
 - `references/saas.md`: product-app blueprints, lists and tables, screen budgets (read for Operate)
 - `references/bans.md`: bans and what to do instead
 - `references/faux-pas.md`: the full catalogue of UX mistakes, by category

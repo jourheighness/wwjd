@@ -10,7 +10,9 @@ Success: the person finishes the sequence without thinking about the form.
 - **No reassurance in hints:** never "You can change it later" or "We'll set sensible defaults". If a choice is changeable, make it easy to change; don't say so.
 
 ## Shape
-- **One column,** one task per step. On the web, labels sit above fields; native apps follow the platform (Material text fields may float). A field's width signals the expected length.
+- **One column,** one task per step. On the web, labels sit above fields; native apps follow the platform (Material text fields may float).
+- **Fields in a stack share one width,** the column's full width: name, email, password and selects line up on both edges. Only short fixed-format fields get a narrower width (postcode, CVC, expiry, one-time code, year), set together on a row of their own.
+- **Choice sets:** 2–4 options as segmented buttons on one row (`commands/prioritize.md`). More than 4, or labels that won't fit on one line: cut or merge the options first ("Just me / 2–50 / 51–500 / 500+"), otherwise use a select. Never a multi-row grid of option buttons.
 - **Narrow layouts:** a narrow auth form may be the page's one centred column. Text inside it stays start-aligned.
 - **Progress:** steps are named and the done ones are marked. Use names, not "Step 3 of 5"; "Question 3 of 7" is acceptable in long public-service forms.
 - **Counts that are decision inputs stay** (remaining characters on a limited field).
