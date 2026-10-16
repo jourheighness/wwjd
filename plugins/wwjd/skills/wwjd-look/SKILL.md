@@ -9,6 +9,16 @@ compatibility: scripts/look.mjs needs Node 20.10+, no dependencies. Reference sc
 References → board → pick → `look.json` → `scripts/look.mjs` → `tokens.css` + `DESIGN.md` + `.wwjd/look.json`.
 Axes, presets and clashes: `references/axes.md`. Where references come from and the card format: `references/sources.md`.
 
+## Quick mode (no DESIGN.md, no board asked)
+wwjd runs this before the first build in a project without a look. About a minute; no screenshots, no questions.
+- **Subject first:** one line of the subject's world: materials, place, tools, audience, era.
+- **Anchor:** name one real product or site it should feel like (from what you know; no capture).
+- **Choose the open axes from the subject:** accent hue from its world (never the kit's default 258, never indigo/violet without a brand); neutral temperature; shape; surface; elevation. Density follows the register.
+- **Type with personality:** a text face by job, plus for Persuade, Showcase, Editorial and consumer apps a display face picked for this subject from Google Fonts (`"fonts": {"display": "\"Name\", …", "sans": …}`; never the trend list in wwjd `bans.md`). Work tools may keep a grotesk, but still choose hue, neutral and shape.
+- **One loud axis** (★ in axes.md); everything else quiet.
+- Write `look.json`, run `look.mjs`, use its `tokens.css`. Handover line: "Look: Archivo + Public Sans, warm neutral, green, soft corners; anchored on <X>. Say 'show me options' for a board."
+- **The kit's default tokens are a floor (contrast, states), never the finished look.** Shipping them unchanged is a miss.
+
 ## 0. Detect and defer
 - **Existing `DESIGN.md` wins.** Read it and fill only the axes it leaves open. `--design DESIGN.md` pins its colours (a pinned `primary` becomes the brand). look.mjs never overwrites a DESIGN.md it did not write; it writes `DESIGN.look.md` instead.
 - Also read `PRODUCT.md` (the register), `.impeccable/design.json` and `.stitch/DESIGN.md`.

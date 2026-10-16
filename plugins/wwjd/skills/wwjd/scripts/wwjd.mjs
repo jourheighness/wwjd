@@ -109,6 +109,7 @@ const PROGRESS_WORD = /\b(done|complete[ds]?|finished|answered|scored|published|
 // sev: default severity. off: registers where the rule doesn't apply. ok(lines, i): context that makes the hit fine.
 const rules = [
   // ── floor: accessibility and honesty ──
+  { id: "default-look", sev: "warn", re: /--a:\s*258\s*;/, msg: "the kit's default accent, unchanged: pick the look (wwjd-look quick mode); default tokens are a floor" },
   { id: "no-zoom", sev: "error", re: /user-scalable\s*=\s*no|maximum-scale\s*=\s*1(\.0)?\b/, msg: "zoom disabled" },
   { id: "tabindex-positive", sev: "error", re: /tabIndex=\{?["']?[1-9]/, msg: "positive tabIndex breaks keyboard order" },
   { id: "div-click", sev: "error", re: /<(div|span|li|tr|td|article|Row|Card)\b[^>]*\bonClick=/, only: /\.(tsx|jsx)$/, msg: "clickable container; make the title a link/button stretched over the row, with inner actions above it" },

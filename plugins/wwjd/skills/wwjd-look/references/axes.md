@@ -4,7 +4,7 @@ Ten axes. Light and dark are always both generated, so mode is not an axis. **Bo
 
 | Axis | Presets | Changes |
 |---|---|---|
-| type | **grotesk** (Inter) · native (system-ui) · humanist (Source Sans 3) · serif-display ★ (Source Serif 4 headings, Inter body) · mono-label (IBM Plex Mono for IDs, codes and data cells only) | `--font-*`, heading weight, display tracking |
+| type | **grotesk** (Inter) · native (system-ui) · humanist (Source Sans 3) · serif-display ★ (Source Serif 4 headings, Inter body) · mono-label (IBM Plex Mono for IDs, codes and data cells only) | `--font-*`, heading weight, display tracking. `"fonts"` in look.json overrides with any open face (Google Fonts link emitted); quick mode uses it for a subject-chosen display face |
 | neutral | temperature **stone** 70 · cool 255 · warm 55 · sage 165 · mauve 310, by chroma achromatic 0 · **quiet** .004 · tinted .012. Written `cool/quiet` | `--n`, chroma per role (text ≤.03, the rest ≤.02) |
 | accent | **quiet** · mono (accent = ink) · wash (grays take the accent hue) · vivid ★ (gamut-max chroma, P3) · dual ★ (second hue at +60°) | accent roles, `--selected`, state layers |
 | surface | **tonal** (ground darker than panes) · flat (one surface) · raised (white cards on a pale ground) · chrome (dark sidebar, `--chrome-*`) · translucent (Native only) | surface L steps |

@@ -9,12 +9,12 @@ Opinions backed by use. If a rule would hurt this case, say so, propose the exce
 ## 0. Entry (once per session)
 1. Run `node <skill>/scripts/wwjd.mjs status` .
 2. Read what it lists: PRODUCT.md; DESIGN.md prose (Named rules, Do's/Don'ts in full); RATCHET.md Gotchas, Tells, `[design]`; decision-log lines naming the surface; 1-2 golden files; the user profile. Never imitate `legacy`.
-3. Create a missing file only when needed, short, vetoable defaults: PRODUCT.md if register or product type would be guessed; RATCHET.md to park a finding; DESIGN.md via `wwjd-look` when a second screen needs the look. Never block showing work on a question.
+3. Create a missing file only when needed, short, vetoable defaults: PRODUCT.md if register or product type would be guessed; RATCHET.md to park a finding; no DESIGN.md: `wwjd-look` quick mode picks a subject-grounded look before the first build (default tokens are a floor, never the look). Never block showing work on a question.
 4. Name the register ("Register: Operate, settings") and route:
 
 | Situation | Do (`commands/<verb>.md`) |
 |---|---|
-| `scratch`, "make me a..." | `start`, `wwjd-look`, then explore or build |
+| `scratch`, "make me a...", no DESIGN.md | `start`, `wwjd-look` (quick mode), then explore or build |
 | add a component or screen | `build` (golden first) |
 | "busy", "simplify", "clean up" | `simplify` (remove *and* reorder) |
 | "review", "what's wrong", screenshot | `review` |
