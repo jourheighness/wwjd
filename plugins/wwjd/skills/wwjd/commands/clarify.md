@@ -18,7 +18,10 @@ In product UI, copy is labels, values and one-line states. Persuade and Editoria
 
 ## Numbers and time
 - **Numbers:**
-  - A number earns its place by changing a decision.
+  - A number earns its place by telling the person something they act on.
+  - **Progress of a small set** ("3 of 8 tasks done") is information. Show it as label → number → bar: a muted, small (11–12px) label with the count, end-aligned above a progress bar. At tight sizes the label drops and the bar stays (`fit.md`).
+  - **Big aggregate counts** ("388 unread notifications", "1,204 events") are noise: a needs-you dot, or nothing. Past a handful, a count stops changing what anyone does.
+  - **Never** zero counts, pressure counts ("You're 60% done"), or counts that repeat what a bar or list already shows.
   - Format with `Intl.*` in the right locale. Pluralise with i18n, never with string tricks.
   - Use `tabular-nums` wherever numbers align or change.
 - **Time:**
@@ -33,6 +36,7 @@ In product UI, copy is labels, values and one-line states. Persuade and Editoria
   - "not just X, but Y", "X, not Y" tails
   - aphoristic fragments ("No setup. Just results.")
 - **Never these buzzwords:** seamless, leverage, elevate, streamline, empower, supercharge, unlock, cutting-edge, robust, effortless, delve.
+- **Claims about the world are checkable:** specific, falsifiable, and verifiable by the person ("3 rooms at this rate, updated 14:14"; "Access ends Tue 6 May. No further charges."). Never vague pressure ("Only 1 left!").
 - **Localised UI is written natively.** Follow the locale's own style guide; never translate word for word.
 
 ## Errors and states

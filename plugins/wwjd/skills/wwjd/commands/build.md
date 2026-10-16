@@ -11,6 +11,7 @@ The approved mockup, Figma frame or recorded decision is the spec. Match it exac
 - **Pages compose components and add no styling of their own:** no utility soup, no hex values, no overrides at the call site. A page that needs a different look gets a variant in the component.
 - **When an existing component inside your scope is hand-rolled or does bad UX,** fix it in the kit; don't copy it. Outside your scope, flag it.
 - **When a better pattern replaces an old one,** replace it everywhere within the agreed scope in the same change.
+- **Audit third-party UI at import** (shadcn, Magic UI, React Bits and other registries): reduced-motion handling, cursor-reactive effects, auto-loops, contrast. Exclude what fails; never import it to patch later.
 - **Seed realistic data** for first use, one item, many, the longest text, and empty.
 - **Build the intended flow, not the current limits.** Every step, state and transition of the approved design ships, even where the backend can't do it yet: put a small named adapter in front (local stub, fixture or optimistic implementation, marked `// TODO(api): …`) and keep it working end to end. Never simplify the flow or fall back to a worse pattern to fit the API. Wiring the real backend waits, or ask "build now or later?".
 

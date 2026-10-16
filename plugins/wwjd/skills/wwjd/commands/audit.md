@@ -13,8 +13,9 @@ This audit is measurable: accessibility, performance, responsiveness and lint. R
    - **Focus:** Tab through the page. Every stop is visible, and none is hidden under sticky chrome.
    - **Reduced motion:** emulate `prefers-reduced-motion: reduce`, and no transform animation remains.
    - **Images:** every image has dimensions and loads; none is broken.
+   - **Spacing drift by purpose:** group computed spacing by job (section padding, card padding, list gap). Drift is more than 4 distinct values in one group, more than 3 max-widths, more than 3 radii, or more than 2 button styles per action type.
 4. **Accessibility:**
-   - **Contrast:** AA for text; 3:1 for UI parts, icons and focus rings.
+   - **Contrast:** AA for text; 3:1 for UI parts, icons and focus rings. The contrast matrix (`colour.md`) exists and passes.
    - **Semantics:** headings never skip a level; landmarks; labels on every control; `aria-label` on icon-only buttons.
    - **Keyboard:** every flow works. Roving focus inside tabs and menus. Esc closes overlays.
    - **Live regions:** announce status changes once, as a phrase.

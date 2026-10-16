@@ -37,7 +37,7 @@ The rules are opinions backed by use, not physics. If a rule would make a specif
   - Every drag has a non-drag alternative (keyboard on resize separators, a close button on sheets).
   - Scrollable regions (code blocks, wide tables) are focusable and labelled.
 - **Stability:** nothing shifts, jumps, re-sorts or reflows unless the person caused it.
-- **Honesty:** no dark patterns. That means no fake urgency or scarcity, no pre-ticked add-ons, no confirmshaming, no hidden costs. No invented proof, people or numbers. Legal, consent, pricing and safety text always stays. Legal links (imprint, privacy, cookie settings, accessibility statement) always stay.
+- **Honesty:** no dark patterns. That means no fake urgency or scarcity, no pre-ticked add-ons, no confirmshaming, no hidden costs. No invented proof, people or numbers. Legal, consent, pricing and safety text always stays. Legal links (imprint, privacy, cookie settings, accessibility statement) always stay. Every way back is no harder than the way in: cancelling, downgrading, unsubscribing or opting out takes no more steps than signing up (count both).
 - **Reversibility:** money, legal commitments, account deletion and anything sent to other people get an explicit review step. Everything else is undoable. Undo stays available until the next action (not a 5-second race), is announced (`role=status`) and is reachable by keyboard; if the data layer has no undo, hide at once and commit when the undo expires or the person moves on.
 - **Data:** judge UI only with realistic data, never with broken or placeholder data.
 
@@ -47,7 +47,7 @@ The rules are opinions backed by use, not physics. If a rule would make a specif
 - Every element earns its place where it sits. Removing makes a screen better more often than adding does.
 - No text that explains, narrates or reassures the interface ("This page shows…", "Nothing is ever lost", "Click here to start…"). If the UI needs a caption, redesign it. One sentence at most where text is truly needed.
 - Nothing twice: no two controls for one job, no repeated status, no duplicate path to the same place.
-- Every number must change a decision. Otherwise use a dot, a progress mark, or nothing. No "3 of 13", no zero counts, no pressure counts. Proof numbers on a landing page and prices in commerce do change decisions. Counts that are decision inputs stay: search results, remaining characters, cart items, unread.
+- Every number must tell the person something they act on. Progress through a small set is information: "3 of 8 tasks done" as a muted label above its progress bar, where space allows. When space is tight it drops first and the bar stays. Big aggregate counts ("388 unread notifications") tell nothing: use a dot, or nothing. Never zero counts or pressure counts. Proof numbers on a landing page and prices in commerce do change decisions. Counts that are decision inputs stay: search results, remaining characters, cart items.
 - Labels are short: a verb plus its target. Use sentence case and the product's words, never system words.
 - Build what was asked for. Designing every state is part of the job, not an addition.
 - **The intended flow comes first; the backend never shrinks it.** Design and build every step, state and transition of the right experience, even where the API or data layer can't do it yet (undo, a field, an endpoint, presence, a bulk action): build against a small named adapter with a local stub, fixture or optimistic implementation, marked `// TODO(api): …`. Never fall back to the worse pattern (keeping `confirm()` because there is no undo). Real wiring waits, or ask "build now or later?".
@@ -64,6 +64,7 @@ The rules are opinions backed by use, not physics. If a rule would make a specif
 - Left-align by default, with one left edge per column and no zig-zag reading. The register files name the few centred moments.
 - Never reserve a slot for something that is absent. Design for the longest real string: wrapping, truncation and translation must not break alignment.
 - Spacing comes from the scale only. No cards inside cards.
+- **The identifier never disappears.** Titles and names wrap; they never end in an ellipsis or take the only shrinking column. As the container narrows, meta drops first, then shortcuts fold into ⋯, then the layout stacks (`commands/fit.md`).
 
 **Actions and disclosure**
 - Each region gets one primary action and one secondary. A tertiary is allowed only when you can say why. Everything else goes behind ⋯, a hover toolbar or the detail view. Never five actions on one card.
@@ -81,6 +82,7 @@ The rules are opinions backed by use, not physics. If a rule would make a specif
 - Text stays ink. Surfaces separate by a step in contrast before borders or shadows. Flat by default: no decorative gradients, glass or glow.
 - When both light and dark ship, each gets real care.
 - Reach the bar of the best product in this register and category. Production-grade, never "tame": a minimal bolt-on onto the old thing.
+- Exception, long-familiar surfaces: where people have used a high-trust surface daily for years, change behaviour before appearance. If a 50ms glance at the redesign reads as "different" rather than "better", the visual change hasn't earned its place yet.
 
 **States and flow**
 - Design every state: first use, one item, many, the longest real text, empty, error, loading (a skeleton), no permission.
@@ -115,6 +117,7 @@ The rules are opinions backed by use, not physics. If a rule would make a specif
 | prioritize | too many actions, unclear hierarchy, affordance | `commands/prioritize.md` |
 | clarify | labels, UI copy, errors, empty states | `commands/clarify.md` |
 | layout | alignment, grid, spacing, wrapping | `commands/layout.md` |
+| fit | a component in different slots and sizes, truncation, hover-revealed actions | `commands/fit.md` |
 | typeset | type scale, rhythm, measure, numbers | `commands/typeset.md` |
 | colour | palette, themes, contrast, status colour | `commands/colour.md` |
 | animate | motion and transitions | `commands/animate.md` |
@@ -131,7 +134,7 @@ A small change in existing UI needs no command file. Apply the rules, then run t
 
 ## 6. Handover check
 
-1. Re-check section 3 against the screen: strings, numbers, actions, edges, sameness, stability, colour.
+1. Re-check section 3 against the screen: strings, numbers, actions (one visibly heavier primary per region), edges, sameness, stability, colour.
 2. Check light and dark, the narrow width, the empty state and the longest real text.
 3. Run `scripts/ui-check.mjs --register <register>` (in this skill's folder) on the changed files. Fix each finding or justify it.
 4. Look at the actual render yourself: `scripts/shoot.sh` or any screenshot tool. Another agent's report is not evidence.

@@ -60,3 +60,4 @@ Motion explains a change, or it goes.
 - Shake on error.
 - Scroll hijacking.
 - Fade-up on every section.
+- Imported effects that ignore reduced motion, react to the cursor or loop on their own (`build.md` screens them at import).

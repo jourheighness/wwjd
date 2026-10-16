@@ -25,6 +25,7 @@ Success: the person completes the task and gets back to work. This is where the 
 - **No confirm dialogs.** Act at once with undo in place; the floor's exceptions get a review sheet with real choices, never yes/no.
 - **Autosave everywhere.** An unsent input is a draft that survives reload; publish is the action.
 - **The person decides.** Manual choices persist per person. The system never auto-opens panels, auto-forwards, re-sorts under the pointer or picks "recents" for them.
+- **Expert tools keep their shortcuts.** Where a key changes meaning by mode, the current mode is always visible.
 - **Bulk actions** appear after a selection. Show presence and permission states.
 
 ## People and status

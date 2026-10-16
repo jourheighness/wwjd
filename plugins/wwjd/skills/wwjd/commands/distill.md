@@ -20,10 +20,12 @@ Use for "too busy", "simplify", "clean up", or "I got overloaded". A good design
 - **Choices:** default instead of asking. Remove steps, confirmations and choices that have an obvious answer.
 - **Disclosure:** move rare actions and detail one layer down (`prioritize.md`).
 - **Structure:** remove a card, border or section that only exists to hold one thing.
+- **Labels:** one internal concept per label. A label or tier that fuses two backend concepts ("Embedded · Cashback") is split or flattened.
 
 ## Not this
 - **Keep legal, consent, pricing and safety text.**
 - **Don't strip full content from Persuade and Editorial.** Thin is not the same as clean. Removal means fewer elements with stronger hierarchy, not less design.
 - **Don't fill freed space with ornament.** Close the gap, or let what remains grow.
+- **Check who loses a control before removing it:** power users, keyboard and assistive-tech users, automation (selectors, deep links, extensions). If the habit wouldn't come back when the control is re-added later, the removal is one-way.
 
 **Done when** nothing left can go without breaking the task.

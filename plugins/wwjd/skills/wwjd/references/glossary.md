@@ -23,6 +23,14 @@
 | Status zoo | Too many distinct statuses; boil them down to the ones a person acts on |
 | Machinery receipts | UI that reports the system's process ("read 14 files", "step 3 of 7") instead of its result |
 | Tame | A minimal bolt-on onto the old design where a redesign was needed |
+| Long-familiar surface | A high-trust surface people have used daily for years; behaviour changes before appearance does |
+| Near-miss | A value close to a token without matching it (ΔE2000 < 6, or 1–2px off the scale); snapped, never kept |
+| Contrast matrix | Every text token against every background it is declared on, each checked for AA |
+| Workaround feature | A feature that exists to route around a failing area: a "classic view" toggle, a promoted "Recently visited" |
+| Must-requirement | A pass/fail condition, one per concern, that every explore variant must meet |
+| Score cap | In critique: Visual and Craft cap at 6 while Removal or Hierarchy is under 5 |
+| Path count | The number of decisions from landing to result |
+| Champion | The person inside a buying organisation who argues for the purchase |
 | Slop | The generic look of generated UI (see `bans.md`) |
 | Drawer | An overlay anchored to an edge, opened on demand |
 | Rail | A narrow, persistent column of icons for navigation |

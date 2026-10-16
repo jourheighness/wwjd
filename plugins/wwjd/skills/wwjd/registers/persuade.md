@@ -5,7 +5,7 @@ Success: the visitor decides and acts. A persuade page argues one claim and earn
 ## Method
 1. **Inventory** 8–12 facts that only this subject has: name and meaning, place, real numbers, materials, rituals, artefacts, imagery that exists. If the brief is vague, state your reading in one line and proceed.
 2. **Argument:** each section is one claim plus its proof. A section with no claim is cut. The order of claims is the page order, which kills the template: hero, logos, 3 features, testimonial, pricing, CTA.
-3. **Idea sentence:** "On this page [thing from the inventory] becomes [device]." Then the competitor test: swap in the nearest rival. If the page still works, it is a category page, not this subject's.
+3. **Idea sentence:** "On this page [thing from the inventory] becomes [device]." Then the competitor test: swap in the nearest rival. If the page still works, it is a category page, not this subject's. Then the self-contradiction test: the page itself demonstrates every claim in the hero. A "simple" product whose page takes 10s to parse fails.
 4. **Copy deck before markup.** The first screen answers the visitor's first question in large type, with one real button. Write the full content: thin sections are the most common reason a clean page loses.
 5. **Spend boldness in one place.** One memorable element; everything else quiet. Before shipping, remove one accessory.
 
@@ -34,6 +34,9 @@ Success: the visitor decides and acts. A persuade page argues one claim and earn
 ## Proof and numbers
 - **Real proof only:** logos, quotes, counts. If it is not confirmed, flag it as a sample or cut it.
 - **Numbers here are content.** A real proof number changes the decision; a stat strip of round numbers does not.
+- **Claims are checkable:** specific and falsifiable, never vague pressure (`commands/clarify.md`).
+- **Let them try it:** for a price or risk decision, a calculator or live preview instead of a description.
+- **B2B:** give the champion copy they can paste into an internal memo.
 
 ## Motion
 - **One orchestrated moment**, plus scroll-linked motion only where it carries the idea.

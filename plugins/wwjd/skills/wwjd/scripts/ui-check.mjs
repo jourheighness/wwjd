@@ -91,6 +91,12 @@ const rules = [
   { id: "native-control", sev: "warn", re: /<(select|datalist)\b|<input[^>]*type=["'](date|time|datetime-local|color|range)["']/, only: MARKUP, skip: (f) => inKit(f), off: R("native", "flow", "transact"), msg: "native control styled by the OS; prefer the kit's control built on the native element/APG primitive" },
   { id: "important", sev: "warn", re: /!important\b/, msg: "!important; fix the cascade or the variant" },
   { id: "native-title", sev: "warn", re: /<(?!svg\b|title\b|iframe\b|abbr\b|link\b|frame\b|object\b)[a-z][a-z0-9]*\b[^>]*\stitle=["{]/, only: MARKUP, msg: "native title tooltip; use the kit tooltip (works on focus and touch)" },
+  // ── fit: components at every size ──
+  { id: "identifier-truncate", sev: "error", re: /<(h[1-6]|label)\b[^>]*\b(truncate|text-ellipsis|line-clamp-1|whitespace-nowrap)\b|data-identifier[^>]*\b(truncate|text-ellipsis|line-clamp-\d|whitespace-nowrap)\b|\b(truncate|text-ellipsis|line-clamp-\d|whitespace-nowrap)\b[^>]*data-identifier/, only: MARKUP, msg: "identifier truncated; titles and names wrap (commands/fit.md)" },
+  { id: "hover-hidden", sev: "error", re: /\b(hidden|invisible)\b[^"'`]*\bgroup-hover:(flex|block|inline-flex|visible|grid)\b/, only: MARKUP, msg: "hover reveal with display/visibility: keyboard can't reach it; use opacity plus focus-within" },
+  { id: "hover-no-fallback", sev: "error", re: /\bopacity-0\b[^"'`]*\bgroup-hover:opacity-100\b/, unless: /group-focus-within:opacity-100/, only: MARKUP, msg: "hover-only reveal: add group-focus-within and keep it visible on touch (hover:none)" },
+  { id: "between-wrap", sev: "warn", re: /\bjustify-between\b[^"'`]*\bflex-wrap\b|\bflex-wrap\b[^"'`]*\bjustify-between\b/, only: MARKUP, msg: "space-between with wrap strands the wrapped item; use ms-auto on the trailing group" },
+  { id: "viewport-in-component", sev: "warn", re: /@media\s*\((min|max)-width/, only: /\.(tsx|jsx|vue|svelte)$/, skip: (f) => !/components?\//.test(f), msg: "viewport breakpoint inside a component; use a container query" },
   // ── layout ──
   { id: "centered-text", sev: "warn", re: /\btext-center\b|text-align:\s*center/, off: R("persuade", "showcase", "editorial", "converse", "flow"), msg: "centred text; start-align unless it is genuinely centred content" },
   { id: "eyebrow", sev: "warn", re: /\buppercase\b[^"'`\n]*\btracking-|\btracking-[^"'`\s]+[^"'`\n]*\buppercase\b/, off: R("editorial"), msg: "uppercase tracked eyebrow; use sentence case or nothing" },

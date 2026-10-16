@@ -15,12 +15,15 @@ The project's palette wins. This command decides where the colour goes.
 
 ## Rules
 - **One ground, one ink, one accent,** plus status colours used only on status.
+- **The primary accent is never spent on an upsell,** a paid add-on or a retention surface. It marks the person's own next step.
+- **Near-misses are errors,** worse than far-off values: a colour within ΔE2000 < 6 of a token that doesn't match it, or spacing or radius 1–2px off the scale. Snap it to the token.
 - **Never colour alone.** Pair it with a shape (dot, diamond, triangle) or a word. Text stays ink; colour sits on the glyph.
 - **Status:**
   - Calm stays calm: the quiet colour of the system, not alarm.
   - Act and attend states are the only loud ones.
   - A needs-you signal too faint to find is as wrong as a christmas tree.
   - Tints stay soft; when in doubt, halve them.
+  - At most 3 signal colours on one card or row.
 - **Neutrals:** one gray family, never warm and cool mixed. No gray text on a coloured background; use a darker shade of that hue instead. Define overlay colours explicitly instead of using alpha, except for focus rings and state layers.
 - **Surfaces:**
   - Layers separate by a lightness step (in OKLCH, about 2–6 L per level), before borders or shadows.
@@ -36,6 +39,8 @@ The project's palette wins. This command decides where the colour goes.
   - Dim images slightly. Recolour charts; never invert them.
 - **Themes:** follow the system setting when both themes ship, and check each on its own: dividers visible, state parity, contrast. A dark-only product is a deliberate project decision recorded in `DESIGN.md`.
 - **Contrast:** AA for body text, 7:1 preferred for long reading. 3:1 for large text, icons, component edges and focus rings.
+  - By construction: a contrast matrix of every text token against every background it is declared on, each at least AA, kept as a workshop story or a CI check.
+  - The brand colour gets an AA text variant; the raw brand colour stays for surfaces without text.
 - **Focus ring:** one shared ring, `:focus-visible`, 2px with an offset, at least 3:1 against what surrounds it, and it appears instantly.
 - **Not the library default:** never ship an untouched default accent (the stock indigo or violet).
 

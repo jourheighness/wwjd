@@ -10,6 +10,7 @@ Review the way an experienced designer does: in one glance, by cutting. Find wha
 5. **The glance test:** does the view answer its question in about 3 seconds, at its primary width, with real data?
 6. **Foreign parts:** anything that doesn't feel like the rest of the product, or looks broken even though it works.
 7. **Signals:** too faint to notice, or a list with no priority.
+8. **Workaround features:** a "classic view" toggle, "Recently visited" promoted to the main nav, a mobile skin solving a desktop problem, a half-finished migration. Each one names an area that is failing.
 
 ## Procedure
 1. **Context:** the project files and decision log (SKILL.md step 1), the register, and the spec if there is one.
@@ -17,7 +18,8 @@ Review the way an experienced designer does: in one glance, by cutting. Find wha
    - widths: desktop and narrow
    - themes: light and dark
    - data: populated, empty and worst case (see `harden.md`)
-3. **Score** each dimension 0–10, weighted for the register. For anything under 8, say what a 10 would look like here.
+3. **What works first:** before any finding, write what already works and why, in a few lines (calibration, not praise padding). Classify each deviation from these rules: intentional (applied consistently: note it, don't score it), accidental (a finding) or unclear (ask the user).
+4. **Score** each dimension 0–10, weighted for the register. For anything under 8, say what a 10 would look like here.
    - **Removal:** nothing explains, repeats or counts without a reason.
    - **Hierarchy:** one primary per region, attention first, disclosure in layers.
    - **System:** the kit is used; the same job has the same shape; nothing hand-rolled.
@@ -27,14 +29,18 @@ Review the way an experienced designer does: in one glance, by cutting. Find wha
    - **Flow:** A → B is clear, no dead ends, every state designed.
    - **Craft:** at the register's bar; not tame, not slop (`references/bans.md`).
    - Weight by register: Operate weights stability and system. Monitor weights the 5-second answer and signal. Reference weights findability. Editorial weights reading. Converse weights state coverage. Transact weights decision clarity and trust. Flow weights completion and errors. Persuade weights idea and composition. Showcase weights the work leading.
-4. **Run the UX laws pass** below.
-5. **Findings, ranked.** Each one:
+   - **Cap:** if Removal or Hierarchy is under 5, Visual and Craft cap at 6. Report the capped and the uncapped score.
+   - **Self-check:** all dimensions within about 1.5 of each other means a lazy pass; look again. A 9–10 needs zero P0/P1 findings (severity as in `audit.md`) and specific evidence for each strength.
+   - **Stop when the score keeps dropping:** in an iterating loop, after round 2, two drops in a row mean the premise is wrong. Stop and report the impasse.
+5. **Run the UX laws pass** below.
+6. **Findings, ranked.** Each one:
    - names the element
    - says where it was seen (screen, or `file:line`)
    - cites the rule it breaks
    - gives one concrete fix
+   - is stated as a count where possible: "Remind me later" ×4, 8 widgets at equal weight, 5 signal colours on one card.
    - Merge instances into the pattern they share. Cross-screen findings rank first. No praise padding.
-6. **Verify** each finding in the render or the code before reporting it.
+7. **Verify** each finding in the render or the code before reporting it.
 
 ## UX laws pass
 1. Attention, memory, clarity: obvious where to look first; nothing must be remembered that could be shown; a stranger gets it in 5 seconds.
@@ -53,6 +59,7 @@ Review the way an experienced designer does: in one glance, by cutting. Find wha
 14. An interrupted flow resumes exactly.
 15. The flow ends on the result, and error recovery is designed too.
 16. No pressure counts, receipts or reassurance anywhere in the flow.
+17. Path count: count every decision from landing to result, and compare with the best product in the category.
 
 ## Expert and persona reviews (for larger work, or on request)
 - **Expert lenses:** UI (visual and system), UX (flow and disclosure), and interaction (stability and affordance). Each reviews separately, then the findings merge.

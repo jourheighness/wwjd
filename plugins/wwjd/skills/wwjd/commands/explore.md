@@ -5,6 +5,7 @@ Use explore for anything that doesn't exist yet, or when the user asks to see op
 ## 1. Research before drawing
 - **Find the best current examples of this exact job:** real products and sites people use, at the top of this register and category. Not the domain's dated look.
 - **Look for a mature package** (component, editor, picker, chart, docs framework) before inventing one.
+- **Workaround features in the current product are evidence** (`critique.md`): each names a failing area to research first.
 - **Report a few named references,** each with the move to steal. Keep verified facts separate from inference.
 
 ## 2. Plan before pixels (what you plan depends on the register)
@@ -23,6 +24,8 @@ Use explore for anything that doesn't exist yet, or when the user asks to see op
 
 Check every flow for dead ends and circular paths before drawing it.
 
+**Must-requirements before variants:** write them down, one per concern, before drawing anything.
+
 ## 3. Variants
 - **How many:** about 5, labelled A–E, and genuinely different in structure, not in tint.
   - **Persuade and Showcase:** each variant pushes further than the last, never cleaner.
@@ -35,6 +38,7 @@ Check every flow for dead ends and circular paths before drawing it.
   - It can be a shareable prototype (an HTML file, a hosted HTML page (e.g. a Claude Artifact), a Storybook story, a sandbox).
   - A letter and a short name per variant, with no explanatory prose on the page; reasoning goes in the message.
   - Show screens on a neutral dark surround so the page's white doesn't distract.
+- **Test every variant against every must-requirement.** A variant that fails one is cut. A requirement no variant meets becomes the brief for a new variant.
 - **Before sharing:** run the handover check in SKILL.md on every variant. When a comparison page gets cluttered, start a fresh one with only the live candidates.
 
 ## 4. Picking

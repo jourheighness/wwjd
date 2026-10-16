@@ -48,7 +48,7 @@ Last column: `P` product UI, `M` marketing, `P+M` both.
 6. **"Premium" lane:** double-bezel cards, a floating glass pill nav, arrow-circle-in-button, blur plus fade-up reveals, `rounded-[2rem]`.
 7. **"Notion-minimal" lane:** a bone ground, pastel uppercase pill tags, 1px #EAEAEA on everything, faux window dots.
 8. **Avoidance aesthetic:** everything removed and nothing designed, so it reads as a thin grey wireframe. Removal means fewer elements with stronger hierarchy, not less design. Fill space with scale, real content or real primitives, never ornament.
-9. **Tame:** bolting new features onto the old page instead of redesigning it. If the result looks like the old thing with additions, redo it.
+9. **Tame:** bolting new features onto the old page instead of redesigning it. If the result looks like the old thing with additions, redo it. Long-familiar, high-trust surfaces are the named exception (SKILL.md section 3, Visual).
 
 ## Quick tests
 - **Squint:** primary, secondary and groups still read when blurred.

@@ -18,15 +18,18 @@ Short, concrete pairs. When a rule is unclear, match the example.
 ```
 The eyebrow restates the obvious, the sentence narrates the card, and the reassurance answers a question nobody asked.
 
-## 2. A count that changes nothing becomes a mark
+## 2. Numbers: progress stays, noise goes
 ```tsx
-// Before
-<span>{published} of {total} areas published</span>
+// Progress of a small set is information: label → number above, bar under
+<div className="progress">
+  <div className="progress-label">{done} of {total} tasks done</div>  {/* 11–12px, muted, end-aligned */}
+  <Progress value={done} max={total} aria-label={`${done} of ${total} tasks done`} />
+</div>
+// …in a narrow row the label drops and the bar stays (fit.md: meta drops first)
+<Progress value={done} max={total} aria-label={`${done} of ${total} tasks done`} />
 
-// After
-<Progress value={published} max={total} aria-label="Areas published" />
-// …or, in a list where only "something needs you" matters:
-{hasUnread && <Dot aria-label="New activity" />}
+// Big aggregate counts tell nothing: "388 unread notifications" becomes
+{hasUnread && <Dot aria-label="New notifications" />}
 ```
 
 ## 3. Five actions become one plus a menu

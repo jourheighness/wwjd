@@ -20,10 +20,12 @@ Success: the person buys with confidence and without surprises. Design mobile-fi
   - Guest checkout, express pay shown first, then `flow.md` rules for the form.
   - A review step before the order.
   - The order button says it commits to pay ("Pay €124", "Place order and pay"). Legally required wording is never shortened.
+- **Claims are checkable** (`commands/clarify.md`): "3 rooms at this rate, updated 14:14", not "Only 1 left!". A cancellation says what ends and what stops: "Access ends Tue 6 May. No further charges."
 - **No dark patterns:** no fake countdowns or fake scarcity; a true delivery cutoff ("Order within 3 h for Friday delivery") and true stock are decision numbers. No pre-ticked add-ons, no confirmshaming, no costs revealed at the last step.
 
 ## Colour and imagery
 - **Product photography carries the colour;** the UI stays neutral.
+- **The brand's primary accent never goes on an upsell,** paid add-on or retention offer (`commands/colour.md`).
 - **Image dimensions are set** so nothing shifts as images load.
 
 ## Accessibility

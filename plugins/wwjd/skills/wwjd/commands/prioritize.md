@@ -4,10 +4,10 @@ Use when a region has too many actions, the hierarchy is unclear, or things don'
 
 ## Action hierarchy, per region
 **Region** means a card, a row, a toolbar, a dialog, a page header or a pane.
-- **Primary:** the next step. It is the only filled button in the region.
+- **Primary:** the next step. It is the only filled button in the region and visibly heavier than everything beside it. Two buttons of equal weight in one region (Edit and Share as twin outlines) means no primary was chosen: pick one, from the spec or the region's main job.
 - **Secondary:** a quiet button.
 - **Tertiary:** a text button, only when it is needed and you can say why.
-- **Everything else** goes behind ⋯ (one shared row-actions menu), a hover toolbar (also shown on focus and after a tap), or the detail view.
+- **Everything else** goes behind ⋯ (one shared row-actions menu), a hover toolbar (rules in `fit.md` §5: shortcuts only, also in ⋯, visible on focus and on touch, no reflow), or the detail view.
 - **Placement:**
   - The primary sits first or last, never in the middle.
   - Actions live in one place per pattern, the same in every instance.

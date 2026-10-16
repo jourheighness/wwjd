@@ -45,17 +45,19 @@ People scan along edges. Misaligned starts, zig-zag reading and text that wraps 
 - **Room:** nothing is cramped against an edge, and there are no cards inside cards.
 
 ## Wrapping and truncation
+How a component behaves as its slot shrinks (what gives way, identifiers, icons, hover reveal) lives in `fit.md`. Per field:
+
 | Field | Treatment |
 |---|---|
-| Names and titles that identify | Wrap. Two lines is fine; four means the column is too narrow |
+| Names and titles that identify | Wrap, never truncate. Two lines is fine; past three, the layout should switch (`fit.md`) |
 | Secondary meta | Truncate at the end |
-| File names, paths, hashes, emails | Truncate in the middle (head plus a fixed tail) |
+| File names, paths, hashes, emails in dense tables | Truncate in the middle (head plus a fixed tail), full text on hover, focus and tap |
 | Card previews | `line-clamp: 2` |
 | Numbers, money, dates, anything compared | Never truncate |
 
 - **Truncated text is readable in full,** via the kit tooltip or the detail view, and on touch too.
 - **Flex and grid fixes:**
-  - Text children of flex get `min-width: 0`; grid tracks use `minmax(0, 1fr)`.
+  - Text children of flex get `min-width: 0`. A grid track that holds an identifier gets a floor (`minmax(12ch, 1fr)`), never `minmax(0, 1fr)` beside fixed columns.
   - Avatars, icons and badges get `flex-shrink: 0`.
   - Long URLs and IDs get `overflow-wrap: anywhere`, never `break-all`.
 - **When text can wrap,** top-align the row so the icon stays with the first line.
