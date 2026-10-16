@@ -8,6 +8,7 @@ Generated UI drifts to the most probable output; ban a default and it falls to t
 | Explainer, reassurance, helper text restating the label | Nothing; format hints and "why we ask" stay | P+M |
 | Big aggregate or zero counts | A dot or nothing; small-set progress above its bar and decision counts stay | P |
 | Five actions on a card | Primary, secondary, ⋯ | P |
+| Qualifier tails on list items ("Free guest seats, for clients who see only the projects you share") | The item's name; a tail only when it is the difference ("5,000 runs a month"). Owner, 2026-10-16: the better-looking pricing card lost on this alone | P+M |
 | Gradient backgrounds, buttons or text (look) | Flat; emphasis by weight | P+M |
 | Indigo, violet or purple accent (look) | The project accent | P+M |
 | Unmodified shadcn or library defaults | The kit's own variants | P+M |

@@ -65,6 +65,8 @@ Size classes come from the slot: wrap it in `.fit`, never a shrink-wrapped flex 
 
 **Hover-revealed actions** (lint `hover-hidden`, `hover-no-fallback`; runtime `hover-shift`, `hover-unreachable`):
 - Only shortcuts hide, each also in the visible ⋯ or the detail view.
+- **Placement:** the toolbar sits at the row's top-end corner, in the same spot on every row, over the trailing meta (time); never mid-row or trailing variable-width text.
+- **Unread or new marks** sit at the row's end beside the time, never touching the avatar (a dot on or next to an avatar reads as presence). Owner, 2026-10-16.
 - Hidden only under `(hover: hover) and (pointer: fine)`, by opacity; shown while hovered, focused within, selected or menu open (`.row-actions`).
 - Space reserved: own column, or swapped with trailing meta in one grid area (`.swap-meta`). Never over the identifier; never animate width or margin.
 - Tab order row link → actions; each names its item (`aria-label="Archive <title>"`). Row actions appear at once; hover cards wait 300–500ms, stay ~500ms, close on Esc, are hoverable (WCAG 1.4.13).

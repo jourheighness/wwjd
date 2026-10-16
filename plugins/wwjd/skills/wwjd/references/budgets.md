@@ -15,7 +15,7 @@ Every surface has a range. Below the minimum it is too thin to earn its own box 
 | Dashboard | ≤5 regions, ≤4 charts, ≤4 headline numbers | ≤1 per region | drill-down pages, a second view |
 | Hero | headline ≤2 lines + lede ≤2 lines + ≤1 moment (proof or delight) | 1 (+1 quiet link); a tool hero holds its own CTA, ≤3 inputs | the next sections |
 | Landing section | 1 claim + 1 proof, ≤3 sub-points | ≤1 | FAQ `<details>`, docs, comparison page |
-| Pricing card | plan + price + who-for line + ≤5 features | 1 | comparison table |
+| Pricing card | plan + price + the total for the chosen quantity ("$120 a month for 10 seats") + who-for (≤8 words) + ≤5 feature names | 1 | comparison table |
 | Form step | 1 question or task; ≤7 fields | 1 primary (Back on top) | "+ Add details", a later step, derived values |
 | Settings group | ≤7 settings | auto-save, or 1 save per page | sub-page, "Advanced" disclosure |
 | Dialog | title + ≤2 sentences + ≤3 fields | 1 primary + 1 secondary | a page or drawer |
