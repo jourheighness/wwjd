@@ -13,6 +13,7 @@
 //   text-collapsed       text squeezed into a track a few characters wide (one letter per line)
 //   ring-clipped         a focus/selection ring cut off by a scrolling or clipping parent
 //   value-fill-empty     a clipped or masked value fill (stars, meters) on an element with no box
+//   control-height-mismatch  controls side by side (stepper, select, input, button) differ in height
 // Needs Playwright installed in the project (npm i -D playwright; npx playwright install chromium).
 // PW_EXE=<path> points it at an existing Chromium build instead.
 let chromium;
@@ -51,6 +52,18 @@ for (const w of widths) {
         const b = el.getBoundingClientRect();
         if (b.width < 1 || b.height < 1) { out.push(["value-fill-empty", "error", (el.closest("[aria-label],[role]")?.getAttribute("aria-label") || el.className || el.tagName) + " has no box, so its fill shows nothing"]); break; }
       }
+    }
+    // controls side by side must share one height
+    const isCtl = (el) => el.matches("button, input:not([type=checkbox]):not([type=radio]), select, [role=group], [role=spinbutton]") || (getComputedStyle(el).borderTopStyle !== "none" && parseFloat(getComputedStyle(el).borderTopWidth) > 0 && el.querySelector("button, input"));
+    for (const p of root.querySelectorAll("*")) {
+      const pc = getComputedStyle(p);
+      if (!(pc.display.includes("flex") && !pc.flexDirection.startsWith("column")) && !pc.display.includes("grid")) continue;
+      const kids = [...p.children].filter((k) => k.getClientRects().length && isCtl(k));
+      if (kids.length < 2) continue;
+      const rows = {};
+      for (const k of kids) { const b = k.getBoundingClientRect(); const key = Math.round(b.top / 8); (rows[key] ||= []).push(b.height); }
+      const bad = Object.values(rows).find((hs) => hs.length > 1 && Math.max(...hs) - Math.min(...hs) > 1.5);
+      if (bad) { out.push(["control-height-mismatch", "error", (p.className || p.tagName) + ": " + bad.map((h) => Math.round(h)).join(" vs ") + "px"]); break; }
     }
     // letter-stacking: text squeezed into a track a few characters wide
     for (const el of root.querySelectorAll("h1,h2,h3,h4,h5,h6,p,li,label,[data-identifier],td,dd,span")) {

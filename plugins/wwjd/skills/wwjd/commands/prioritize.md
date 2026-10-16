@@ -33,6 +33,8 @@ Use when a region has too many actions, the hierarchy is unclear, or things don'
 - **Set expectations before the click.**
   - An option's state shows on the option itself before anyone picks it: unavailable, extra cost, needs sign-in, leaves the page, irreversible.
   - Use a faded option, a small mark or a word in its label or tooltip. Never a surprise after choosing.
+- **A state signal looks different from the label it qualifies.** It's a mark on the item itself (faded swatch, diagonal strike, small badge), not a second line of text in the same style, which nobody registers. The word goes in the tooltip and accessible name ("Ash, sold out").
+- **Peers in a row keep one baseline.** Never add a line under one item in a row of equals (swatches, tabs, steps, chips); it pushes that label out of line. The state lives on the item, not below it.
 - **Consequences disclose after the interaction.** Details that only matter for one choice (a restock form for a sold-out variant, extra fields for one plan) appear only once that choice is made or focused. They appear in place, without pushing the rest of the layout around, and leave when the choice changes.
 
 ## Disclosure layers

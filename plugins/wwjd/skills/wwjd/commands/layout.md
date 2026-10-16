@@ -42,6 +42,7 @@ People scan along edges. Misaligned starts, zig-zag reading and text that wraps 
 - **Use the kit's scale** on a 4px base, with `gap` between siblings.
 - **Proximity carries grouping:** related items sit closer than separate groups, a heading has more space above than below, and the gap between sections exceeds any gap inside one.
 - **Consistency:** the same slot gets the same padding in every instance.
+- **Controls in one row share one height** from the control-height token: a quantity stepper, select, input and button side by side are exactly the same height and align on both edges. A shorter stepper next to a taller button looks cheap.
 - **Room:** nothing is cramped against an edge, and there are no cards inside cards.
 
 ## Wrapping and truncation
