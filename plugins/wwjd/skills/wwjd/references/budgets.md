@@ -32,14 +32,24 @@ Every surface has a range. Below the minimum it is too thin to earn its own box 
 | Notification item | 1 line + time | ≤1 | the thing it points to |
 
 ## When it overflows
-1. **Grade** every item: decides, delights, nothing (SKILL.md). Optional: `scripts/grade.mjs spec.json --surface <row>` ranks with a fast decision model when `OPENROUTER_API_KEY` is set (experimental); without a key it prints the same questions for you to answer.
-2. **Throw away** "nothing": system facts (sync time, internal IDs, warehouse, distance when time is shown), duplicates, anything the person can't act on. Not "one step away": gone.
-3. **Keep** the top-ranked "decides" up to the max, plus at most one "delights" moment where the surface has room for one (hero, empty state, success).
-4. **Move** the rest one step away, choosing by what it is:
-   - an explanation or definition of something visible → tooltip (never essential);
+1. **Inclusion needs proof.** Ask "should this stay?", never "should this go?". An item stays only if the person needs it here to decide or act now; the default is out.
+2. **Ask about the bad habits directly,** per item, before ranking anything:
+   - Does it restate something already visible?
+   - Is it explaining another element or the interface, rather than being content?
+   - Would the person notice if it were gone?
+   - Is it needed now, or only later or elsewhere?
+   An item that restates or explains never stays, however "important" it sounds.
+3. **Throw away** what nobody would miss: system facts (sync time, internal IDs, warehouse, distance when time is shown), duplicates.
+4. **Keep** what earned its place, ranked, up to the max, plus at most one "delights" moment where the surface has room (hero, empty state, success). A free slot stays empty unless an unsure item is justified.
+5. **Move** the rest one step away, by kind; explainers move, they don't vanish:
+   - an explanation of something visible → tooltip (never essential);
+   - teaching copy → the empty state or one-time onboarding;
    - more of the same kind → "Show more" or expand in place;
    - details of this object → the detail view, peek or side panel;
    - more actions → ⋯ or the hover toolbar (never the only path on touch);
-   - a comparison → a table or page of its own;
-   - a setting → settings, near where it applies.
-5. **Say where it went** in the handover, one line per moved group ("SKU, weight → product page specs").
+   - a comparison → a table or page of its own; a preference → settings.
+6. **Swap, never grow.** To bring a cut item back, name the shown item it replaces. The budget is fixed.
+7. **Say where it went** in the handover, one line per moved group ("SKU, weight → product page specs").
+8. **Log cuts** (`.wwjd/cuts.jsonl`; `grade.mjs` writes it when `.wwjd/` exists). Something cut again and again (subtitles, "Learn more", helper text under every field) becomes a ban in `bans.md` or DESIGN.md, so it stops being proposed.
+
+**Optional fast pass:** `scripts/grade.mjs spec.json --surface <row>` asks all of this of a decision model when `OPENROUTER_API_KEY` is set (experimental, `WWJD_DECIDER`, default `typesafe/jev-1.14`); unsure answers come back to you. Without a key it prints the same questions for you to answer.

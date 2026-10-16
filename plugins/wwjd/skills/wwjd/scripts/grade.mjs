@@ -9,8 +9,10 @@
 //   "object":  "invoice", "actions": { "key": "label" }, "states": { "key": "state description" } }  primary action per state
 // With OPENROUTER_API_KEY set: OpenRouter Decisions API, model $WWJD_DECIDER (default typesafe/jev-1.14).
 // Without it (or --offline): prints the same typed questions for the agent to answer itself.
-// Confident answers (>= .7) can be applied; "unsure" ones go to the thinking model. Scores rank only.
-import { readFileSync } from "node:fs";
+// Inclusion needs proof: an item stays only with stay >= .7 and no restates/explains flag. Explainers move (tooltip,
+// empty state, onboarding), never just vanish. Unsure items go to the thinking model; scores rank only.
+// Cuts are logged to .wwjd/cuts.jsonl when .wwjd/ exists; recurring patterns become bans.
+import { readFileSync, existsSync, appendFileSync } from "node:fs";
 
 const args = process.argv.slice(2);
 const file = args.find(a => !a.startsWith("--"));
@@ -40,10 +42,26 @@ const LEVELS = ["Not needed here", "Could go one step away", "Useful, secondary"
 const PROMINENCE = ["Hide or move elsewhere", "Small, at the edge", "Visible, secondary", "Prominent", "Leads the screen"];
 
 const questions = {};
+const YN = (instructions, yes, no) => ({ type: "noul", instructions, criteria: { true: yes, false: no } });
+const DEST = {
+  tooltip: "A one-line explanation of something visible; fine to hover or focus for.",
+  expand: "More of the same kind; a 'Show more' or expand in place.",
+  detail: "Details of this object; its detail view, peek or side panel.",
+  empty_state: "Teaching copy that only helps before there is content.",
+  onboarding: "Teaching copy for first use; a one-time tip or docs.",
+  settings: "A preference; settings, near where it applies.",
+  drop: "Nobody needs it anywhere; throw it away.",
+};
 for (const k of Object.keys(spec.items || {})) {
-  questions[`item:${k}:role`] = { type: "choice", instructions: `Item \`items.${k}\`: given \`goal\` and \`surface\`, what does it do for the person?`, criteria: ROLE };
-  questions[`item:${k}:place`] = { type: "choice", instructions: `Item \`items.${k}\`: given \`goal\` and \`surface\`, where should it live?`, criteria: PLACE };
-  questions[`item:${k}:rank`] = { type: "score", instructions: `How important is \`items.${k}\` on this surface, given \`goal\`?`, criteria: LEVELS };
+  const it = `\`items.${k}\``;
+  questions[`item:${k}:role`] = { type: "choice", instructions: `Item ${it}: given \`goal\` and \`surface\`, what does it do for the person?`, criteria: ROLE };
+  questions[`item:${k}:stay`] = YN(`Should ${it} stay visible on this surface? Yes only if the person needs it here, to decide or act toward \`goal\`.`, "It must stay visible here.", "It can leave this surface.");
+  questions[`item:${k}:restates`] = YN(`Does ${it} restate something another item in \`items\` already shows?`, "It repeats information already visible.", "It adds information nothing else shows.");
+  questions[`item:${k}:explains`] = YN(`Is ${it} explaining another element or how the interface works, rather than being content itself?`, "It explains, instructs, narrates or reassures.", "It is content: a fact, value, name or action.");
+  questions[`item:${k}:missed`] = YN(`Would the person notice and miss ${it} if it were gone?`, "They would miss it.", "They would not notice.");
+  questions[`item:${k}:now`] = YN(`Does the person need ${it} to decide or act right now on this surface, rather than later or elsewhere?`, "Needed now, here.", "Only later or elsewhere.");
+  questions[`item:${k}:dest`] = { type: "choice", instructions: `If ${it} leaves this surface, where should it go?`, criteria: DEST };
+  questions[`item:${k}:rank`] = { type: "score", instructions: `How important is ${it} on this surface, given \`goal\`?`, criteria: LEVELS };
 }
 for (const k of Object.keys(spec.regions || {})) {
   questions[`region:${k}`] = { type: "score", instructions: `How prominent should region \`regions.${k}\` be, given \`goal\`?`, criteria: PROMINENCE };
@@ -75,17 +93,29 @@ const sure = x => (x?.confidence ?? 0) >= .7;
 const unsure = [];
 
 if (spec.items) {
+  // Inclusion needs proof: keep only with stay >= .7 and no bad-habit flag; then rank inside the budget.
   const keep = new Set(spec.keep || []);
-  const rows = Object.keys(spec.items).map(k => ({ k, role: a[`item:${k}:role`], place: a[`item:${k}:place`], rank: a[`item:${k}:rank`]?.score ?? 0 }));
-  rows.sort((x, y) => (keep.has(y.k) - keep.has(x.k)) || y.rank - x.rank);
-  console.log(`Items (${surfaceType || "surface"} budget ${budget}; * = kept, never counted; away = one step away (references/budgets.md); drop = throw away; ? = unsure, decide yourself)`);
-  let shown = 0;
-  rows.forEach(r => {
-    const show = keep.has(r.k) || (r.role?.choice !== "nothing" && shown++ < budget) ? "show" : r.role?.choice === "nothing" ? "drop" : "away";
-    const flag = (sure(r.role) && sure(r.place)) ? " " : "?";
-    if (flag === "?" && !keep.has(r.k)) unsure.push(r.k);
-    console.log(`${flag}${keep.has(r.k) ? "*" : " "} ${show.padEnd(4)} ${r.k.padEnd(14)} ${String(r.role?.choice).padEnd(8)} ${String(r.place?.choice).padEnd(13)} rank ${r.rank.toFixed(1)}  "${spec.items[r.k]}"`);
+  const p = (k, q) => a[`item:${k}:${q}`]?.noul ?? 0;
+  const rows = Object.keys(spec.items).map(k => {
+    const flags = [p(k, "restates") >= .5 && "restates", p(k, "explains") >= .5 && "explains", p(k, "missed") < .5 && "unmissed", p(k, "now") < .5 && "later"].filter(Boolean);
+    const earns = keep.has(k) || (p(k, "stay") >= .7 && !flags.includes("restates") && !flags.includes("explains"));
+    const unsureStay = !keep.has(k) && p(k, "stay") >= .4 && p(k, "stay") < .7;
+    return { k, earns, flags, unsureStay, role: a[`item:${k}:role`]?.choice, dest: a[`item:${k}:dest`]?.choice, rank: a[`item:${k}:rank`]?.score ?? 0, stay: p(k, "stay") };
   });
+  rows.sort((x, y) => (keep.has(y.k) - keep.has(x.k)) || (y.earns - x.earns) || y.rank - x.rank);
+  let shown = 0;
+  // Gone only when nobody would miss it; anything missed but not earned moves one step away.
+  for (const r of rows) r.out = keep.has(r.k) ? "show" : r.earns && shown++ < budget ? "show"
+    : p(r.k, "missed") < .5 && (r.dest === "drop" || r.role === "nothing") ? "drop" : (r.dest === "drop" || !r.dest ? "detail" : r.dest);
+  console.log(`Items (${surfaceType || "surface"} budget ${budget}; * kept by rule, never counted; ? unsure, decide yourself)`);
+  for (const r of rows) {
+    if (r.unsureStay) unsure.push(r.k);
+    console.log(`${r.unsureStay ? "?" : " "}${keep.has(r.k) ? "*" : " "} ${r.out.padEnd(11)} ${r.k.padEnd(14)} stay ${r.stay.toFixed(2)} ${r.flags.join(",").padEnd(26)} "${spec.items[r.k]}"`);
+  }
+  const free = budget - Math.min(shown, budget);
+  if (free > 0) console.log(`${free} of ${budget} slots free: fill only with "?" items you can justify, or leave them empty.`);
+  console.log("Swap rule: when full, an item comes back only by naming the shown item it replaces. The budget never grows.");
+  if (existsSync(".wwjd")) appendFileSync(".wwjd/cuts.jsonl", rows.filter(r => r.out !== "show").map(r => JSON.stringify({ at: new Date().toISOString(), surface: surfaceType || spec.surface, item: spec.items[r.k], to: r.out, flags: r.flags })).join("\n") + "\n");
 }
 if (spec.regions) {
   const order = Object.keys(spec.regions).sort((x, y) => a[`region:${y}`].score - a[`region:${x}`].score);
