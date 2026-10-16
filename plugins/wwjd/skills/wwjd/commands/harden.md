@@ -5,6 +5,14 @@ Every component should look right all the way through, not just in the demo.
 ## Interactive states
 Every interactive component needs all eight states, each designed: default, hover, focus-visible, active, disabled, loading, error, success. Hover without a focus state is the most common miss.
 
+## States share one box
+- **A state changes attributes and styles, never the element.**
+  - A step, tab, row or chip that becomes done, active, selected or clickable keeps the same element, the same padding, the same font and the same height.
+  - Never swap a `<span>` for a `<button>` or a link with its own box model, underline or padding.
+  - If one state must be interactive, render every state as that element from the start: disabled or `aria-disabled` until it applies.
+- **Link styling is for links in text.** A stepper step, tab, chip or row is never underlined in any state; its affordance is the hover fill and the focus ring.
+- **Check states side by side.** Show every state of a component together in the workshop (default, hover, focus, active, selected, done, disabled, error) and compare their boxes. A state that moves, resizes or restyles its neighbours is a defect.
+
 ## Hidden states stay hidden
 - Every element toggled with the `hidden` attribute needs a global `[hidden] { display: none !important }`; `starter.css` ships it. Without it, any class that sets `display` shows the hidden state, and the screen renders two states at once (the form and its success message together).
 - One state per view: a flow's result replaces the step it completes; never stack both.

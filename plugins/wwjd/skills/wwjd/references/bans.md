@@ -31,6 +31,7 @@ Last column: `P` product UI, `M` marketing, `P+M` both.
 | Fake dashboard of grey bars | A real interface fragment, or no image | M |
 | Emoji as icons | One icon library | P+M |
 | Spinner in the middle | A skeleton matching the final layout | P |
+| Swapping the element on state change (span → button/link with its own padding or underline) | One element per component in every state; state via attributes and styles | P |
 | Confirm dialog for routine actions | Undo; the floor's exceptions get a review sheet with real choices | P |
 | Raw OS-styled select, date or checkbox next to kit controls | Kit controls built on native elements or APG primitives (native pickers are fine on touch) | P |
 | Bounce or elastic easing, `scale(0)` entrances | Ease-out from 0.95–0.98 and opacity | P+M |

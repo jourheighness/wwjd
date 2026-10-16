@@ -14,7 +14,7 @@ Success: the person finishes the sequence without thinking about the form.
 - **Fields in a stack share one width,** the column's full width: name, email, password and selects line up on both edges. Only short fixed-format fields get a narrower width (postcode, CVC, expiry, one-time code, year), set together on a row of their own.
 - **Choice sets:** 2–4 options as segmented buttons on one row (`commands/prioritize.md`). More than 4, or labels that won't fit on one line: cut or merge the options first ("Just me / 2–50 / 51–500 / 500+"), otherwise use a select. Never a multi-row grid of option buttons.
 - **Narrow layouts:** a narrow auth form may be the page's one centred column. Text inside it stays start-aligned.
-- **Progress:** steps are named and the done ones are marked. Use names, not "Step 3 of 5"; "Question 3 of 7" is acceptable in long public-service forms.
+- **Progress:** steps are named and the done ones are marked. The stepper is one row that never wraps on desktop (it collapses to "Step name · 2 of 4" only when it can't fit). Every step is the same element with the same box in every state; a done step that can be revisited is a button styled exactly like the others, never an underlined link. Use names, not "Step 3 of 5"; "Question 3 of 7" is acceptable in long public-service forms.
 - **Counts that are decision inputs stay** (remaining characters on a limited field).
 - **Back keeps the data.** Long flows save and resume.
 
