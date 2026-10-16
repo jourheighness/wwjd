@@ -26,7 +26,7 @@ Check 320, 390, 768, 1440 and 1920. No horizontal page scroll anywhere.
 - **Targets:** the floor's touch sizes; expand hit areas with padding or a pseudo-element.
 - **Placement:** primary actions in the thumb zone, sticky above the keyboard.
 - **No hover:** on touch, every hover affordance (⋯, toolbars, previews) gets a visible control (⋯); long-press only as a shortcut.
-- **Forms:** inputs at least 16px so iOS doesn't zoom. Native pickers for date and select are right on touch.
+- **Forms:** inputs at least 16px so iOS doesn't zoom. Selects and date pickers come from the component system, on touch too. OS pickers only in native apps (`registers/native.md`).
 - **Safe areas:** respect safe-area insets and the on-screen keyboard. Use `100dvh`.
 
 ## Text scaling

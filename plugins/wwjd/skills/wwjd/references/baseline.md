@@ -9,7 +9,7 @@ Use this whenever the project has no design system. It's the look and the compon
 | Svelte | Bits UI |
 | Vue | Reka UI |
 | Several frameworks | Ark UI |
-| Single-file HTML prototype | Native: `<dialog>` with `showModal()`, the Popover API plus CSS anchor positioning, `<details>`, native form controls, all styled by `starter.css` |
+| Single-file HTML prototype | Native `<dialog>` with `showModal()`, the Popover API plus CSS anchor positioning (menus, and selects built as a styled listbox, never a `<select>` popup), `<details>`, native checkbox, radio and range inputs styled by `starter.css` |
 
 - **Base UI setup:** wrap the app in `.root { isolation: isolate }` so portals stack above it.
 - **Styling hooks:** style through its state attributes and variables:
@@ -92,6 +92,7 @@ Use this whenever the project has no design system. It's the look and the compon
   - Sizes: sm 28 / md 32 / lg 36, radius 6, 14/500.
   - Secondary is the default (quiet fill). `.btn-primary`: accent, one per region. `.btn-tertiary`: transparent. `.btn-icon`: square, with `.is-filled` for a resting container. `.btn-danger`: only on review steps.
   - Loading keeps the label and adds an inline spinner.
+- **Never an OS dropdown.** A select is a styled trigger plus a popup listbox from the primitives (Base UI Select or Combobox), never a native `<select>` popup, on touch too. The `.select` class styles that trigger.
 - **Field:**
   - Parts: `.field` → `.field-label` → `.input` / `.select` / `.textarea` (Field.Control, Select.Trigger, Combobox.Input) → `.field-description` / `.field-error`.
   - Full column width, control height, 3:1 border.

@@ -29,7 +29,7 @@ Success: the person finishes the sequence without thinking about the form.
 
 ## Input
 - **Attributes:** `autocomplete` on every field (WCAG 1.3.5), the right `type` and `inputmode`. Paste and password managers always work.
-- **Mobile:** inputs at least 16px so iOS doesn't zoom. Native date and select pickers are fine on touch.
+- **Mobile:** inputs at least 16px so iOS doesn't zoom. Selects and date pickers come from the component system on touch too, never the OS dropdown.
 - **Validation:**
   - Format errors on blur once the field has input; required-field errors on submit. The error sits at the field and says how to fix it.
   - Long forms get an error summary on submit that links to each field.

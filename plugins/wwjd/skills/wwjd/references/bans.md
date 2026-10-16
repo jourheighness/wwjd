@@ -33,7 +33,7 @@ Last column: `P` product UI, `M` marketing, `P+M` both.
 | Spinner in the middle | A skeleton matching the final layout | P |
 | Swapping the element on state change (span → button/link with its own padding or underline) | One element per component in every state; state via attributes and styles | P |
 | Confirm dialog for routine actions | Undo; the floor's exceptions get a review sheet with real choices | P |
-| Raw OS-styled select, date or checkbox next to kit controls | Kit controls built on native elements or APG primitives (native pickers are fine on touch) | P |
+| Default OS dropdowns (`<select>` popups, native date pickers) anywhere on the web, and OS-styled checkboxes next to kit controls | The component system: Base UI Select / Combobox / DatePicker parts styled by the tokens; in a single-file prototype a styled Popover listbox (ARIA listbox pattern). OS pickers only in native apps | P+M |
 | Bounce or elastic easing, `scale(0)` entrances | Ease-out from 0.95–0.98 and opacity | P+M |
 | Stagger, bubble-in, fade-up on every block | One orchestrated moment or none | P+M |
 | `→` appended to every link, "A · B · C" meta strings | Plain label | P+M |
