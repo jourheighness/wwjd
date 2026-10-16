@@ -5,6 +5,10 @@ Every component should look right all the way through, not just in the demo.
 ## Interactive states
 Every interactive component needs all eight states, each designed: default, hover, focus-visible, active, disabled, loading, error, success. Hover without a focus state is the most common miss.
 
+## Hidden states stay hidden
+- Every element toggled with the `hidden` attribute needs a global `[hidden] { display: none !important }`; `starter.css` ships it. Without it, any class that sets `display` shows the hidden state, and the screen renders two states at once (the form and its success message together).
+- One state per view: a flow's result replaces the step it completes; never stack both.
+
 ## Data states, per view
 | State | Treatment |
 |---|---|

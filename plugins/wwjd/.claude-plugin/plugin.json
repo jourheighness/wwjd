@@ -1,6 +1,6 @@
 {
   "name": "wwjd",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "What Would Johannes Do: an opinionated UI/UX rule set and design workflow. One skill, a cold design critic agent, and a prompt hook that routes UI work to the skill.",
   "author": { "name": "Johannes Carlsten" }
 }

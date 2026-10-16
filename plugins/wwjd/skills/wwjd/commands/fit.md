@@ -69,7 +69,9 @@ A component lives in many slots: a sidebar, a list, a dialog, a phone. Design ho
   ```
   Titles, meta, body and actions share rows, and actions pin to the bottom. `line-clamp: 2` goes on descriptions only, never on the title.
 - **Button groups switch as a whole:** short `nowrap` labels in a Switcher or Cluster. Never a 2-line button next to a 1-line one. A lone full-width button may wrap its label.
-- **Long strings:** use `overflow-wrap: anywhere` (not `break-word`) inside flex and grid, plus `min-width: 0` on flex children.
+- **Long strings:** `overflow-wrap: anywhere` only on unbreakable tokens (URLs, IDs, emails, hashes, file names), plus `min-width: 0` on flex children. Titles and prose use `overflow-wrap: break-word`: when their track is too narrow, it shows as a visible overflow instead of one letter per line.
+- **Components never carry their own placement.** `grid-area`, `grid-column`, `order` and positioning margins that only make sense inside one parent belong on that parent's child selector (`.row > .check { grid-area: check }`), never on the component class. A reused component otherwise lands in an implicit track of its new grid, and its neighbours fall into the wrong columns.
+- **Text never sits in an auto or icon-sized track.** Every container that holds text has a definite or floored width: panels `inline-size: min(480px, 100%)`, text tracks `minmax(12ch, 1fr)`. Place conditional or optional grid children by name, so a missing or extra child can't shift the rest.
 - **Text wrapping:** `text-wrap: balance` on titles, `pretty` on descriptions, never set globally.
 - **Rounded cards** use `overflow: clip` with `overflow-clip-margin` equal to the ring width, never `overflow: hidden`, which clips focus rings and diacritics.
 

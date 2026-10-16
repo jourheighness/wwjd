@@ -97,6 +97,8 @@ const rules = [
   { id: "hover-no-fallback", sev: "error", re: /\bopacity-0\b[^"'`]*\bgroup-hover:opacity-100\b/, unless: /group-focus-within:opacity-100/, only: MARKUP, msg: "hover-only reveal: add group-focus-within and keep it visible on touch (hover:none)" },
   { id: "between-wrap", sev: "warn", re: /\bjustify-between\b[^"'`]*\bflex-wrap\b|\bflex-wrap\b[^"'`]*\bjustify-between\b/, only: MARKUP, msg: "space-between with wrap strands the wrapped item; use ms-auto on the trailing group" },
   { id: "viewport-in-component", sev: "warn", re: /@media\s*\((min|max)-width/, only: /\.(tsx|jsx|vue|svelte)$/, skip: (f) => !/components?\//.test(f), msg: "viewport breakpoint inside a component; use a container query" },
+  { id: "component-placement", sev: "warn", re: /^\s*\.[\w-]+\s*\{[^}]*\b(grid-area:\s*[a-z][\w-]*|grid-column:\s*[a-z][\w-]*|order:\s*-?\d)/, only: /\.(css|scss|tsx|jsx|vue|svelte|html|astro)$/, msg: "placement on a component class leaks into every grid it's reused in; put it on the parent's child selector (.row > .x)" },
+  { id: "anywhere-on-text", sev: "warn", re: /(h[1-6]|title|name|heading|label|prose|body)[^{]*\{[^}]*overflow-wrap:\s*anywhere|(text|title|heading|prose)[\w-]*[^"'`]*\bbreak-anywhere\b/i, msg: "overflow-wrap:anywhere on titles/prose hides a too-narrow track as letter-stacked text; use break-word" },
   // ── layout ──
   { id: "centered-text", sev: "warn", re: /\btext-center\b|text-align:\s*center/, off: R("persuade", "showcase", "editorial", "converse", "flow"), msg: "centred text; start-align unless it is genuinely centred content" },
   { id: "eyebrow", sev: "warn", re: /\buppercase\b[^"'`\n]*\btracking-|\btracking-[^"'`\s]+[^"'`\n]*\buppercase\b/, off: R("editorial"), msg: "uppercase tracked eyebrow; use sentence case or nothing" },
@@ -160,6 +162,18 @@ for (const f of uiFiles) {
       findings.push({ file: f, line: i + 1, rule: r.id, severity: r.level, message: r.msg });
     });
   }
+}
+
+// file-level: elements toggled with the hidden attribute need a global [hidden] guard,
+// or any class with a display rule shows them anyway (both states on screen at once)
+for (const f of uiFiles) {
+  let text; try { text = readFileSync(f, "utf8"); } catch { continue; }
+  if (cfg.rules?.["hidden-guard"] === "off") continue;
+  const usesHidden = /\shidden(\s|>|=|\})|\.hidden\s*=|toggleAttribute\(\s*["']hidden/.test(text);
+  const setsDisplay = /\{[^}]*\bdisplay:\s*(grid|flex|block|inline-flex|inline-grid)/.test(text);
+  const guarded = /(^|[\s,}])\[hidden\](:not\([^)]*\))?\s*\{[^}]*display:\s*none/m.test(text);
+  if (/\.(html|svelte|vue|astro)$/.test(f) && usesHidden && setsDisplay && !guarded)
+    findings.push({ file: f, line: 1, rule: "hidden-guard", severity: "error", message: "hidden attribute used with display rules but no global [hidden] { display: none !important }; hidden states will show" });
 }
 
 const errors = findings.filter((x) => x.severity === "error").length;

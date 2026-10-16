@@ -10,6 +10,7 @@
 //   overflow             anything wider than the container
 //   hover-shift          hovering a row ([data-row], [role=row], li) moves a sibling by > 0.5px
 //   hover-unreachable    an action hidden at rest that keyboard focus doesn't reveal
+//   text-collapsed       text squeezed into a track a few characters wide (one letter per line)
 // Needs Playwright installed in the project (npm i -D playwright; npx playwright install chromium).
 // PW_EXE=<path> points it at an existing Chromium build instead.
 let chromium;
@@ -40,6 +41,14 @@ for (const w of widths) {
       if (!el.offsetParent && el.tagName !== "BODY") continue;
       if (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1) out.push(["identifier-clipped", "error", name(el)]);
       else if (el.getBoundingClientRect().height / lineH(el) > 3.5) out.push(["identifier-long", "warn", name(el)]);
+    }
+    // letter-stacking: text squeezed into a track a few characters wide
+    for (const el of root.querySelectorAll("h1,h2,h3,h4,h5,h6,p,li,label,[data-identifier],td,dd,span")) {
+      if (!el.offsetParent || el.children.length > 2) continue;
+      const t = (el.textContent || "").trim(); if (t.length < 12) continue;
+      const cs = getComputedStyle(el); const ch = parseFloat(cs.fontSize) * 0.55;
+      const w = el.getBoundingClientRect().width; const lines = el.getBoundingClientRect().height / lineH(el);
+      if (w < ch * 6 && lines > 2.5) { out.push(["text-collapsed", "error", name(el) + " (" + Math.round(w) + "px wide)"]); break; }
     }
     for (const icon of root.querySelectorAll("[data-trailing-icon]")) {
       const label = icon.previousElementSibling || icon.parentElement;

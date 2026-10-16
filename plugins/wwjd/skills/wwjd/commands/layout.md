@@ -59,7 +59,7 @@ How a component behaves as its slot shrinks (what gives way, identifiers, icons,
 - **Flex and grid fixes:**
   - Text children of flex get `min-width: 0`. A grid track that holds an identifier gets a floor (`minmax(12ch, 1fr)`), never `minmax(0, 1fr)` beside fixed columns.
   - Avatars, icons and badges get `flex-shrink: 0`.
-  - Long URLs and IDs get `overflow-wrap: anywhere`, never `break-all`.
+  - Long URLs and IDs get `overflow-wrap: anywhere`, never `break-all`. Titles and prose use `break-word` (`fit.md`).
 - **When text can wrap,** top-align the row so the icon stays with the first line.
 - **Clickable text:** shorten first; it may wrap; never clip.
 - **Headings and prose:** `text-wrap: balance` on headings with a max inline size, `pretty` on prose; never applied globally.
