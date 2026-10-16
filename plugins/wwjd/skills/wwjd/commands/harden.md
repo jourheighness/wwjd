@@ -13,6 +13,14 @@ Every interactive component needs all eight states, each designed: default, hove
 - **Link styling is for links in text.** A stepper step, tab, chip or row is never underlined in any state; its affordance is the hover fill and the focus ring.
 - **Check states side by side.** Show every state of a component together in the workshop (default, hover, focus, active, selected, done, disabled, error) and compare their boxes. A state that moves, resizes or restyles its neighbours is a defect.
 
+## Value displays show the value
+- **Check every data-driven visual in the render at 0, a partial value and the maximum:** stars, rating bars, meters, progress, sparklines, percentage fills, gauges. A rating of 4.6 shows four and a half stars filled. Code that computes the right number proves nothing until the fill is seen.
+- **Fills need a real box.**
+  - A clip, mask or percentage width only works on an element with a size: `display: block` or `inline-block`, with an explicit width and height.
+  - Never on an inline span whose content is absolutely positioned: it has no box, so the fill disappears.
+  - Prefer `<meter>` or `<progress>`, or a block with `inline-size: calc(var(--value) * 100%)`.
+- **The number and the visual agree,** and the accessible name carries the value ("4.6 out of 5").
+
 ## Hidden states stay hidden
 - Every element toggled with the `hidden` attribute needs a global `[hidden] { display: none !important }`; `starter.css` ships it. Without it, any class that sets `display` shows the hidden state, and the screen renders two states at once (the form and its success message together).
 - One state per view: a flow's result replaces the step it completes; never stack both.

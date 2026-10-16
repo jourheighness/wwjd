@@ -12,6 +12,7 @@
 //   hover-unreachable    an action hidden at rest that keyboard focus doesn't reveal
 //   text-collapsed       text squeezed into a track a few characters wide (one letter per line)
 //   ring-clipped         a focus/selection ring cut off by a scrolling or clipping parent
+//   value-fill-empty     a clipped or masked value fill (stars, meters) on an element with no box
 // Needs Playwright installed in the project (npm i -D playwright; npx playwright install chromium).
 // PW_EXE=<path> points it at an existing Chromium build instead.
 let chromium;
@@ -42,6 +43,14 @@ for (const w of widths) {
       if (!el.offsetParent && el.tagName !== "BODY") continue;
       if (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1) out.push(["identifier-clipped", "error", name(el)]);
       else if (el.getBoundingClientRect().height / lineH(el) > 3.5) out.push(["identifier-long", "warn", name(el)]);
+    }
+    // value fills with no box: a clip/mask on a zero-size element hides the value entirely
+    for (const el of root.querySelectorAll("*")) {
+      const cs = getComputedStyle(el);
+      if ((cs.clipPath && cs.clipPath !== "none" || cs.maskImage && cs.maskImage !== "none") && el.children.length) {
+        const b = el.getBoundingClientRect();
+        if (b.width < 1 || b.height < 1) { out.push(["value-fill-empty", "error", (el.closest("[aria-label],[role]")?.getAttribute("aria-label") || el.className || el.tagName) + " has no box, so its fill shows nothing"]); break; }
+      }
     }
     // letter-stacking: text squeezed into a track a few characters wide
     for (const el of root.querySelectorAll("h1,h2,h3,h4,h5,h6,p,li,label,[data-identifier],td,dd,span")) {
