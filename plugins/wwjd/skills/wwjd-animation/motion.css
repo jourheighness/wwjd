@@ -1,0 +1,118 @@
+/* wwjd motion: themes + recipes. Load after the wwjd kit (tokens.css, base.css); <html data-motion="instant|crisp|smooth|springy">, default crisp.
+   New tokens: --ease-spring/--dur-spring (spatial entrance), --pop-scale, --press-scale, --enter-y.
+   Transform + opacity only (height: grid rows, <details>); exits faster; reduced motion (last block) wins. */
+
+/* ── Themes ─────────────────────────────────────────────────────────── */
+:root, [data-motion="crisp"] {
+  --ease-out: cubic-bezier(.23, 1, .32, 1); --ease-move: cubic-bezier(.77, 0, .175, 1); --ease-drawer: cubic-bezier(.32, .72, 0, 1);
+  --dur-fast: 120ms; --dur-pop: 160ms; --dur-modal: 220ms;
+  --ease-spring: var(--ease-out); --dur-spring: var(--dur-pop);
+  --pop-scale: .97; --press-scale: .98; --enter-y: 8px;
+}
+/* Fade only: tools used all day */
+[data-motion="instant"] {
+  --dur-fast: 80ms; --dur-pop: 100ms; --dur-modal: 160ms;
+  --ease-spring: var(--ease-out); --dur-spring: var(--dur-pop);
+  --pop-scale: 1; --press-scale: 1; --enter-y: 0px;
+}
+/* Longer deceleration: consumer, commerce, onboarding */
+[data-motion="smooth"] {
+  --dur-fast: 180ms; --dur-pop: 240ms; --dur-modal: 320ms;
+  --ease-spring: var(--ease-drawer); --dur-spring: var(--dur-pop);
+  --pop-scale: .96; --press-scale: .97; --enter-y: 12px;
+}
+/* M3 Expressive springs on transform only: spatial .8/380 (≈1.2% overshoot), moves .9/700. Persuade, Showcase, Native */
+[data-motion="springy"] {
+  --dur-fast: 120ms; --dur-pop: 180ms; --dur-modal: 320ms;
+  --ease-spring: linear(0, .025 2.8%, .102 6%, .536 18.5%, .717 24.8%, .848 31%, .934 37.5%, .988 45%, 1.012 54.5%, 1);
+  --ease-move: linear(0, .023 3%, .092 6.5%, .488 20.2%, .658 27.3%, .781 34%, .872 41.2%, .941 50.5%, .981 61.8%, .998 76.5%, 1);
+  --dur-spring: 420ms;
+  --pop-scale: .95; --press-scale: .97; --enter-y: 16px;
+}
+
+/* ── Press ──────────────────────────────────────────────────────────── */
+.btn:not(:disabled, [data-disabled], [aria-disabled="true"]):active { transform: scale(var(--press-scale)); }
+
+/* ── Overlays (same selectors as kit/base.css) ───────────────────────── */
+/* Base UI: data-starting-style / data-ending-style */
+:is(.popup, .tooltip, .dialog, .drawer, .backdrop, .toast) {
+  transition: opacity var(--dur-pop) var(--ease-out), transform var(--dur-spring) var(--ease-spring); }
+:is(.popup, .tooltip, .dialog):is([data-starting-style], [data-ending-style]) { opacity: 0; transform: scale(var(--pop-scale)); }
+:is(.backdrop, .toast):is([data-starting-style], [data-ending-style]) { opacity: 0; }
+.toast[data-starting-style] { transform: translateY(var(--enter-y)); }
+.drawer { transition-duration: var(--dur-modal); transition-timing-function: var(--ease-drawer); }
+.drawer:is([data-starting-style], [data-ending-style]) { transform: translateX(100%); }
+[data-ending-style] { transition-duration: var(--dur-fast); transition-timing-function: var(--ease-out); }
+.drawer[data-ending-style] { transition-duration: calc(var(--dur-modal) * .75); }
+:is(.drawer, .toast, .backdrop)[data-swiping], .tooltip[data-instant] { transition-duration: 0ms; }
+
+/* Native <dialog> / [popover]: the closed rule carries the (faster) exit, the open rule the entry */
+:is(dialog.dialog, dialog.drawer, [popover].popup) {
+  opacity: 0; transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out),
+    overlay var(--dur-fast) allow-discrete, display var(--dur-fast) allow-discrete; }
+:is(dialog.dialog, [popover].popup) { transform: scale(var(--pop-scale)); }
+dialog.drawer { transform: translateX(100%); transition-duration: calc(var(--dur-modal) * .75); }
+:is(dialog.dialog, dialog.drawer)[open], [popover].popup:popover-open {
+  opacity: 1; transform: none;
+  transition: opacity var(--dur-pop) var(--ease-out), transform var(--dur-spring) var(--ease-spring),
+    overlay var(--dur-spring) allow-discrete, display var(--dur-spring) allow-discrete; }
+dialog.drawer[open] { transition-duration: var(--dur-modal); transition-timing-function: var(--ease-drawer); }
+@starting-style {
+  dialog.dialog[open], [popover].popup:popover-open { opacity: 0; transform: scale(var(--pop-scale)); }
+  dialog.drawer[open] { opacity: 0; transform: translateX(100%); }
+}
+:is(dialog.dialog, dialog.drawer)::backdrop { opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out), overlay var(--dur-fast) allow-discrete, display var(--dur-fast) allow-discrete; }
+:is(dialog.dialog, dialog.drawer)[open]::backdrop { opacity: 1; transition-duration: var(--dur-pop); }
+@starting-style { :is(dialog.dialog, dialog.drawer)[open]::backdrop { opacity: 0; } }
+
+/* ── Height: grid rows (any element) or native <details class="disclosure"> ── */
+.expand { display: grid; grid-template-rows: 0fr; transition: grid-template-rows calc(var(--dur-modal) * .75) var(--ease-move); }
+.expand > * { min-height: 0; overflow: hidden; visibility: hidden; transition: visibility calc(var(--dur-modal) * .75) allow-discrete; }
+.expand[data-open] { grid-template-rows: 1fr; transition-duration: var(--dur-modal); }
+.expand[data-open] > * { visibility: visible; }
+@supports (interpolate-size: allow-keywords) {
+  details.disclosure { interpolate-size: allow-keywords; }
+  details.disclosure::details-content { block-size: 0; overflow: clip;
+    transition: block-size calc(var(--dur-modal) * .75) var(--ease-move), content-visibility calc(var(--dur-modal) * .75) allow-discrete; }
+  details.disclosure[open]::details-content { block-size: auto; transition-duration: var(--dur-modal); }
+}
+
+/* ── Tab indicator: script sets --tab-x (px) and --tab-w (unitless) from the active tab ── */
+.tabs-indicator { position: absolute; left: 0; bottom: -1px; width: 1px; height: 2px; background: var(--text);
+  transform-origin: 0 0; transform: translateX(var(--tab-x, 0px)) scaleX(var(--tab-w, 0));
+  transition: transform var(--dur-modal) var(--ease-move); }
+.tabs-indicator ~ .tab::after, .tabs-indicator + * .tab::after { content: none; }
+
+/* ── View transitions: wrap list changes in document.startViewTransition(); pages opt in with @view-transition { navigation: auto; } ── */
+.motion-list > * { view-transition-name: match-element; view-transition-class: item; }
+::view-transition { pointer-events: none; }  /* clicks reach the live page; never lock input */
+::view-transition-group(*) { animation-duration: var(--dur-modal); animation-timing-function: var(--ease-move); }
+::view-transition-group(root) { animation-duration: var(--dur-pop); }
+::view-transition-new(*.item):only-child { animation: wwjd-enter var(--dur-spring) var(--ease-spring) both; }
+::view-transition-old(*.item):only-child { animation: wwjd-exit var(--dur-fast) var(--ease-out) both; }
+@keyframes wwjd-enter { from { opacity: 0; transform: translateY(calc(var(--enter-y) * -.5)) scale(var(--pop-scale)); } }
+@keyframes wwjd-exit { to { opacity: 0; transform: scale(var(--pop-scale)); } }
+
+/* ── Scroll reveal: opt-in, one idea per page, never on every block ── */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal { animation: wwjd-reveal linear both; animation-timeline: view(); animation-range: entry 0% entry 60%; }
+  }
+}
+@keyframes wwjd-reveal { from { opacity: 0; transform: translateY(var(--reveal-y, 16px)); } }
+
+/* ── Reduced motion: wins over every theme. Spatial moves → ≤120ms crossfade ── */
+@media (prefers-reduced-motion: reduce) {
+  :root, [data-motion] {
+    --dur-fast: 0ms; --dur-pop: 120ms; --dur-modal: 120ms; --dur-spring: 120ms;
+    --ease-spring: var(--ease-out); --ease-move: ease;
+    --pop-scale: 1; --press-scale: 1; --enter-y: 0px; --reveal-y: 0px;
+  }
+  .drawer:is([data-starting-style], [data-ending-style]), dialog.drawer:not([open]) { transform: none; }
+  @starting-style { dialog.drawer[open] { transform: none; } }
+  .tabs-indicator { transition: none; }
+  ::view-transition-group(*) { animation: none; }
+  ::view-transition-old(*), ::view-transition-new(*) { animation-duration: 120ms; }
+  ::view-transition-new(*.item):only-child, ::view-transition-old(*.item):only-child { animation-name: -ua-view-transition-fade-in; }
+}

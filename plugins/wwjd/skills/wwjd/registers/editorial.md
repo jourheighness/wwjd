@@ -1,35 +1,31 @@
 # Editorial: articles, essays, blogs, reports, newsletters
 
-Success: the reader reads to the end. Typography is the interface.
+Profile: `data-profile="reading"` (`.breakout`, `.flow`). Colour: lives in the frame and the figures, not the text.
+
+Success: the reader reads to the end. Typography is the interface. Layouts: `article`, `blog-index`.
 
 ## Reading
-- **Measure:** 60–75 characters (about 66 is ideal). Body 18–21px on desktop, 17–18px on phones. Leading 1.5–1.65.
-- **Face:** a text face chosen for long reading, with real italics. Old-style figures in prose; lining tabular figures in tables.
-- **One reading column,** centred as a column. Text inside it is start-aligned: ragged-right by default (easier for dyslexic readers); justify only with hyphenation and a correct `lang`.
-- **Microtypography:**
-  - Smart quotes and real dashes (em dashes are correct in prose), non-breaking spaces between values and units.
-  - `hanging-punctuation` where supported.
-  - `text-wrap: pretty` on paragraphs and `balance` on headings.
-- **Links in prose are underlined,** with tuned thickness and offset, and a visited state.
-- **Light on dark:** slightly more leading and a slightly lighter weight.
+- **Measure** 60–75 characters (~66 ideal). Leading 1.5–1.65; light on dark gets slightly more leading and a lighter weight.
+- **Face:** a text face built for long reading, real italics. Old-style figures in prose; lining tabular figures in tables.
+- **One reading column,** centred as a column; text inside start-aligned, ragged-right by default. Justify only with hyphenation and a correct `lang`.
+- **Microtypography:** smart quotes, real dashes (em dashes are right in prose), non-breaking spaces between values and units, `hanging-punctuation` where supported, `text-wrap: pretty` on paragraphs and `balance` on headings.
+- **Prose links** underlined with tuned thickness and offset, plus a visited state.
 
 ## Story furniture is content
-- **Kicker, headline, dek, byline, absolute published date and "updated" date.** Relative time is wrong here.
-- **The kicker** comes from the publication's own section system. It is not a decorative eyebrow.
+- **Kicker, headline, dek, byline, absolute published date and "updated" date.** Never relative time here.
+- **The kicker** comes from the publication's section system; it is not a decorative eyebrow.
 - **Figures and tables** break out to a wider column; captions carry the credit. No text over images.
-- **Footnotes:** sidenotes on wide screens, popovers on narrow ones, with links back both ways.
-- **Pull quotes** only when they add something; never one that repeats the paragraph next to it.
-- **Contents:** a table of contents past about 1,500 words. Headings are linkable anchors.
+- **Footnotes:** sidenotes on wide screens, popovers on narrow, linked both ways.
+- **Pull quotes** only when they add something, never repeating the paragraph beside them.
+- **Contents** past ~1,500 words; headings are linkable anchors.
 
 ## Around the article
-- **Article lists** show the title, dek, date and author, scannable without cards for every item.
-- **Distribution:** a print stylesheet, RSS, and semantic HTML that reader mode can parse.
-- **Motion:** none in the reading column. No reading progress bar by default. No sticky share rails, no parallax.
-- **Ads and embeds:** reserve their space so the text never jumps.
+- **Lists** show title, dek, date and author, scannable without a card per item.
+- **Distribution:** print stylesheet, RSS, semantic HTML that reader mode parses.
+- **No motion in the reading column;** no reading progress bar by default, no sticky share rails, no parallax.
+- **Ads and embeds** reserve their space.
 
 ## Tells to avoid
-- Cream ground, terracotta accent and a huge italic serif: the "warm editorial" default.
-- Hairlines everywhere with mono captions: broadsheet cosplay.
-- Drop caps on every post.
-- Pull quotes that duplicate the text next to them.
-- A hero image that pushes the first sentence below the fold on a phone.
+- Cream ground, terracotta accent and a huge italic serif (the "warm editorial" default).
+- Hairlines everywhere with mono captions (broadsheet cosplay).
+- Drop caps on every post; a hero image that pushes the first sentence below the fold on a phone.

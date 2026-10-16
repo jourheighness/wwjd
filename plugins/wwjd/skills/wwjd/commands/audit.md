@@ -1,37 +1,34 @@
-# audit: technical quality
+# audit: fix the codebase
 
-This audit is measurable: accessibility, performance, responsiveness and lint. Run `critique` for design judgement; run this for facts.
+For `messy` repos and "debt", "clean up the codebase", "why does this look inconsistent". Output is a map and a ratchet, not a rewrite.
 
-## Steps
-1. **Static:** `scripts/ui-check.mjs --register <register>` (in this skill's folder) on the changed paths. Every finding is fixed, or justified with `ui-check-ignore: <reason>`.
-2. **Render** at 320, 390, 768, 1440 and 1920, in light and dark (`scripts/shoot.sh`, or any headless browser). Check 200% zoom and text-spacing overrides in a real browser; `shoot.sh` doesn't zoom.
-3. **Runtime checks** in a headless browser:
-   - **Horizontal overflow:** `document.documentElement.scrollWidth > innerWidth`, at every width.
-   - **Clipped text:** elements with `scrollWidth > clientWidth` while `overflow` is visible.
-   - **Hit targets:** below the floor's sizes.
-   - **Layout shift:** CLS from a `PerformanceObserver` is 0 after hovering every row, opening every tab and toggling the theme. Diff `getBoundingClientRect()` before and after each hover.
-   - **Focus:** Tab through the page. Every stop is visible, and none is hidden under sticky chrome.
-   - **Reduced motion:** emulate `prefers-reduced-motion: reduce`, and no transform animation remains.
-   - **Images:** every image has dimensions and loads; none is broken.
-   - **Spacing drift by purpose:** group computed spacing by job (section padding, card padding, list gap). Drift is more than 4 distinct values in one group, more than 3 max-widths, more than 3 radii, or more than 2 button styles per action type.
-4. **Accessibility:**
-   - **Contrast:** AA for text; 3:1 for UI parts, icons and focus rings. The contrast matrix (`colour.md`) exists and passes.
-   - **Semantics:** headings never skip a level; landmarks; labels on every control; `aria-label` on icon-only buttons.
-   - **Keyboard:** every flow works. Roving focus inside tabs and menus. Esc closes overlays.
-   - **Live regions:** announce status changes once, as a phrase.
-5. **Performance** (Persuade, Showcase, Editorial, Reference, Transact, Flow):
-   - LCP under 2.5s on a mid-range phone.
-   - The LCP image is preloaded.
-   - At most 2 font files above the fold, with metric-matched fallbacks.
-   - Images in modern formats with set dimensions.
-   - No layout shift as the page loads.
-6. **Responsive:** `adapt.md` checks.
+## 1. Map
+- `wwjd.mjs audit`: findings by area, rebuild candidates, golden picks, ready `[design]` lines.
+- Classify each drift by root cause and fix it there:
+
+| Cause | Fix |
+|---|---|
+| Missing token | add it to the tokens |
+| One-off where a kit component exists | use the component |
+| Bad kit component | fix it and its story; call sites follow |
+| Flow differs from comparable features (modal vs page, autosave vs submit) | align the flow |
+| Screen beyond repair | rebuild from a ≤10-line spec (`build`) |
+
+## 2. Ratchet
+- `wwjd.mjs check --baseline` writes `.wwjd-baseline.json`; commit it. From then on the hook and `check --new` report only new findings, and re-running `--baseline` only lowers counts.
+- **Golden files:** confirm 1–3 of the suggested picks with the owner once; write them to `.wwjd.json` `golden`. Old patterns nobody should copy go to `legacy` globs.
+- **RATCHET.md:** one Backlog line per area, tagged `[design]` (or `[eng]`), stating the suspicion, not the target. Gotchas and Tells as found. Never Config or Scheduler.
+
+## 3. Fix order
+Honesty and floor first, then the kit components with the most call sites, then rebuild candidates, then the long tail as each screen is touched (inside the scope of the task at hand).
+
+## 4. Facts the scripts don't check (milestone or on request)
+- **Contrast:** AA text, 3:1 UI parts, icons, focus; the contrast matrix story exists and passes.
+- **Semantics:** headings never skip a level; landmarks; every control labelled; icon-only buttons named.
+- **Keyboard:** every flow works; roving focus in tabs and menus; Esc closes overlays. 200% zoom and text-spacing in a real browser.
+- **Live regions:** status changes announced once, as a phrase.
+- **Performance** (Persuade, Showcase, Editorial, Reference, Transact, Flow): LCP < 2.5s on a mid-range phone, LCP image preloaded, ≤2 font files above the fold with metric-matched fallbacks, modern image formats with set dimensions, no load shift.
+- `render.mjs runtime` covers overflow, clipped text, targets, hover shift, focus visibility, reduced motion, broken images and spacing drift.
 
 ## Report
-- **Score** each area 0–4: accessibility, performance, responsive, theming, anti-patterns.
-- **Severity:**
-  - **P0:** blocks the task.
-  - **P1:** a major issue or a WCAG AA failure.
-  - **P2:** a workaround exists.
-  - **P3:** polish.
-- **List P0 and P1 with `file:line` fixes.** A clean audit proves the absence of these defects, not quality.
+Severity: **blocks** · **major** (incl. any floor failure) · **minor**, with `file:line` fixes for the first two. A clean audit proves those defects are absent, not that the UI is good.

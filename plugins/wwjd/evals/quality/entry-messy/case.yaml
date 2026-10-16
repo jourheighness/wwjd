@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: entry-messy
+tags: [quality]
+context:
+  scaffold_script: fixture.sh

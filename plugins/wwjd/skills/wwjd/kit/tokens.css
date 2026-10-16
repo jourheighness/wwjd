@@ -1,0 +1,58 @@
+/* tokens.css: the look. Default preset "baseline": stone neutral, one accent hue, flat, Inter, radii 4/6/8/12.
+   wwjd-look may replace this file; it keeps every custom property name (base.css, layouts.css and the
+   wwjd-animation skill's motion.css read them). Load order: tokens.css → base.css → layouts.css (→ motion.css).
+   Theme follows the system; <html data-theme="light|dark"> forces one.
+   Font (optional): <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..600&display=swap" rel="stylesheet">
+   Changing --a (accent hue)? Re-check every text token on every surface: 4.5:1 text, 3:1 edges and focus. */
+:root {
+  color-scheme: light dark;
+  --n: 70;   /* neutral hue bias: low-chroma stone */
+  --a: 258;  /* accent hue */
+
+  --surface-1: light-dark(oklch(.970 .003 var(--n)), oklch(.185 .003 var(--n)));   /* ground, sidebar */
+  --surface-2: light-dark(oklch(.995 .0015 var(--n)), oklch(.210 .003 var(--n)));  /* pane, card, table, input */
+  --surface-3: light-dark(oklch(1 0 0), oklch(.250 .004 var(--n)));                 /* popup, dialog, toast */
+  --fill: light-dark(oklch(.935 .004 var(--n)), oklch(.280 .004 var(--n)));         /* quiet button, track, badge */
+  --fill-strong: light-dark(oklch(.905 .005 var(--n)), oklch(.320 .005 var(--n)));
+  --hover: light-dark(oklch(.25 .01 var(--n) / .05), oklch(.98 .005 var(--n) / .06)); /* state layers */
+  --press: light-dark(oklch(.25 .01 var(--n) / .09), oklch(.98 .005 var(--n) / .10));
+  --selected: light-dark(color-mix(in oklab, oklch(.53 .19 var(--a)) 9%, var(--surface-2)), oklch(.98 .005 var(--n) / .09));
+  --border: light-dark(oklch(.905 .004 var(--n)), oklch(.300 .004 var(--n)));
+  --border-strong: light-dark(oklch(.860 .005 var(--n)), oklch(.350 .005 var(--n)));
+  --border-control: light-dark(oklch(.645 .006 var(--n)), oklch(.540 .006 var(--n)));  /* 3:1 edge */
+  --scrim: light-dark(oklch(.22 .01 var(--n) / .35), oklch(0 0 0 / .6));
+
+  --text: light-dark(oklch(.22 .008 var(--n)), oklch(.95 .003 var(--n)));
+  --text-2: light-dark(oklch(.45 .008 var(--n)), oklch(.77 .005 var(--n)));
+  --text-3: light-dark(oklch(.53 .007 var(--n)), oklch(.67 .005 var(--n)));  /* on surfaces only, not on --fill */
+  --text-disabled: light-dark(oklch(.72 .005 var(--n)), oklch(.45 .005 var(--n)));
+
+  --accent: light-dark(oklch(.53 .19 var(--a)), oklch(.55 .17 var(--a)));
+  --accent-hover: light-dark(oklch(.49 .18 var(--a)), oklch(.51 .17 var(--a)));
+  --accent-text: light-dark(oklch(.51 .18 var(--a)), oklch(.76 .12 var(--a)));
+  --on-accent: oklch(1 0 0);
+  --on-danger: oklch(1 0 0);  /* text on --danger-solid; stays white whatever the accent needs */
+  --focus: var(--accent-text);
+
+  --danger: light-dark(oklch(.55 .20 27), oklch(.71 .17 25));
+  --danger-solid: light-dark(oklch(.54 .20 27), oklch(.55 .19 27));
+  --danger-solid-hover: light-dark(oklch(.50 .19 27), oklch(.51 .18 27));
+  --warning: light-dark(oklch(.64 .145 62), oklch(.80 .14 80));  /* glyph only in light (3:1) */
+  --success: light-dark(oklch(.53 .13 150), oklch(.74 .14 150));
+  --info: light-dark(oklch(.53 .13 245), oklch(.75 .11 245));
+
+  --shadow-1: 0 1px 2px light-dark(oklch(.2 .01 var(--n) / .06), oklch(0 0 0 / .3)),
+              0 8px 20px -6px light-dark(oklch(.2 .01 var(--n) / .14), oklch(0 0 0 / .5));
+  --shadow-2: 0 2px 6px light-dark(oklch(.2 .01 var(--n) / .06), oklch(0 0 0 / .3)),
+              0 24px 48px -12px light-dark(oklch(.2 .01 var(--n) / .22), oklch(0 0 0 / .6));
+
+  --r-1: 4px; --r-2: 6px; --r-3: 8px; --r-4: 12px; --r-full: 999px;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --ease-out: cubic-bezier(.23, 1, .32, 1); --ease-move: cubic-bezier(.77, 0, .175, 1); --ease-drawer: cubic-bezier(.32, .72, 0, 1);
+  --dur-fast: 120ms; --dur-pop: 160ms; --dur-modal: 220ms;
+}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }

@@ -7,7 +7,7 @@
     {
       "name": "wwjd",
       "source": "./plugins/wwjd",
-      "description": "What Would Johannes Do: an opinionated UI/UX rule set and design workflow for landing pages, editorial, docs, product apps, dashboards, chat, commerce, forms and mobile."
+      "description": "What Would Johannes Do: opinionated UI/UX rules and workflow for landing pages, editorial, docs, product apps, dashboards, chat, commerce, forms and mobile, with neutral look and motion skills."
     }
   ],
   "metadata": {

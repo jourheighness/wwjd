@@ -1,39 +1,30 @@
 # Transact: stores, product pages, listings, cart, checkout
 
-Success: the person buys with confidence and without surprises. Design mobile-first, because most commerce traffic is mobile.
+Profile: `data-profile="consumer"`. Colour: product photography carries it; the UI stays neutral.
+
+Success: the person buys with confidence and without surprises. Layouts: `product-detail`, `listing-search`, `cart-checkout`, `pricing`.
 
 ## Product page
-- **Above the fold at 390:** gallery, title, price, variant choice, and add to cart. A sticky buy bar appears after scroll.
-- **Gallery:** swipe and zoom, with 5 or more images, including in context and at scale.
-- **Variants:** swatches with text names. Unavailable variants stay visible and are visibly faded before anyone clicks (a strike mark, "Sold out" in the name or tooltip); they are never hidden. Choosing one swaps the buy box in place to its own path ("Notify me when it's back", the restock date). That path never shows while another variant is selected.
-- **Decision numbers are mandatory:** price, unit price, delivery date (a date, not "3–5 days"), shipping cost before checkout, rating with its count, true stock levels.
-- **Specs and details:** vertical collapsible sections. Here an accordion is the right pattern.
-- **Reviews:** names as text. Allow sorting and filtering by rating; show the distribution.
+- **Above the fold at 390:** gallery, title, price, variant choice, add to cart. A sticky buy bar after scroll.
+- **Gallery:** swipe and zoom, 5+ images, including in context and at scale.
+- **Variants:** swatches with text names. Unavailable ones stay visible and look faded before the click (strike mark, "Sold out" in name or tooltip), never hidden. Choosing one swaps the buy box in place to its own path ("Notify me when it's back", restock date), shown only while it's selected.
+- **Decision numbers are mandatory:** price, unit price, delivery date (a date, not "3–5 days"), shipping cost before checkout, rating with its count, true stock.
+- **Specs:** vertical collapsible sections; here an accordion is right.
+- **Reviews:** names as text; sort and filter by rating; show the distribution.
 
 ## Listing
-- **Filters and sort:** faceted filters with applied-filter chips, and sort. Counts inside filter menus are fine, because they change the decision.
-- **Cards:** one image ratio, aligned with subgrid. Price and title are always visible, never revealed on hover.
+- Faceted filters with applied chips, plus sort. Counts inside filter menus are fine: they change the decision.
+- Cards: one image ratio, aligned with subgrid. Price and title always visible, never on hover.
+- **No infinite scroll on product lists:** "Load more", position restored on Back.
 
 ## Cart and checkout
-- **Cart:** editable quantities, full totals with tax and shipping, and an empty cart that offers recently viewed items.
-- **Checkout:**
-  - Guest checkout, express pay shown first, then `flow.md` rules for the form.
-  - A review step before the order.
-  - The order button says it commits to pay ("Place order and pay", "Pay now"), with the total beside it in the action bar's fixed summary slot, not inside the label (`registers/flow.md`, action bar). Legally required wording is never shortened.
-- **Claims are checkable** (`commands/clarify.md`): "3 rooms at this rate, updated 14:14", not "Only 1 left!". A cancellation says what ends and what stops: "Access ends Tue 6 May. No further charges."
-- **No dark patterns:** no fake countdowns or fake scarcity; a true delivery cutoff ("Order within 3 h for Friday delivery") and true stock are decision numbers. No pre-ticked add-ons, no confirmshaming, no costs revealed at the last step.
-
-## Colour and imagery
-- **Product photography carries the colour;** the UI stays neutral.
-- **The brand's primary accent never goes on an upsell,** paid add-on or retention offer (`commands/colour.md`).
-- **Image dimensions are set** so nothing shifts as images load.
-
-## Accessibility
-- The European Accessibility Act has applied to EU e-commerce since June 2025. Treat WCAG AA as the minimum.
+- **Cart:** editable quantities, full totals with tax and shipping; an empty cart offers recently viewed items.
+- **Checkout:** guest checkout, express pay first, then `registers/flow.md` for the form. A review step before the order. The order button says it commits to pay ("Place order and pay", "Pay now"), the total beside it in the action bar's summary slot. Legally required wording is never shortened.
+- **True urgency is a decision number:** "3 rooms at this rate, updated 14:14", "Order within 3 h for Friday delivery"; never "Only 1 left!". A cancellation says what ends and what stops: "Access ends Tue 6 May. No further charges."
+- **The primary accent never goes on an upsell,** paid add-on or retention offer.
+- **Image dimensions set** so nothing shifts.
+- **EU:** the European Accessibility Act applies to e-commerce since June 2025; WCAG AA is the minimum.
 
 ## Tells to avoid
-- An autoplay hero carousel.
-- "Shop now" over stock photos.
-- Quick-view modals everywhere.
-- Hover-only add to cart.
-- A newsletter popup on first visit.
+- An autoplay hero carousel; "Shop now" over stock photos.
+- Quick-view modals everywhere; hover-only add to cart; a newsletter popup on first visit.

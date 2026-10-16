@@ -25,7 +25,7 @@ The eyebrow restates the obvious, the sentence narrates the card, and the reassu
   <div className="progress-label">{done} of {total} tasks done</div>  {/* 11–12px, muted, end-aligned */}
   <Progress value={done} max={total} aria-label={`${done} of ${total} tasks done`} />
 </div>
-// …in a narrow row the label drops and the bar stays (fit.md: meta drops first)
+// …in a narrow row the label drops and the bar stays (meta drops first: rules/layout.md)
 <Progress value={done} max={total} aria-label={`${done} of ${total} tasks done`} />
 
 // Big aggregate counts tell nothing: "388 unread notifications" becomes
@@ -113,4 +113,20 @@ Before: a chat bubble saying "I've analysed 14 documents and updated
 After:  the change is marked in the report itself, with Keep and Undo
         on it. One line in the chat: "Filled in section 3 from the
         March audit."
+```
+
+## 10. Rebuild from a spec, don't renovate
+```text
+Before: a 600-line OrdersPage with three filter rows, inline styles,
+        a hand-rolled modal and 14 patches. The agent edits it in place:
+        fixes spacing, adds a fourth filter, wraps it all in one more card.
+After:  a ≤10-line spec, then a fresh screen from kit parts:
+          Job: find the order a customer is asking about, fix it.
+          Layout: shell-sidebar › list-peek.
+          Columns: customer, order no., status, total, date.
+          Group: needs action / in transit / done. Sort: newest.
+          Primary: New order. Row: status circle; rest in ⋯.
+          Detail: peek panel; refund via review sheet.
+          States: loading, empty, filtered empty, 200+, longest name.
+        The old page is deleted in the same change.
 ```

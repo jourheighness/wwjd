@@ -1,57 +1,43 @@
 # Glossary
 
+The owner's words, used literally. A drawer is not a rail.
+
 | Term | Meaning |
 |---|---|
-| Register | The kind of job a surface does (Persuade, Editorial, Operate…). It is chosen per surface, not per product |
+| Register | The job a surface does (Persuade, Operate…), chosen per surface, not per product |
 | Surface | A page, screen or pane being worked on |
-| Region | A unit that gets its own action hierarchy: a card, row, toolbar, dialog, page header or pane |
-| Kit | The project's shared component library and its tokens |
-| Workshop | The place components are shown in isolation, with their states: Storybook, Ladle, Cosmos |
-| Spec | The approved design being built: a mockup, Figma frame, comparison page or recorded decision |
-| Decision log | Where the project records dated design decisions (`docs/decisions/`, `DESIGN.md` named rules) |
-| Profile | The user's personal settings at `~/.config/wwjd/profile.md`: workflow and locale only, never design rules |
+| Region | A unit with its own action hierarchy: card, row, toolbar, dialog, page header, pane |
+| Kit | The project's shared components and tokens |
+| Workshop | Where components show in isolation with their states (Storybook, Ladle) |
+| Spec | The approved design being built: mockup, Figma frame, comparison page, recorded decision |
+| Decision log | Where the project records dated design decisions (`docs/decisions/`, DESIGN.md named rules) |
+| User profile | `$WWJD_PROFILE` or `~/.config/wwjd/profile.md`: workflow and locale only. Not `data-profile` (the type/rhythm preset in `kit/base.css`) |
+| Contrast matrix | Every text token against every background it's declared on, each AA |
+| Scrim | A neutral shade between an image and the text on it |
+| Golden file | A screen the project names as the one to imitate |
 | Chrome | A container's visible surface: background, border, padding |
 | Bleed / hang | Chrome extending into the gutter so the content keeps the column edge |
-| Ground / ink / accent | The base background, the text colour, and the one emphasis colour |
-| Tone step | A small lightness difference between surfaces, used instead of a border or shadow |
-| Scrim | A neutral shade between an image and the text on it, for legibility |
-| Signal | Colour or a mark that means something needs attention |
-| Act / attend | The two attention levels: act (do something now) and attend (keep an eye on it). Everything else is calm |
-| Needs-you signal | A mark saying "something here needs you" (often a dot instead of a count); it must stay findable at a glance |
-| Calm | The quiet default state of anything that needs no one; it carries no signal colour |
+| Ground / ink / accent | Base background, text colour, the one emphasis colour |
+| Tone step | A small lightness difference between surfaces, instead of a border or shadow |
+| Act / attend / calm | Do something now / keep an eye on it / needs no one, no signal colour |
+| Needs-you signal | A mark that something needs you (often a dot, not a count); findable at a glance |
 | Christmas tree | Colour on everything, so nothing stands out |
-| Status zoo | Too many distinct statuses; boil them down to the ones a person acts on |
-| Machinery receipts | UI that reports the system's process ("read 14 files", "step 3 of 7") instead of its result |
+| Status zoo | Too many statuses; boil down to the ones a person acts on |
+| Machinery receipts | UI reporting the process ("read 14 files") instead of the result |
 | Tame | A minimal bolt-on onto the old design where a redesign was needed |
-| Long-familiar surface | A high-trust surface people have used daily for years; behaviour changes before appearance does |
-| Near-miss | A value close to a token without matching it (ΔE2000 < 6, or 1–2px off the scale); snapped, never kept |
-| Contrast matrix | Every text token against every background it is declared on, each checked for AA |
-| Workaround feature | A feature that exists to route around a failing area: a "classic view" toggle, a promoted "Recently visited" |
-| Must-requirement | A pass/fail condition, one per concern, that every explore variant must meet |
-| Score cap | In critique: Visual and Craft cap at 6 while Removal or Hierarchy is under 5 |
-| Path count | The number of decisions from landing to result |
-| Champion | The person inside a buying organisation who argues for the purchase |
-| Slop | The generic look of generated UI (see `bans.md`) |
+| Long-familiar surface | A high-trust surface used daily for years; behaviour changes before looks |
+| Near-miss | A value close to a token without matching it (ΔE2000 < 6, 1–2px off scale); snap it |
+| Workaround feature | A feature routing around a failing area: a "classic view" toggle, a promoted "Recently visited" |
+| Must-requirement | A pass/fail condition every explore variant must meet |
+| Path count | Decisions from landing to result |
 | Drawer | An overlay anchored to an edge, opened on demand |
-| Rail | A narrow, persistent column of icons for navigation |
-| Panel / pane | A docked, often resizable region of the layout |
-| Sheet | A modal surface that slides from the bottom or an edge |
+| Rail | A narrow, persistent column of navigation icons |
+| Panel / pane | A docked, often resizable layout region |
+| Sheet | A modal surface sliding from the bottom or an edge (detents: its snap heights) |
 | Tray | A temporary strip holding queued or pending items |
 | Popover | A small floating surface anchored to its trigger |
-| Detents | The heights a native sheet snaps to (e.g. medium, large) |
-| Review sheet | The step before money, legal commitments, account deletion or sending to others: says what will happen, with real choices, never yes/no |
-| Thumb zone | The part of a phone screen a thumb reaches one-handed; the bottom area |
-| Placeholder | The hint text inside an empty input. Never a label |
-| Example content | Seeded, realistic sample data shown on first use; not the input placeholder |
-| Kicker / dek / lede | Editorial furniture: the section label above a headline, the subheading under it, the opening paragraph |
-| Idea sentence | In Persuade: "On this page [thing from the inventory] becomes [device]" |
-| Copy deck | The page's full written content, drafted before markup |
+| Review sheet | The step before money, legal commitments, account deletion or sending to others: real choices, never yes/no |
 | Signature move | The one memorable element a design spends its boldness on |
-| Orchestrated moment | A single deliberate motion sequence on a page, instead of motion everywhere |
-| Tell | A detail that gives away generated or template UI |
-| Drift lane | Where generated UI goes after its first default is banned (`bans.md`) |
-| Avoidance aesthetic | Everything removed and nothing designed: a thin grey wireframe |
-| Diátaxis | The docs model of four page types: tutorial, how-to, reference, explanation |
-| APG | The WAI-ARIA Authoring Practices Guide: keyboard and ARIA patterns for widgets |
-| L1–L4 | The disclosure layers: always visible, one click, behind ⋯ or ⌘K / Ctrl+K, shortcuts and configuration |
-| Removal pass | A sweep that deletes what doesn't earn its place (`commands/distill.md`) |
+| Tell / slop | A detail that gives away generated UI / the generic generated look (`bans.md`) |
+| Drift lane | Where generated UI goes after its first default is banned |
+| Avoidance aesthetic | Everything removed, nothing designed: a thin grey wireframe |

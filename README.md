@@ -1,85 +1,83 @@
 # wwjd: What Would Johannes Do
 
-A design skill for coding agents. When an agent designs, builds or reviews an interface, wwjd tells it how Johannes would do it: what to cut, where actions go, how layouts align and resize, which numbers to show, and how to check the result before handing it over.
+Design skills for coding agents. When an agent builds, simplifies or reviews an interface, wwjd tells it how Johannes would do it: what to cut, where actions go, how layouts align and resize, which facts to show, and how to check the result without slowing the loop.
 
-It covers landing pages, editorial and docs, product apps, dashboards, chat and AI interfaces, commerce, forms and onboarding, and mobile. It works in Claude Code, Codex and any agent that reads skill files.
+Works in Claude Code, Codex and any agent that reads skill files.
 
-## What it does
-
-- **Picks the rules for the job.** A landing page, a dashboard and a checkout follow different rules; the agent chooses by the surface it is working on.
-- **Runs one focused command at a time:** explore, build, critique, audit, polish, distill, prioritize, clarify, layout, fit, typeset, colour, animate, harden, adapt.
-- **Holds a floor nothing overrides:** accessibility, layout stability, no dark patterns, real data.
-- **Checks its own work:** a static lint (`ui-check.mjs`), screenshots at desktop and phone (`shoot.sh`), and a resize check (`fit-check.mjs`).
-- **Respects the project:** the repo's design system and recorded decisions come first, and corrections you give become rules in the project.
+## Three skills, one plugin
+- **wwjd:** structure, behaviour, copy and workflow. Opinionated.
+- **wwjd-look:** palette, type face, shape and depth from real references; writes `DESIGN.md` and tokens under wwjd's variable names. Neutral, so impeccable, taste or Stitch can replace it.
+- **wwjd-animation:** motion themes and micro-interactions; `motion.css` on the same token names.
 
 ## What's inside
-
 ```
 plugins/wwjd/
   skills/wwjd/
-    SKILL.md          the floor, the rules, the register and command routers, the handover check
-    registers/        persuade · showcase · editorial · reference · operate · monitor ·
-                      converse · transact · flow · native (platform overlay)
-    commands/         explore · build · critique · audit · polish · distill · prioritize ·
-                      clarify · layout · fit · typeset · colour · animate · harden · adapt
-    references/       bans (never this, do that instead) · faux-pas catalogue ·
-                      before/after examples · glossary
-    scripts/          ui-check.mjs (static lint) · shoot.sh (screenshots) · fit-check.mjs (resize check)
-  agents/wwjd-critic.md   cold, read-only design review (Claude Code)
-  hooks/                  prompt hook that routes UI work to the skill (Claude Code)
+    SKILL.md        entry, precedence, floor, rules, registers, the loop (always loaded, <7.5KB)
+    commands/       start · build · simplify · review · explore · audit
+    rules/          layout · actions · states · copy · visual (the how, read by topic)
+    registers/      persuade · showcase · editorial · reference · operate · monitor ·
+                    converse · transact · flow · native (platform overlay)
+    references/     product-types · layouts · ai · bans · examples · baseline · glossary
+    kit/            tokens.css (look) · base.css (profiles, components, fit) · layouts.css
+    scripts/        wwjd.mjs (status, lint, baseline, debt map) · render.mjs (screenshots, fit, runtime)
+  skills/wwjd-look/       the look
+  skills/wwjd-animation/  motion
+  agents/wwjd-critic.md   cold review, on request only
+  hooks/                  route.sh (points UI prompts at wwjd) · check.sh (lints each edited UI file)
   evals/                  trigger and quality evals for `claude plugin eval`
+docs/research/            archived research (faux-pas catalogue, layouts, look); not shipped in the skill
 ```
 
-- **Registers:** the agent picks the rules for the kind of job a surface does. A dev tool's landing page follows Persuade, while its app follows Operate.
-- **Commands:** each loads one focused file, so the agent reads only what the task needs.
+## How it runs
+1. **Entry, once per session:** `wwjd.mjs status` prints the stage (`scratch`, `kit`, `messy`), the baseline files, the kit, Storybook, golden and legacy files. The agent reads what it lists.
+2. **Route:** six verbs. `start` sets up a baseline, `build` builds or rebuilds, `simplify` removes and reorders, `review` returns a verdict and ranked findings, `explore` shows ~5 structure variants, `audit` maps the debt.
+3. **Loop:** show the work at once, react, adjust. A hook lints each edited UI file silently; one screenshot per handover; the full matrix only at milestones; the critic only when asked.
 
 ## Install
-
-**Claude Code** (skill, critic agent and routing hook):
+**Claude Code:**
 ```bash
 claude plugin marketplace add <this repo's git URL or local path>
 claude plugin install wwjd@wwjd
 ```
-
-**Codex, Cursor and other agents:** copy or symlink `plugins/wwjd/skills/wwjd` into the agent's skills folder: `~/.agents/skills/wwjd` for Codex, or `.agents/skills/wwjd` inside a repo. Agents can skip skills, so add this to your `AGENTS.md` as a backstop:
-
+**Codex and other agents:** copy or symlink each folder under `plugins/wwjd/skills/` into the agent's skills folder (`~/.agents/skills/` or `.agents/skills/` in a repo). There are no hooks there, so the skill runs the lint itself before handover. Backstop in `AGENTS.md`:
 ```markdown
 ## UI work
-Before designing, building or reviewing any interface, read the wwjd skill
-(`~/.agents/skills/wwjd/SKILL.md` or `.agents/skills/wwjd/SKILL.md`) and follow it.
+Before designing, building or reviewing any interface, read the wwjd skill and follow it.
 ```
 
-## Make it yours: the profile
-
-The skill reads `~/.config/wwjd/profile.md` (or `$WWJD_PROFILE`) when it exists. It covers workflow and locale only:
-- your locale and copy conventions
-- your preview and review workflow
-
-Design rules don't go in the profile. Project rules go in the project's decision log or `DESIGN.md`; a rule that should hold across projects is proposed as a change to this skill.
-
-**Precedence:**
-1. The floor (accessibility, honesty, stability).
-2. The project's own decisions and `DESIGN.md`.
-3. The wwjd rules; the more specific file wins (register and command files refine `SKILL.md` for their scope).
-4. Your profile, for workflow and locale only; it never overrides a design rule.
-
-## ui-check
-
-```bash
-node plugins/wwjd/skills/wwjd/scripts/ui-check.mjs [paths] --register operate [--json]
-```
-- **Default scope:** with no paths, it scans files changed against HEAD.
-- **Severity per project:** set it in `.wwjd.json`:
+## Per project
+- **`.wwjd.json`** (committed, repo-relative paths only):
   ```json
-  { "register": "persuade", "locale": ["sv", "en"], "rules": { "gradient": "off", "eyebrow": "error" } }
+  { "register": "operate", "locale": ["sv", "en"], "kitDirs": ["packages/ui"],
+    "golden": ["src/pages/Orders.tsx"], "legacy": ["src/old/**"],
+    "storybook": "pnpm storybook", "rules": { "gradient": "off" } }
   ```
-- **Locale:** English-only copy rules (the dash rule) run only when every listed locale is English (default `["en"]`).
-- **One-off exceptions:** ignore a single line with `ui-check-ignore: <reason>`.
+  Never preview URLs or hosts: use the `WWJD_PREVIEW` env var or an untracked `AGENTS.local.md`.
+- **`.wwjd-baseline.json`** (committed): `wwjd.mjs check --baseline` writes it. The hook and `check --new` then report only errors and new warnings, and re-running `--baseline` only lowers counts. Delete it to accept new debt on purpose.
+- **`.wwjd/`** (gitignored): screenshots, references, look.json.
+- **One-off exceptions:** a trailing `wwjd-ignore: <reason>` comment on the line.
+- **Hook off for a project:** `WWJD_HOOK_CHECK=0`.
+
+## Your profile
+`~/.config/wwjd/profile.md` (or `$WWJD_PROFILE`): workflow and locale only, never design rules. Project rules go in the decision log or `DESIGN.md`; a rule for every project is proposed as a change to this skill.
+
+**Precedence:** the floor › the project's DESIGN.md and decision log › wwjd (the more specific file wins) › your profile.
+
+## Scripts
+```bash
+node plugins/wwjd/skills/wwjd/scripts/wwjd.mjs status
+node plugins/wwjd/skills/wwjd/scripts/wwjd.mjs check [paths] [--register operate] [--new] [--baseline] [--json]
+node plugins/wwjd/skills/wwjd/scripts/wwjd.mjs audit
+node plugins/wwjd/skills/wwjd/scripts/render.mjs shoot <url|file> [--one]
+node plugins/wwjd/skills/wwjd/scripts/render.mjs fit <url> [--selector css]
+node plugins/wwjd/skills/wwjd/scripts/render.mjs runtime <url>
+```
+`wwjd.mjs` needs Node 20.10+ and nothing else. `render.mjs` needs Playwright in the project (`npm i -D playwright`), or `PW_EXE` pointing at an existing Chromium.
 
 ## Evals
-
 ```bash
 cd plugins/wwjd
-claude plugin eval . --case 'pos-*' --case 'neg-*'      # does the skill trigger, and only on UI work
-claude plugin eval . --case 'cleanup-card' --scaffold   # does it change the output
+claude plugin eval . --case 'pos-*' --case 'neg-*'          # triggers on UI work, and only there
+claude plugin eval . --tag quality --scaffold                # changes the output
 ```

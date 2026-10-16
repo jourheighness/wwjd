@@ -1,6 +1,7 @@
 {
   "name": "wwjd",
-  "version": "0.4.0",
-  "description": "What Would Johannes Do: an opinionated UI/UX rule set and design workflow. One skill, a cold design critic agent, and a prompt hook that routes UI work to the skill.",
-  "author": { "name": "Johannes Carlsten" }
+  "version": "0.5.0",
+  "description": "What Would Johannes Do: opinionated UI/UX rules and workflow. Three skills (wwjd for structure, behaviour and copy; wwjd-look for the look; wwjd-animation for motion), a cold critic agent on request, a prompt hook that routes UI work, and an auto-lint hook after UI edits.",
+  "author": { "name": "Johannes Carlsten" },
+  "skills": "./skills/"
 }

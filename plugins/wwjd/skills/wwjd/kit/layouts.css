@@ -1,0 +1,100 @@
+/* layouts.css: page and pane layouts; copy, don't read. Loads after tokens.css and base.css (which sets --sidebar-w --rail-w
+   --list-w --inspector-w --toc-w --header-h --page-margin --gutter --measure --container --space-*). Entries: references/layouts.md.
+   .shell is container `shell`, its main pane container `main`; app layouts query `main`, pages use viewport queries.
+   An area absent at a width is display:none here and mounted in a Drawer/Sheet by the kit. */
+
+/* shell-sidebar: nav → rail <1024 → Drawer <768. Inspector or copilot pushes from 1280, Drawer below */
+.shell { container: shell / inline-size; display: grid; block-size: 100dvh;
+  grid-template: "nav main inspector" minmax(0, 1fr) / var(--sidebar-w) minmax(0, 1fr) auto; }
+.shell > .nav { grid-area: nav; min-block-size: 0; overflow: auto; }
+.shell > :is(main, .main) { grid-area: main; container: main / inline-size; min-block-size: 0; overflow: auto; scrollbar-gutter: stable; }
+.shell > .inspector { grid-area: inspector; inline-size: var(--inspector-w); min-block-size: 0; overflow: auto; border-inline-start: 1px solid var(--border); }
+@media (width < 1024px) { .shell { --sidebar-w: var(--rail-w); } }
+@media (width < 1280px) { .shell > .inspector { display: none; } }
+@media (width < 768px) { .shell { grid-template: "main" minmax(0, 1fr) / minmax(0, 1fr); } .shell > .nav { display: none; } }
+
+/* Container + marketing grid 4/8/12: children set --span (12) and --span-md (8); phones stack */
+.container { inline-size: min(100% - var(--page-margin) * 2, var(--container)); margin-inline: auto; }
+.grid-12 { display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: var(--space-group) var(--gutter); }
+.grid-12 > * { grid-column: 1 / -1; }
+@media (width >= 600px) { .grid-12 { --cols: 8; } .grid-12 > * { grid-column: span var(--span-md, 8); } }
+@media (width >= 1024px) { .grid-12 { --cols: 12; } .grid-12 > * { grid-column: span var(--span, 12); } }
+
+/* Tiles: cards and dashboard panels; reflow without breakpoints */
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--tile-min, 18rem)), 1fr)); gap: var(--gutter); }
+
+/* inbox-3pane: context → Drawer <84rem, views → list-header dropdown <66rem, one pane <48rem ([data-open] = thread) */
+.inbox { display: grid; block-size: 100%; grid-template-areas: "views list thread ctx";
+  grid-template-columns: 14rem var(--list-w) minmax(30rem, 1fr) 18rem; }
+.inbox > * { min-block-size: 0; overflow: auto; }
+.inbox > .views { grid-area: views; } .inbox > .list { grid-area: list; }
+.inbox > .thread { grid-area: thread; } .inbox > .context { grid-area: ctx; }
+@container main (width < 84rem) {
+  .inbox { grid-template-areas: "views list thread"; grid-template-columns: 14rem var(--list-w) minmax(0, 1fr); }
+  .inbox > .context { display: none; } }
+@container main (width < 66rem) {
+  .inbox { grid-template-areas: "list thread"; grid-template-columns: var(--list-w) minmax(0, 1fr); }
+  .inbox > .views { display: none; } }
+@container main (width < 48rem) {
+  .inbox { grid-template-areas: "pane"; grid-template-columns: minmax(0, 1fr); }
+  .inbox > .list { grid-area: pane; } .inbox > .thread { grid-area: pane; display: none; }
+  .inbox[data-open] > .thread { display: block; } .inbox[data-open] > .list { display: none; } }
+
+/* list-peek: the peek pushes the list; <64rem it overlays as a drawer */
+.list-peek { display: grid; block-size: 100%; grid-template-areas: "list peek"; grid-template-columns: minmax(0, 1fr) auto; }
+.list-peek > * { min-block-size: 0; overflow: auto; }
+.list-peek > .list { grid-area: list; }
+.list-peek > .peek { grid-area: peek; inline-size: clamp(22.5rem, var(--peek-w, 28rem), 50cqi); border-inline-start: 1px solid var(--border); }
+@container main (width < 64rem) {
+  .list-peek > .peek { position: fixed; inset-block: 0; inset-inline-end: 0; z-index: var(--z-modal); inline-size: min(28rem, 100%);
+    background: var(--surface-3); box-shadow: var(--shadow-2); } }
+
+/* record-page: head · body · side (sticky); narrow: side stacks above the body */
+.record { display: grid; gap: var(--space-6); align-items: start; padding: var(--page-margin);
+  grid-template-areas: "head head" "body side"; grid-template-columns: minmax(0, 1fr) 18rem; }
+.record > .head { grid-area: head; } .record > .body { grid-area: body; }
+.record > .side { grid-area: side; position: sticky; top: calc(var(--header-h) + var(--space-4)); }
+@container main (width < 48rem) {
+  .record { grid-template-areas: "head" "side" "body"; grid-template-columns: minmax(0, 1fr); }
+  .record > .side { position: static; } }
+
+/* settings: .setting = label at the start, control at the end. <48rem sub-nav is an index route; <30rem control stacks */
+.settings { display: grid; align-items: start; column-gap: var(--space-8); padding: var(--page-margin);
+  grid-template-areas: "sub body"; grid-template-columns: 14rem minmax(0, 45rem); }
+.settings > .subnav { grid-area: sub; position: sticky; top: var(--space-4); } .settings > .body { grid-area: body; }
+.setting { display: grid; grid-template-columns: minmax(12ch, 1fr) auto; column-gap: var(--space-4); align-items: start; padding-block: var(--space-3); }
+@container main (width < 48rem) {
+  .settings { grid-template-areas: "body"; grid-template-columns: minmax(0, 1fr); } .settings > .subnav { display: none; } }
+@container main (width < 30rem) { .setting { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-2); } }
+
+/* docs: contents → collapsible bar <72rem; nav → Drawer <50rem */
+.docs { display: grid; column-gap: var(--gutter); grid-template-areas: "nav main toc";
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr) var(--toc-w); }
+.docs > nav { grid-area: nav; } .docs > .toc { grid-area: toc; }
+.docs > main { grid-area: main; inline-size: min(45rem, 100%); padding-inline: var(--page-margin); }
+.docs > :is(nav, .toc) { position: sticky; top: var(--header-h); max-block-size: calc(100dvh - var(--header-h)); overflow: auto; }
+@media (width < 72rem) {
+  .docs { grid-template-areas: "nav main"; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); } .docs > .toc { display: none; } }
+@media (width < 50rem) {
+  .docs { grid-template-areas: "main"; grid-template-columns: minmax(0, 1fr); } .docs > nav { display: none; } }
+
+/* article: <article class="breakout flow article"> (base.css lines + rhythm). Sidenotes in the margin from 80rem */
+.article > .sidenote { color: var(--text-2); font-size: var(--text-caption); line-height: var(--lh-caption); }
+@media (width >= 80rem) {
+  .article > .sidenote { grid-column: content-end / full-end; max-inline-size: 16rem; margin-block-start: 0; margin-inline-start: var(--space-8); } }
+
+/* wizard: top · step · sticky bar (summary start, primary end). .with-summary adds a column from 64rem */
+.wizard { display: grid; min-block-size: 100dvh; justify-content: center; grid-template-areas: "top" "body" "bar";
+  grid-template-rows: auto 1fr auto; grid-template-columns: min(40rem, 100% - var(--page-margin) * 2); }
+.wizard > .top { grid-area: top; } .wizard > .body { grid-area: body; } .wizard > .summary { display: none; }
+.wizard > .bar { grid-area: bar; position: sticky; bottom: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center; gap: var(--space-4); padding-block: var(--space-3); background: var(--surface-1); }
+@media (width >= 64rem) {
+  .wizard.with-summary { grid-template-areas: "top top" "body sum" "bar sum"; grid-template-columns: minmax(0, 40rem) 22rem; column-gap: var(--space-12); }
+  .wizard.with-summary > .summary { display: block; grid-area: sum; align-self: start; position: sticky; top: var(--space-6); } }
+
+/* auth-card: card ~12dvh from the top; true centre jumps with the keyboard */
+.auth { display: grid; min-block-size: 100dvh; grid-template-rows: auto 1fr auto; justify-items: center; padding: var(--space-4) var(--page-margin); }
+.auth > :is(header, footer) { justify-self: stretch; }
+.auth > .card { inline-size: min(24rem, 100%); align-self: start; margin-block-start: 12dvh; }
+@media (width < 30rem) { .auth > .card { padding: 0; border: 0; background: none; margin-block-start: var(--space-8); } }

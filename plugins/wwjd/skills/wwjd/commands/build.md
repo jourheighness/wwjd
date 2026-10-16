@@ -1,33 +1,30 @@
-# build: implement an approved design
+# build: new, extend or rebuild
 
-The approved mockup, Figma frame or recorded decision is the spec. Match it exactly, list every difference, never improvise. "It looked better in the mockup" is the failure this command exists to prevent.
+One command for every build. The spec (an approved variant, mockup, Figma frame or recorded decision) is matched exactly: every difference listed, nothing improvised. "It looked better in the mockup" is the failure this prevents.
+
+## Modes
+- **New:** golden files first (`wwjd.mjs status` lists them). Copy their structure, imports and naming; never a `legacy` file.
+- **Extend:** the same job reuses the same component; a missing look becomes a kit variant with its story.
+- **Rebuild:** a messy screen in scope is rebuilt, not renovated. Write a ≤10-line spec (job, register, layout id from `references/layouts.md`, regions, primary action per region, states), show it, build it fresh on the kit, then replace the old one. Pair: `references/examples.md`.
 
 ## Before coding
-1. **Inventory the spec:** every region, component, string, spacing, state and interaction. For Figma, read the whole frame and re-fetch it each session.
-2. **Map each part to a kit component.** A missing part becomes a new kit component or variant, with a workshop story showing its states. Never style it inline on the page.
-3. **Re-read the decision log** so nothing decided earlier is lost.
+1. **Inventory the spec:** regions, components, strings, spacing, states, interactions. Figma: read the whole frame, re-fetch each session.
+2. **Map every part to a kit component.** Missing → new kit component or variant plus a story with its states.
+3. **Grep the decision log** for the surface's names, so nothing decided is lost.
 
 ## While coding
-- **Pages compose components and add no styling of their own:** no utility soup, no hex values, no overrides at the call site. A page that needs a different look gets a variant in the component.
-- **When an existing component inside your scope is hand-rolled or does bad UX,** fix it in the kit; don't copy it. Outside your scope, flag it.
-- **When a better pattern replaces an old one,** replace it everywhere within the agreed scope in the same change.
-- **Audit third-party UI at import** (shadcn, Magic UI, React Bits and other registries): reduced-motion handling, cursor-reactive effects, auto-loops, contrast. Exclude what fails; never import it to patch later.
-- **Seed realistic data** for first use, one item, many, the longest text, and empty.
-- **Build the intended flow, not the current limits.** Every step, state and transition of the approved design ships, even where the backend can't do it yet: put a small named adapter in front (local stub, fixture or optimistic implementation, marked `// TODO(api): …`) and keep it working end to end. Never simplify the flow or fall back to a worse pattern to fit the API. Wiring the real backend waits, or ask "build now or later?".
+- **Kit first:** pages compose components and add no styling: no utility soup, hex or call-site overrides. A different look is a variant.
+- **A bad kit component is fixed in the kit,** with its story, never patched at the call site. Outside scope: flag it.
+- **A better pattern replaces the old one** everywhere in the agreed scope, in the same change.
+- **Third-party UI** (shadcn, Magic UI, React Bits, other registries): audit at import for reduced motion, cursor-reactive effects, auto-loops, contrast. Exclude what fails.
+- **Seed realistic data:** first use, one, many, longest text, empty.
+- **The intended flow ships whole:** every step, state and transition, behind a small named adapter (stub, fixture or optimistic) marked `// TODO(api): …` where the backend can't yet. Never the worse pattern to fit the API.
 
-## Verify before saying done
-1. **Paired screenshots** of the app and the spec in the same state:
-   - light and dark
-   - the primary width (1440 for desktop tools, 390 for mobile-first registers) and the other end
-   - Look at them yourself, e.g. with `scripts/shoot.sh`.
-2. **Difference list:** every visible difference is either fixed or flagged. A difference caused by real data (longer text, missing values) goes to the user as a decision; don't silently redesign.
-3. **Static check:** run `scripts/ui-check.mjs --register <register>` (in this skill's folder) on the changed files.
-4. **Live check:** confirm the change is live where the user will look (preview, workshop, deploy). Hand over the link, with every `TODO(api)` mock and what the backend must provide.
-5. **Cold review:** for larger builds, a reviewer that did not write the code compares it against the spec (in Claude Code, the `wwjd-critic` agent). It runs in the background after the handover; never hold the work back for it.
+## Verify (tiers: SKILL.md loop)
+- **Auto:** the hook's `wwjd.mjs check`. Fix each finding or justify it with `wwjd-ignore: <reason>`.
+- **Each handover:** `render.mjs shoot <url> --one`, read it yourself; with a spec, compare the same state and list every difference: fixed, or flagged. A difference caused by real data (longer text, missing values) is the user's decision, never a silent redesign.
+- **Milestone:** `render.mjs shoot` (primary + other width × light/dark), `render.mjs fit` for anything that resizes, `render.mjs runtime`, empty and longest-text states.
+- **Live:** confirm the change is where the user will look (preview, workshop, deploy). Hand over the link and the `TODO(api)` list with what the backend must provide; ask "build now or later?".
 
-## Delegating a build
-The brief says "match exactly, list differences, never improvise". It names:
-- the spec link
-- the kit components to use
-- the states to cover
-- the paired-screenshot check
+## Delegating
+The brief says "match exactly, list differences, never improvise" and names the spec, the kit components, the states and the screenshot check.

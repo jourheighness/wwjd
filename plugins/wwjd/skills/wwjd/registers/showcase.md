@@ -1,13 +1,14 @@
 # Showcase: portfolio, case study, gallery, agency
 
-Success: the visitor experiences the work. The interface recedes so the work can lead.
+Profile: `data-profile="marketing"`. Colour: identity, framing the work and never competing with it; a neutral ground when the work is colourful.
+
+Success: the visitor experiences the work; the interface recedes. Layouts: `case-study`, `feed`.
 
 - **The work leads** from the first viewport: no preloader, no manifesto before the first piece.
-- **Crops:** one crop system. Never crop the work for decoration. Show the work at a size where its detail reads.
-- **Index views** (a list with hover preview, a grid, a full-bleed sequence) stay scannable: title, discipline, year, one line at most.
-- **Case studies read as Editorial** (`editorial.md`): a real measure, captions with credit, the problem → move → result told with real artefacts.
-- **Navigation:** next and previous project, and the way back to the index restores the scroll position.
-- **Motion:** at most one signature transition between index and piece. Never cursor-follow blobs, custom cursors or marquees of skills.
-- **Colour and type** frame the work and never compete with it. A neutral ground is right when the work is colourful.
-- **Performance:** images in modern formats with set dimensions and lazy loading below the fold. No layout shift as images arrive.
+- **One crop system;** never crop the work for decoration. Show it at a size where its detail reads.
+- **Index views** (list with hover preview, grid, full-bleed sequence) stay scannable: title, discipline, year, one line at most.
+- **Case studies read as Editorial** (`registers/editorial.md`): problem → move → result, told with real artefacts, captions with credit.
+- **Navigation:** next and previous project; back to the index restores scroll.
+- **Motion:** `wwjd-animation` skill. At most one signature transition between index and piece; never cursor-follow blobs, custom cursors or skill marquees.
+- **Images:** modern formats, set dimensions, lazy below the fold.
 - **Contact:** one obvious way to reach the person or studio, on every page.

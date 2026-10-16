@@ -1,47 +1,37 @@
-# explore: new screens, flows and pages
+# explore: options for something new
 
-Use explore for anything that doesn't exist yet, or when the user asks to see options. Small fixes skip it.
+For anything that doesn't exist yet, or "show me options". Small fixes skip it. Structure only: the look comes from `wwjd-look` (3 look variants); here ~5 structure variants.
 
 ## 1. Research before drawing
-- **Find the best current examples of this exact job:** real products and sites people use, at the top of this register and category. Not the domain's dated look.
-- **Look for a mature package** (component, editor, picker, chart, docs framework) before inventing one.
-- **Workaround features in the current product are evidence** (`critique.md`): each names a failing area to research first.
-- **Report a few named references,** each with the move to steal. Keep verified facts separate from inference.
+- **The best current examples of this exact job:** real products at the top of this register and category, not the domain's dated look. A few named references, each with the move to steal; verified facts apart from inference.
+- **A mature package** (editor, picker, chart, docs framework) before inventing one.
+- **Workaround features** in the current product (`review.md`) name the failing area to research first.
+- **Layout candidates:** `references/layouts.md` index; the verb → layout table in `registers/operate.md`.
 
-## 2. Plan before pixels (what you plan depends on the register)
-
+## 2. Plan before pixels
 | Register | Plan | Variants differ in | Render first |
 |---|---|---|---|
-| Persuade | inventory → argument → idea sentence → copy deck | art direction: composition, type system, colour proportions | hero at 1440 and 390, plus the hardest section |
-| Showcase | asset inventory | how the work is framed: index model, sequence, scale | first viewport plus one case study |
-| Editorial | typographic system: text face, display face, measure, grid, furniture | type specimen on a real article | a page with a table, footnote, figure and pull quote, on a phone |
-| Reference | page-type map and nav tree; search model | navigation model and density | the hardest page: an API reference with code tabs |
-| Operate | flow map A → B; kit inventory | organisation: nav model, pane split, what leads, density | the key screen with worst-case data |
-| Monitor | the questions each view answers, and a data inventory | which question leads; chart forms; density | the incident state and the empty state |
-| Converse | storyboard: empty → first answer → stream → tool step → approval → error → long thread | placement (full page, side panel, inline, command bar); how agent work shows | the storyboard as clickable frames |
-| Transact | buy path: listing → product page → cart → checkout | gallery model and buy box | the product page at 390 |
-| Flow | step map (each step's single question); a list of fields the system can derive | chunking: one page, stepper, progressive | the longest step in its error state, at 390 |
+| Persuade | inventory → argument → idea sentence → copy deck | composition, type system, colour proportions | hero at 1440 and 390 + the hardest section |
+| Showcase | asset inventory | framing: index model, sequence, scale | first viewport + one case study |
+| Editorial | text face, display face, measure, grid, furniture | type specimen on a real article | table, footnote, figure, pull quote, on a phone |
+| Reference | page-type map, nav tree, search model | navigation model, density | the hardest page (API ref with code tabs) |
+| Operate | flow map A → B, kit inventory | nav model, pane split, what leads, density | key screen with worst-case data |
+| Monitor | the questions each view answers, data inventory | which question leads, chart forms, density | incident state and empty state |
+| Converse | storyboard: empty → first answer → stream → tool step → approval → error → long thread | placement (page, side panel, inline, command bar), how agent work shows | the storyboard as clickable frames |
+| Transact | buy path: listing → product → cart → checkout | gallery model, buy box | product page at 390 |
+| Flow | step map (one question per step), fields the system can derive | chunking: one page, stepper, progressive | longest step in its error state at 390 |
 
-Check every flow for dead ends and circular paths before drawing it.
-
-**Must-requirements before variants:** write them down, one per concern, before drawing anything.
+- Check every flow for dead ends and circles before drawing it.
+- **Must-requirements first,** one per concern, written down before any variant.
 
 ## 3. Variants
-- **How many:** about 5, labelled A–E, and genuinely different in structure, not in tint.
-  - **Persuade and Showcase:** each variant pushes further than the last, never cleaner.
-  - **Operate, Monitor and Reference:** variants change the organisation; they don't add decoration.
-- **The intended flow, not the current limits:** prototypes show every step, state and transition of the right experience, whatever the API can do today. Note what would need backend support.
-- **Real material:** the project's tokens and type, real component shapes, realistic messy data (long names, one item, many, empty).
-- **Context:** show each variant where it lives, at the sizes it appears, next to its neighbours.
-- **States:** light and dark when the work is visual; interactive when the feel matters.
-- **One comparison page:**
-  - It can be a shareable prototype (an HTML file, a hosted HTML page (e.g. a Claude Artifact), a Storybook story, a sandbox).
-  - A letter and a short name per variant, with no explanatory prose on the page; reasoning goes in the message.
-  - Show screens on a neutral dark surround so the page's white doesn't distract.
-- **Test every variant against every must-requirement.** A variant that fails one is cut. A requirement no variant meets becomes the brief for a new variant.
-- **Before sharing:** run the handover check in SKILL.md on every variant. When a comparison page gets cluttered, start a fresh one with only the live candidates.
+- **About 5, A–E,** different in structure, never in tint. Persuade and Showcase: each pushes further than the last. Operate, Monitor, Reference: organisation changes, no decoration added.
+- **The intended flow, not today's API:** every step, state and transition; note what needs backend support.
+- **Real material:** the project's tokens and kit, realistic messy data (long names, one, many, empty), shown where it lives at its real sizes next to its neighbours. Light and dark when visual; interactive when the feel matters.
+- **One comparison page** (an HTML file, an Artifact, a story, a sandbox): a letter and a short name per variant, no prose on the page (reasoning goes in the message), screens on a neutral dark surround. Cluttered → a fresh page with only the live candidates.
+- **Each variant meets every must-requirement,** or it's cut. A requirement no variant meets is the brief for a new one.
+- **Before sharing:** `wwjd.mjs check` per variant. Lint only; the full checks wait for the milestone.
 
 ## 4. Picking
-- **The user picks and remixes by letter** ("A and D", "B everywhere"). Merge exactly what they named, and keep what they liked while consolidating.
-- **Refine until approved.** The chosen variant approves its components.
-- **Record the approval** with its date and a link to the comparison page in the decision log. That page is now the spec for `build`.
+- **By letter:** "A and D", "B everywhere". Merge exactly what was named; keep what they liked while consolidating. Refine until approved.
+- **Record the approval** with date and comparison-page link in the decision log. That page is now the spec for `build`.

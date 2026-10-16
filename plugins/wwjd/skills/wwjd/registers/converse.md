@@ -1,63 +1,39 @@
 # Converse: chat, assistants, agent panels, copilots
 
-For AI behaviour beyond the chat surface (agents, approvals, autonomy, language, disclosure, memory) read `references/ai.md`.
+Profile: `data-profile="app"`. Colour: neutral; the content leads.
 
-Success: the person gets work done through dialogue and trusts what came back.
+Success: the person gets work done through dialogue and trusts what came back. This file is the chat surface; agent work, approvals, trust, disclosure, memory and AI language live in `references/ai.md`.
 
 ## States (design every one)
 | State | Behaviour |
 |---|---|
-| Empty | 3–4 specific starting suggestions; no welcome essay |
+| Empty | 3–4 specific starters; no welcome essay |
 | Submitted | Acknowledged within 100ms |
 | Streaming | Stop replaces Send |
 | Ready | Actions available |
-| Error | Inline retry; the person's input is kept |
-| Aborted | The partial answer is kept and marked as stopped |
+| Error | Inline retry; input kept |
+| Aborted | Partial answer kept, marked stopped |
 
-## Layout
-- **A reading column:** the thread is a column at a readable max width, centred in its pane.
-- **Messages:**
-  - The assistant's output is a document, not a bubble. Use reading type (about 16px, about 70ch) and the code-block rules from `reference.md`.
-  - The person's turns are compact and distinct.
-  - Messages arrive in order, one at a time, never two or three at once.
-- **Scroll:** on send, pin the person's message near the top and stream the answer below it without following the bottom. "Jump to latest" appears only if they scroll away. Never yank the scroll.
-- **Streaming without jank:** no per-token fades, and tables and code blocks don't reflow mid-stream.
+## Thread
+- **A reading column** at a readable max width, centred in its pane.
+- **Assistant output is a document, not a bubble:** reading type (~16px, ~70ch), code blocks as in `registers/reference.md`. The person's turns are compact and distinct.
+- **Order:** messages arrive one at a time, never two or three at once.
+- **Scroll:** on send, pin the person's message near the top and stream below without following the bottom. "Jump to latest" only if they scroll away. Never yank.
+- **No jank:** no per-token fades; tables and code don't reflow mid-stream.
+- **Announce** the finished message with `aria-live="polite"`, never each token.
 
 ## Composer
-- **Size:** autogrows to about 8 lines, never more than ~40% of the viewport, then scrolls inside.
-- **Keys:** on desktop Enter sends and Shift+Enter adds a line; on mobile Enter adds a line.
-- **Drafts and attachments:** the draft survives reload. Attachments show as chips.
-- **Context:** shown as one line at the top of the composer, only when present ("Replying to …"), with an × to clear it.
-- **Model and mode pickers** stay quiet.
-- **Focus** stays in the composer after sending.
-
-## Agent work
-- **Tool and agent steps:** one collapsed line each, expandable. Never a raw dump of chain-of-thought.
-- **Approvals** are real choices that say what will happen.
-- **Results land where they apply,** in the document, the code or the record, marked there with keep and undo. The chat says in one sentence what was done.
-- **Hide the machinery:**
-  - While work runs, one live status line ("Reading the March audit…") builds trust and perceived speed. It collapses or disappears once the result is in.
-  - No step counters or lasting receipts unless the person opens them.
+- Autogrows to ~8 lines, never past ~40% of the viewport, then scrolls inside.
+- Desktop: Enter sends, Shift+Enter adds a line. Mobile: Enter adds a line.
+- The draft survives reload; attachments are chips; focus stays after sending.
+- Context is one line on top only when present ("Replying to …" ×). Model and mode pickers stay quiet.
 
 ## Message actions
-- **The set:** copy, regenerate, and edit to branch, on hover or focus. On touch, a visible control (⋯); long-press only as a shortcut.
-- **Regenerated versions:** step through them with arrows; the "2 / 3" count sits in a tooltip.
-- **One shared menu** for every assistant message.
-
-## Trust
-- **Cite** sources inline, linked.
-- **Disclose AI** once on an AI-only surface (near the input), never on every message. Where AI and human content mix, mark each AI item (`references/ai.md`).
-- **Memory** is visible and editable.
-- **Never present guesses as facts.** Uncertainty is stated in the answer's own words.
-
-## Accessibility
-- Announce the finished message with `aria-live="polite"`, never each token.
+- Copy, regenerate, edit-to-branch on hover or focus; on touch a visible ⋯.
+- Regenerated versions step with arrows; "2 / 3" sits in a tooltip.
+- One shared menu for every assistant message.
 
 ## Tells to avoid
-- Sparkle avatars.
-- Purple AI glow.
-- A blinking typewriter cursor.
-- Endless bouncing dots.
-- "As an AI…" banners.
-- Every answer as a stack of cards with headers.
+- Sparkle avatars, purple AI glow, a blinking typewriter cursor, endless bouncing dots.
+- "As an AI…" banners; every answer as a stack of carded headers.
 - Tooltips covering the message they describe.
