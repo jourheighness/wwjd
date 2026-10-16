@@ -1,0 +1,16 @@
+{
+  "name": "wwjd",
+  "owner": {
+    "name": "Johannes Carlsten"
+  },
+  "plugins": [
+    {
+      "name": "wwjd",
+      "source": "./plugins/wwjd",
+      "description": "What Would Johannes Do: an opinionated UI/UX rule set and design workflow for landing pages, editorial, docs, product apps, dashboards, chat, commerce, forms and mobile."
+    }
+  ],
+  "metadata": {
+    "description": "Johannes Carlsten's design skills for coding agents."
+  }
+}
