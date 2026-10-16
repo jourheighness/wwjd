@@ -30,6 +30,10 @@ Use when a region has too many actions, the hierarchy is unclear, or things don'
   - A control whose icon still shows "+" while it zooms out is desynced, and that's a defect.
 - **Disabled means "not yet":** give the reason in a tooltip (with `aria-disabled`, still focusable) or inline. Hide what can never apply. Read-only looks different from disabled.
 - **Hover is never the only path.** Touch has none.
+- **Set expectations before the click.**
+  - An option's state shows on the option itself before anyone picks it: unavailable, extra cost, needs sign-in, leaves the page, irreversible.
+  - Use a faded option, a small mark or a word in its label or tooltip. Never a surprise after choosing.
+- **Consequences disclose after the interaction.** Details that only matter for one choice (a restock form for a sold-out variant, extra fields for one plan) appear only once that choice is made or focused. They appear in place, without pushing the rest of the layout around, and leave when the choice changes.
 
 ## Disclosure layers
 | Layer | What goes there |

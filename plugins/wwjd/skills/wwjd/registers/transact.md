@@ -5,7 +5,7 @@ Success: the person buys with confidence and without surprises. Design mobile-fi
 ## Product page
 - **Above the fold at 390:** gallery, title, price, variant choice, and add to cart. A sticky buy bar appears after scroll.
 - **Gallery:** swipe and zoom, with 5 or more images, including in context and at scale.
-- **Variants:** swatches with text names. Unavailable variants stay visible and are marked; they are never hidden.
+- **Variants:** swatches with text names. Unavailable variants stay visible and are visibly faded before anyone clicks (a strike mark, "Sold out" in the name or tooltip); they are never hidden. Choosing one swaps the buy box in place to its own path ("Notify me when it's back", the restock date). That path never shows while another variant is selected.
 - **Decision numbers are mandatory:** price, unit price, delivery date (a date, not "3–5 days"), shipping cost before checkout, rating with its count, true stock levels.
 - **Specs and details:** vertical collapsible sections. Here an accordion is the right pattern.
 - **Reviews:** names as text. Allow sorting and filtering by rating; show the distribution.
