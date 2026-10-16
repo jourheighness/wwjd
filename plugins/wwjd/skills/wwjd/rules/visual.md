@@ -17,6 +17,12 @@ The how behind SKILL.md's Visual rules. Choosing palette and faces is the `wwjd-
 - **Flat exceptions:** a look DESIGN.md owns (lint `gradient`, `gradient-text`, `glass` off for it); a neutral scrim over a photo (always under text on busy imagery); one frosted sticky bar.
 - **Grounds:** tinted neutral, never yellow cream (`references/bans.md`); pure white when the brand needs it.
 
+## Crafted calm (product screens)
+- **Three levels at a squint:** page title one tier above its section headings (app: `--text-display` vs `--text-heading`); group labels ink 600, never grey captions.
+- **Identity on nouns:** a channel, integration, place or person shows its glyph at the row start: a 16px icon on a 32px neutral `--fill` tile (`.mark`), or the real logo/avatar in its own colours (identity, not accent).
+- **The value in its form:** row ends show the current value in ink (`.setting-value`), connections a glyph + word, schedules a 3-stop line. A live preview of the effect (notification, email, theme) beats any caption; it uses seeded real data (`.preview-card`).
+- **Panels:** one tone step + one 1px `--border` edge, radius one tier above the controls inside; dividers inset to the text edge; rows ≥44px (64 with a hint); 40px between sections.
+
 ## Themes
 - **Follow the system** ("System" is the default choice); check each theme on its own: dividers, state parity, contrast. Dark-only is a DESIGN.md decision.
 - **Dark:** depth from lighter surfaces in ~3 steps; accents slightly desaturated, accent on text rather than faded fills; images dimmed slightly; charts recoloured, never inverted.

@@ -17,7 +17,7 @@ Every surface has a range. Below the minimum it is too thin to earn its own box 
 | Landing section | 1 claim + 1 proof, ≤3 sub-points | ≤1 | FAQ `<details>`, docs, comparison page |
 | Pricing card | plan + price + the total for the chosen quantity ("$120 a month for 10 seats") + who-for (≤8 words) + ≤5 feature names | 1 | comparison table |
 | Form step | 1 question or task; ≤7 fields | 1 primary (Back on top) | "+ Add details", a later step, derived values |
-| Settings group | ≤7 settings | auto-save, or 1 save per page | sub-page, "Advanced" disclosure |
+| Settings group | ≤7 settings + ≤1 preview of their effect (a rendering, not a fact) | auto-save, or 1 save per page | sub-page, "Advanced" disclosure |
 | Dialog | title + ≤2 sentences + ≤3 fields | 1 primary + 1 secondary | a page or drawer |
 | Drawer / side panel | identifier + ≤8 facts in groups | 1 primary + ≤2 | the full record page |
 | Popover | ≤5 facts | ≤2 | the detail view |

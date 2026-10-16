@@ -199,6 +199,13 @@ input.switch:checked::before, .switch-thumb[data-checked] { transform: translate
 .badge { display: inline-flex; align-items: center; height: 20px; padding: 0 var(--space-1-5); border-radius: var(--r-1);
   background: var(--fill); color: var(--text-2); font-size: var(--text-caption); font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
 
+/* Crafted calm: identity glyph tile, a value in ink, a preview of a setting's effect (rules/visual.md) */
+.mark { display: inline-grid; place-items: center; flex-shrink: 0; width: 32px; height: 32px; border-radius: var(--r-3); background: var(--fill); color: var(--text-2); }
+.mark.is-sm { width: 24px; height: 24px; border-radius: var(--r-2); }
+.mark > svg { width: 16px; height: 16px; }
+.setting-value { color: var(--text); font-size: var(--text-caption); line-height: var(--lh-caption); margin-top: var(--space-0-5); }
+.preview-card { padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--r-4); background: var(--surface-2); }
+
 /* Avatar (Avatar.Root/Image/Fallback or span > img) and stack */
 .avatar { --size: 24px; display: inline-grid; place-items: center; flex-shrink: 0; width: var(--size); height: var(--size); overflow: hidden;
   border-radius: 50%; background: var(--fill-strong); color: var(--text-2); font-size: calc(var(--size) * .42); font-weight: 500;

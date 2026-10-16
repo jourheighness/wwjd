@@ -16,6 +16,7 @@ wwjd runs this before the first build in a project without a look. About a minut
 - **Choose the open axes from the subject:** accent hue from its world (never the kit's default 258, never indigo/violet without a brand); neutral temperature; shape; surface; elevation. Density follows the register.
 - **Type with personality:** a text face by job, plus for Persuade, Showcase, Editorial and consumer apps a display face picked for this subject from Google Fonts (`"fonts": {"display": "\"Name\", …", "sans": …}`; never the trend list in wwjd `bans.md`). Work tools may keep a grotesk, but still choose hue, neutral and shape.
 - **One loud axis** (★ in axes.md); everything else quiet.
+- **Richness defaults per register:** Operate and Monitor pick an icon set (one stroke, 16px), set the page title in the display tier, and put panels at `--r-4` with hairline elevation. Flow and Transact add soft elevation on the one decision card. The handover line names the icon set.
 - Write `look.json`, run `look.mjs`, use its `tokens.css`. Handover line: "Look: Archivo + Public Sans, warm neutral, green, soft corners; anchored on <X>. Say 'show me options' for a board."
 - **The kit's default tokens are a floor (contrast, states), never the finished look.** Shipping them unchanged is a miss.
 

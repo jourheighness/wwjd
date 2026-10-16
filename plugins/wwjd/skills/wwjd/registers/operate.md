@@ -91,13 +91,15 @@ Success: the person completes the task and gets back to work. A calm product wit
 - Members is a table. Billing and deletion go through review sheets. Advanced collapsed at the end; the danger zone kept apart, last.
 - Settings search once there are more than ~8 sections. Reset to default per setting or section.
 - Preferences persist per person: never reset on reload or another device.
+- **Rich, not loud:** row = glyph tile + label + value or hint at the start, control at the end. Channel and matrix headers carry the channel icon. Always-on = lock glyph + reason, never a faded control.
+- **Show what it does:** notification, digest, theme and template settings get a live preview, as a sticky aside when the main pane is ≥62rem, inline under the control otherwise.
 
 ## Screen budgets
 | Screen | First screen | One layer down |
 |---|---|---|
 | List | Title, view tabs, Filter + chips, Display, 1 primary ("New …"), ≤1 secondary; 4–6 columns | Import, export, column config; row actions in ⋯; detail in the panel |
 | Detail | Title, status, ≤2 actions + ⋯; main = body and activity; side = ≤7 key properties | "More fields"; parallel sets as tabs (≤5); history behind an activity filter |
-| Settings | Sub-nav; one section's fields | Advanced, danger zone |
+| Settings | Sub-nav; one section's fields + its preview | Advanced, danger zone |
 
 - ≤5 table toolbar actions. Export appears once rows exist, bulk on selection, "+" in a group on hover.
 

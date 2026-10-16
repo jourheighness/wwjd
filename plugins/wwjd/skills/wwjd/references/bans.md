@@ -9,13 +9,14 @@ Generated UI drifts to the most probable output; ban a default and it falls to t
 | Big aggregate or zero counts | A dot or nothing; small-set progress above its bar and decision counts stay | P |
 | Five actions on a card | Primary, secondary, ⋯ | P |
 | Qualifier tails on list items ("Free guest seats, for clients who see only the projects you share") | The item's name; a tail only when it is the difference ("5,000 runs a month"). Owner, 2026-10-16: the better-looking pricing card lost on this alone | P+M |
+| Bare product screen: grey caption groups, label + control only, small title, an empty third of the canvas | Identity glyphs, values in ink, one live preview, a display-tier title (`rules/visual.md` Crafted calm). Owner, 2026-10-16: "the settings got very very plain" | P |
 | Gradient backgrounds, buttons or text (look) | Flat; emphasis by weight | P+M |
 | Indigo, violet or purple accent (look) | The project accent | P+M |
 | Unmodified shadcn or library defaults | The kit's own variants | P+M |
 | Glass or backdrop-blur panels (look) | An opaque surface a tone step off the ground; one frosted sticky bar is fine | P+M |
 | Coloured left/top accent stripe on cards | State glyph + word, or a tone step | P+M |
 | 3 or 6 identical icon-topped cards | Rows, a list, or one composed section | P+M |
-| Rounded icon tile above a heading | Icon inline beside the text, or none | P+M |
+| Rounded icon tile above a heading; coloured icon tiles | A 32px neutral tile inline at the row start for nouns with identity (channel, integration, place), or none | P+M |
 | Uppercase tracked eyebrow or kicker | Nothing, or fold it into the heading | P+M |
 | Pill "New" / "Beta" / "Introducing" badges | Plain text or nothing | P+M |
 | 01/02/03 markers | Order by position; `<ol>` only for real sequences | P+M |
@@ -46,7 +47,7 @@ Generated UI drifts to the most probable output; ban a default and it falls to t
 5. **The next trendy font (look):** Space Grotesk, Instrument Serif, Fraunces, Syne, Bricolage, Satoshi, Clash. Choose by job and personality, never from a trend list.
 6. **"Premium" (look):** double-bezel cards, floating glass pill nav, arrow-circle-in-button, blur + fade-up reveals, `rounded-[2rem]`.
 7. **"Notion-minimal" (look):** bone ground, pastel uppercase pill tags, 1px #EAEAEA on everything, faux window dots.
-8. **Avoidance aesthetic:** everything removed, nothing designed: a thin grey wireframe. Removal means fewer elements with stronger hierarchy; fill space with scale, real content or real primitives, never ornament.
+8. **Avoidance aesthetic:** everything removed, nothing designed: a thin grey wireframe. Removal means fewer elements with stronger hierarchy; fill space with scale, real content or real primitives, never ornament. Test: cover the labels; if a grey grid of identical rows is left, add identity, values or a preview, never ornament.
 9. **Tame:** new features bolted onto the old page instead of a redesign. If it looks like the old thing with additions, redo it (long-familiar surfaces excepted, SKILL.md).
 
 ## Quick tests

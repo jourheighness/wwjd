@@ -47,7 +47,7 @@ Floor > project DESIGN.md + decision log > wwjd (more specific file wins) > user
 
 **Stable under the hand.** State changes only on intent. Scroll and focus move only on action; overlays never cover the work. Motion explains a change or goes, interruptible, transform/opacity only.
 
-**Visual.** Colour means attention; needs-you findable at a glance. Ink text; contrast steps before borders or shadows; flat, no decorative gradient, glass or glow. Both themes cared for. The bar is the category's best, never tame. Long-familiar high-trust surfaces: behaviour before looks; a 50ms glance must read "better", not "different".
+**Visual.** Colour means attention; needs-you findable at a glance. Ink text; contrast steps before borders or shadows; flat, no decorative gradient, glass or glow. Both themes cared for. The bar is the category's best, never tame. **Calm is not bare:** fewer elements, each designed. Nouns show their identity (icon, logo, avatar), values show in their form, and a setting that makes something visible shows a preview of it (`rules/visual.md` Crafted calm). Long-familiar high-trust surfaces: behaviour before looks; a 50ms glance must read "better", not "different".
 
 **States and flow.** First use, one, many, longest, empty, error, loading, no permission. A to B, obvious next step, no dead ends or circles, ends on the result.
 
