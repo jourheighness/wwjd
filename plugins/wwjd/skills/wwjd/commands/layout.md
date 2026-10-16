@@ -30,7 +30,7 @@ People scan along edges. Misaligned starts, zig-zag reading and text that wraps 
   .page > * { grid-column: content; }
   ```
 - **Sibling cards** align their insides with subgrid, so titles, meta and actions share a line and the actions pin to the bottom.
-- **Start-aligned by default.** Centre only what is genuinely centred: an icon in a button, a canvas empty state, the register's one centred moment.
+- **Start-aligned by default; centring is a decision, not a habit.** Centre where the design motivates it: a table, figure or quote in a reading column, a canvas empty state, the register's hero moment, an icon in its button. Alignment is a product-wide choice: the same kind of page aligns the same way everywhere, so one centred settings page among start-aligned ones, or a step that suddenly centres mid-flow, is the defect.
 - **No reserved slots.** If an optional badge or meta is absent, the content moves to the start. An absent optional meta line is omitted, not shown as "—" (table cells are different: `harden.md`).
 - **Optical alignment:**
   - A checkbox or icon aligns to the first line of text.

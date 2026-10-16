@@ -15,6 +15,8 @@ The rules are opinions backed by use, not physics. If a rule would make a specif
 1. **Load context:**
    - Read the user profile at `$WWJD_PROFILE`, or `~/.config/wwjd/profile.md` if that is unset (workflow and locale). Then read the project's own files: `DESIGN.md`, `PRODUCT.md`, the decision log (`docs/decisions/` or similar), and the UI sections of `AGENTS.md` or `CLAUDE.md`.
    - Find the kit: the shared component package, its tokens, and its workshop (Storybook or similar). Recorded decisions must survive this session.
+   - **No design system? Don't stop; build on the ground** (`references/baseline.md`): Base UI primitives for behaviour and accessibility, styled with the baseline tokens (`scripts/starter.css`). Never hand-roll a dialog, menu, select or tooltip. Write `DESIGN.md`/`PRODUCT.md` with `commands/init.md` whenever it helps: when the project settles, when a second screen needs the same decisions, or when the user asks.
+   - **Product app?** Look up its type in `references/product-types.md`: core objects, the right first screen, the do's and don'ts.
 2. **Pick the register** from the table in section 4, using the surface you are working on, not the product as a whole. State it in one line ("Register: Persuade, pricing page"). For a hybrid, the outer register owns the frame and the inner one owns its region. A hybrid embeds a region; it never collapses a whole journey into one page. A landing page converts, and its action leads into its own stepped flow.
 3. **Pick the command** from the table in section 5 and read its file before acting.
 4. **Precedence**, highest first:
@@ -61,7 +63,7 @@ The rules are opinions backed by use, not physics. If a rule would make a specif
 
 **Layout**
 - Work on a grid. Content aligns to the column edges, and a container's surface and padding bleed into the gutter, so a card's text lines up with the text above it.
-- Left-align by default, with one left edge per column and no zig-zag reading. The register files name the few centred moments.
+- Start-align by default, with one left edge per column and no zig-zag reading. Centre only where the design motivates it (a figure or table in a reading column, a hero moment, an icon in its button), and decide it once: the same kind of page aligns the same way across the product, and nothing is suddenly centred mid-flow.
 - Never reserve a slot for something that is absent. Design for the longest real string: wrapping, truncation and translation must not break alignment.
 - Spacing comes from the scale only. No cards inside cards.
 - **The identifier never disappears.** Titles and names wrap; they never end in an ellipsis or take the only shrinking column. As the container narrows, meta drops first, then shortcuts fold into ⋯, then the layout stacks (`commands/fit.md`).
@@ -108,6 +110,7 @@ The rules are opinions backed by use, not physics. If a rule would make a specif
 
 | Command | When | Read |
 |---|---|---|
+| init | write DESIGN.md / PRODUCT.md once the project settles, or on request | `commands/init.md` |
 | explore | new screen, flow or page; "show me options" | `commands/explore.md` |
 | build | implement an approved mockup, Figma frame or decision | `commands/build.md` |
 | critique | "review", "what's wrong", UX review, persona test | `commands/critique.md` |
@@ -127,6 +130,8 @@ The rules are opinions backed by use, not physics. If a rule would make a specif
 A small change in existing UI needs no command file. Apply the rules, then run the handover check (section 6).
 
 **References:**
+- `references/product-types.md`: 27 product types (CRM, booking, helpdesk, billing…): objects, first screen, do's and don'ts
+- `references/saas.md`: product-app blueprints, lists and tables, screen budgets (read for Operate)
 - `references/bans.md`: bans and what to do instead
 - `references/faux-pas.md`: the full catalogue of UX mistakes, by category
 - `references/examples.md`: before and after

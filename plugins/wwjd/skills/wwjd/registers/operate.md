@@ -1,5 +1,7 @@
 # Operate: product apps, editors, admin, settings
 
+**Read `references/saas.md` before any product-app screen:** blueprints (list → detail, inbox, workspace, settings, admin), list and table anatomy, screen budgets, and the bans that stop the raw-HTML look.
+
 Success: the person completes the task and gets back to work. This is where the rules in SKILL.md bite hardest; this file adds what is specific to apps.
 
 ## The bar
