@@ -15,6 +15,12 @@ Success: the person completes the task and gets back to work. This is where the 
 - **One question per view:** what is this, and what do I do now? Lead with what needs the person.
 - **⌘K / Ctrl+K** is the one door to search, navigation and actions. Every view, tab, filter and selection lives in the URL, so everything deep-links.
 
+## Lists and tables
+- **Look like a product, not raw HTML:** visible structure, with rows on a surface, separators or hover fills, a clear hierarchy between the identifier and its meta.
+- **Group by what the person acts on** once a list passes a handful of items: overdue, today, this week, later; or by status. Group headers are small and quiet.
+- **Values that don't explain themselves get a small column header** (Due vs Updated, Owner vs Reviewer). Headers carry sort, and filters sit with the list.
+- **Progress in a row is the bar alone.** The "3 of 8" label belongs where there is room for it (cards, detail views), not in a dense row.
+
 ## Density and type
 - **Density is a token** (compact or comfortable). Text 13–14px is right for dense work tools; nothing meant to be read goes under 12px.
 - **One family** (the kit's), about 5 roles. `tabular-nums` wherever numbers align or change.
@@ -29,7 +35,7 @@ Success: the person completes the task and gets back to work. This is where the 
 - **Bulk actions** appear after a selection. Show presence and permission states.
 
 ## People and status
-- **People:** names show where the person matters (assignee, owner, author on a detail view); stacked avatars only for groups, with names in a tooltip that also works on focus and tap.
+- **People:** in list and table rows, an avatar only, with the name in a tooltip (hover, focus and tap) and in the accessible name. Names are written out in detail views, assignment pickers and anywhere identity is the point.
 - **Status** is a dot or a shape plus a word, one marker vocabulary in one size everywhere. Status is never a button-looking pill.
 
 ## AI inside the product

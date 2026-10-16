@@ -55,6 +55,7 @@ The project's palette wins. This command decides where the colour goes.
   - Label directly instead of using a legend that restates.
   - Gridlines are low contrast.
   - No big axis labels, no scribble of dots.
+- **Annotate, don't narrate:** mark events on the chart (a spike marker, a deploy or incident line with its label) instead of restating values in text next to it.
 - **Lines:** edge to edge at a fixed aspect ratio. They never stretch vertically and never escape their container.
 - **Integrity** (any failure fails the chart):
   - Bars start at zero, and compared series share a scale.

@@ -15,7 +15,7 @@ The rules are opinions backed by use, not physics. If a rule would make a specif
 1. **Load context:**
    - Read the user profile at `$WWJD_PROFILE`, or `~/.config/wwjd/profile.md` if that is unset (workflow and locale). Then read the project's own files: `DESIGN.md`, `PRODUCT.md`, the decision log (`docs/decisions/` or similar), and the UI sections of `AGENTS.md` or `CLAUDE.md`.
    - Find the kit: the shared component package, its tokens, and its workshop (Storybook or similar). Recorded decisions must survive this session.
-2. **Pick the register** from the table in section 4, using the surface you are working on, not the product as a whole. State it in one line ("Register: Persuade, pricing page"). For a hybrid, the outer register owns the frame and the inner one owns its region.
+2. **Pick the register** from the table in section 4, using the surface you are working on, not the product as a whole. State it in one line ("Register: Persuade, pricing page"). For a hybrid, the outer register owns the frame and the inner one owns its region. A hybrid embeds a region; it never collapses a whole journey into one page. A landing page converts, and its action leads into its own stepped flow.
 3. **Pick the command** from the table in section 5 and read its file before acting.
 4. **Precedence**, highest first:
    1. **The floor** (section 2). Nothing overrides it.

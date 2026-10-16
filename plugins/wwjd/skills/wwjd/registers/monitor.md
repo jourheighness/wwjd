@@ -2,7 +2,8 @@
 
 Success: the person knows the state in 5 seconds and knows where to look next.
 
-- **One question per view.** Write the questions first ("what does an on-call engineer need in 5 seconds?"), then design. The first row is what needs someone now, not vanity KPIs.
+- **One question per view.** Write the questions first ("what does an on-call engineer need in 5 seconds?"), then design. The first row is alerts and what needs someone now, not vanity KPIs. Everything else (SLO detail, per-service breakdowns) is one drill-down away, not on the first screen.
+- **Never narrate what a chart shows.** No "error rate peaked at 0.15% at 08:30" beside the chart. Annotate the chart itself: a marker on the spike, a line at the deploy or incident that likely caused it, so when and why read in place.
 - **KPI anatomy:** value, unit, change against a named comparison period, and a sparkline. A number earns its place only if it changes a decision; most dashboards show too many.
 - **Signals:**
   - Colour only where something needs attention. Calm stays calm.

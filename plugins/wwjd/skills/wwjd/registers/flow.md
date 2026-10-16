@@ -7,6 +7,7 @@ Success: the person finishes the sequence without thinking about the form.
 - **Never ask twice** for data already given (WCAG 2.2, 3.3.7).
 - **Optional fields** go behind "+ Add details". Nothing optional sits on the critical path.
 - **Default** whenever the answer is predictable.
+- **No reassurance in hints:** never "You can change it later" or "We'll set sensible defaults". If a choice is changeable, make it easy to change; don't say so.
 
 ## Shape
 - **One column,** one task per step. On the web, labels sit above fields; native apps follow the platform (Material text fields may float). A field's width signals the expected length.
@@ -25,7 +26,9 @@ Success: the person finishes the sequence without thinking about the form.
 - **Helper text** only where it prevents an error: format hints and "why we ask" stay. Legal and consent text always stays.
 
 ## Auth
-- **Passkeys first.** No cognitive tests (WCAG 2.2, 3.3.8). Show password rules before the first attempt, not after it fails.
+- **Passkeys first.** No cognitive tests (WCAG 2.2, 3.3.8).
+- **Password rules appear as the person starts typing,** and tick off live. They are not permanent helper text, and never revealed only after a failed attempt.
+- **Show password is an eye icon** inside the field, appearing once there is input, with `aria-pressed` and an accessible name. Not a "Show" text button.
 
 ## Onboarding
 - **Land on first value** with seeded example content. Skippable.

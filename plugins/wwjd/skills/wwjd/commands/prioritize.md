@@ -14,11 +14,12 @@ Use when a region has too many actions, the hierarchy is unclear, or things don'
   - In headers, actions sit at the end, in a fixed order.
 - **Frequency decides visibility.** Something used daily is visible. Something rare goes in ⋯. Never give an entry point more space than its use earns.
 - **No duplicate paths:** one place to answer, one to copy a link, one to approve.
+- **Choice sets** of 2–4 options are segmented button radios (one row of connected buttons, the selected one filled), placed under their label rather than beside it. Every label fits on one line at the narrowest size; if it doesn't, cut options or use a menu.
 - **Choices:** about 3 visible options per group. Clear options beat few options: merge or rename overlapping ones before cutting.
 
 ## Affordance
 - **The whole row or card is the target:** its title is a link or button stretched over it, with hover and keyboard focus; inner actions sit above it as icon buttons. Never an `onClick` on the container. No nested button does the same job.
-- **Pressable looks pressable:** a filled or bordered button, or a row with a hover fill and a chevron.
+- **Pressable looks pressable:** a filled or bordered button, or a row with a hover fill and a chevron. Icon-only buttons (theme toggle, new chat, close) have a resting container: a subtle fill or outline, never a bare glyph.
 - **Not pressable never looks pressable:** status is a dot or muted text, not a pill. Status labels are `<span>`s, not buttons.
 - **Links navigate and buttons act:** `<a>` and `<button>`, never a clickable `<div>`.
 - **Icons do exactly what they show,** and each one has a tooltip.

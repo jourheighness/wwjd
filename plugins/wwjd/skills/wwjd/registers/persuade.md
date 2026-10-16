@@ -9,6 +9,10 @@ Success: the visitor decides and acts. A persuade page argues one claim and earn
 4. **Copy deck before markup.** The first screen answers the visitor's first question in large type, with one real button. Write the full content: thin sections are the most common reason a clean page loses.
 5. **Spend boldness in one place.** One memorable element; everything else quiet. Before shipping, remove one accessory.
 
+## The page converts; the journey lives elsewhere
+- **The landing page argues and earns one action.** Ordering, booking or signing up happens on its own pages, stepped as a flow, never as a shop crammed into the landing page.
+- **Map the journey after the click,** with each step in its register, e.g. product list (Transact: search, filters, basket) → pickup or delivery (Flow: closest pickup point, call the store) → checkout (the best-fit checkout for this business).
+
 ## Composition
 - **One dominant thing per screen.** Neighbouring sections never share a layout.
 - **Spacing:** the gap between sections is larger than any gap inside one.

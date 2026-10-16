@@ -37,7 +37,9 @@ A component lives in many slots: a sidebar, a list, a dialog, a phone. Design ho
 
 ## 3. The identifier never disappears
 - **Mark it:** the title or name element gets `data-identifier`.
-- **It wraps; it never ends in an ellipsis** in rows, cards, list items, headers, navigation, labels or errors. If it passes 3 lines at S, fix the layout (drop meta, stack actions, widen the slot); don't clamp the title.
+- **It wraps; it never ends in an ellipsis on one line** in rows, cards, list items, headers, navigation, labels or errors.
+- **Lists keep one constant row height,** sized for the identifier's usual length (often 2 lines). Short titles keep that height. A rare title longer than that clamps at that line count, with the full text on hover, focus, tap and in the detail view. If titles often exceed it, fix the layout (drop meta, widen the slot).
+- **Meta columns stay on one line.** A meta value that would wrap is replaced by its compact form (avatar for a name, short date) or drops.
 - **It never gets the only shrinking track.** A grid that gives fixed widths to meta and `minmax(0, 1fr)` to the title deletes the title first. Give the identifier track a floor (`minmax(12ch, 1fr)`), and drop or move the fixed columns at the container breakpoint.
 - **The one exception: single-line truncation in fixed-height dense UI** (tables, trees, tabs, file pickers). It needs all four:
   - The column resizes, or the full text sits in the detail view.
