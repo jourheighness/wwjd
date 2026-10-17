@@ -33,6 +33,7 @@ The how behind SKILL.md's "every state" rule.
 
 - **Response:** acknowledged in 100ms; past ~1s progress in place; past ~10s determinate progress when the duration is known, else a live status line. Never fake or stalling progress.
 - **Optimistic updates** where success is likely; on failure roll back with an inline error. Autosave never fails silently.
+- **Optional platform APIs fail soft:** storage, history, clipboard and share are wrapped in try/catch, and the page renders without them (embeds, sandboxes, private windows). A thrown `replaceState` must never leave a table unrendered.
 - **Live updates merge in place:** scroll, selection and open rows survive. Server and client render the same date, theme and auth (no hydration flip).
 - **Interrupted flows resume exactly:** drafts survive reload (not payment data); a session timeout warns, extends and keeps the draft.
 - **Errors are human:** a sentence and an action; codes and traces in details.

@@ -390,7 +390,7 @@ if (cmd === "status") {
     console.log(`register: ${cfg.register || "unset (name it per surface)"}`);
     console.log(`golden: ${golden.join(", ") || (picks.length ? `none set; suggested ${picks.join(", ")} (confirm, then add "golden" to .wwjd.json)` : "none")}`);
     console.log(`legacy: ${[].concat(cfg.legacy || []).join(", ") || "none"}  (never imitate)`);
-    console.log(decider ? `decider: on (${decider}); grade.mjs once per over-budget surface, before building it` : "decider: off (optional; grade facts yourself, references/budgets.md)");
+    console.log(decider ? `decider: on (${decider}); grade.mjs once per over-budget surface, before building it` : "decider: off; still grade once per over-budget surface, before building it: `grade.mjs spec.json --offline` prints the questions, you answer them");
     console.log(dialLine());
     console.log(`read: ${read.join("; ")}`);
   }
