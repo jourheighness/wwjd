@@ -47,10 +47,16 @@ claude plugin install wwjd@wwjd
 Before designing, building or reviewing any interface, read the wwjd skill and follow it.
 ```
 
+## Dials
+Seven dials tune effort and boldness, never the floor: **creativity, budget, density, motion, voice, rigor, decider** (`plugins/wwjd/skills/wwjd/references/dials.md`).
+- **Per person:** `/plugin configure wwjd@wwjd`, or the wwjd rows in `/config`. The optional `decider_key` (OpenRouter) is stored in the secure store and turns on `grade.mjs`.
+- **Per project:** `"dials": { "creativity": 4, "budget": 2 }` in `.wwjd.json`.
+- **Per request:** words like "bolder", "leaner", "airier" or "thorough" move one dial one stop; the prompt hook names the nudge.
+
 ## Per project
 - **`.wwjd.json`** (committed, repo-relative paths only):
   ```json
-  { "register": "operate", "locale": ["sv", "en"], "kitDirs": ["packages/ui"],
+  { "register": "operate", "locale": ["sv", "en"], "kitDirs": ["packages/ui"], "dials": { "creativity": 4 },
     "golden": ["src/pages/Orders.tsx"], "legacy": ["src/old/**"],
     "storybook": "pnpm storybook", "rules": { "gradient": "off" } }
   ```

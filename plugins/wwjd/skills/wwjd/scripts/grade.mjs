@@ -8,12 +8,15 @@
 //   "keep":    ["key", ...],                              hard rules: identifier, legal, price, consent
 //   "regions": { "key": "what the region shows", ... }, which region leads
 //   "object":  "invoice", "actions": { "key": "label" }, "states": { "key": "state description" } }  primary action per state
-// With OPENROUTER_API_KEY set: OpenRouter Decisions API, model $WWJD_DECIDER (default typesafe/jev-1.14).
+// With a key (plugin option decider_key → WWJD_DECIDER_KEY, or OPENROUTER_API_KEY): OpenRouter Decisions API,
+// model $WWJD_DECIDER (default typesafe/jev-1.14). Dials (wwjd.mjs dials): budget shifts every budget by (dial − 3),
+// decider off = offline, strict = its cuts stand unless swapped.
 // Without it (or --offline): prints the same typed questions for the agent to answer itself.
 // Inclusion needs proof: an item stays only with stay >= .7 and no restates/explains flag. Explainers move (tooltip,
 // empty state, onboarding), never just vanish. Unsure items go to the thinking model; scores rank only.
 // Cuts are logged to .wwjd/cuts.jsonl when .wwjd/ exists; recurring patterns become bans.
 import { readFileSync, existsSync, appendFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 const args = process.argv.slice(2);
 const file = args.find(a => !a.startsWith("--"));
@@ -24,9 +27,19 @@ const SURFACES = { row: 5, table: 7, card: 4, "product-card": 3, stat: 2, header
   "form-step": 7, settings: 8, dialog: 5, drawer: 8, popover: 5, tooltip: 1, toast: 1, menu: 7, nav: 7, tabbar: 5, empty: 2, chat: 3, notification: 2 };
 const opt = name => args.includes(name) ? args[args.indexOf(name) + 1] : undefined;
 const surfaceType = opt("--surface") || spec.surfaceType;
-const budget = Number(opt("--budget")) || spec.budget || SURFACES[surfaceType] || 4;
+// Dials: plugin options (WWJD_DIALS) < the nearest .wwjd.json "dials"
+const dial = {};
+for (const [k, v] of (process.env.WWJD_DIALS || "").split(/\s+/).filter(Boolean).map(x => x.split("="))) dial[k] = v;
+for (let d = process.cwd(); ; d = dirname(d)) {
+  const f = join(d, ".wwjd.json");
+  if (existsSync(f)) { try { Object.assign(dial, JSON.parse(readFileSync(f, "utf8")).dials || {}); } catch {} break; }
+  if (dirname(d) === d) break;
+}
+const shift = Math.min(2, Math.max(-2, Math.round(Number(dial.budget ?? 3) - 3) || 0));
+const mode = ["off", "assist", "strict"].includes(dial.decider) ? dial.decider : "assist";
+const budget = Number(opt("--budget")) || spec.budget || Math.max(1, (SURFACES[surfaceType] || 4) + shift);
 if (!opt("--budget") && !spec.budget && !SURFACES[surfaceType]) console.error(`grade: no budget for surface "${surfaceType ?? ""}" (keys: ${Object.keys(SURFACES).join(" ")}); using 4. Pass --budget N.`);
-const key = process.env.OPENROUTER_API_KEY;
+const key = mode === "off" ? null : process.env.WWJD_DECIDER_KEY || process.env.OPENROUTER_API_KEY;
 const model = process.env.WWJD_DECIDER || "typesafe/jev-1.14";
 const offline = args.includes("--offline") || !key;
 
@@ -75,7 +88,7 @@ for (const k of spec.actions ? Object.keys(spec.states || {}) : []) {
 const state = { goal: spec.goal, surface: spec.surface, items: spec.items, regions: spec.regions, object: spec.object, states: spec.states };
 
 if (offline) {
-  console.log(`No decider (set OPENROUTER_API_KEY to use ${model}). Answer these yourself, same options, then apply the budget (${budget}):`);
+  console.log(`No decider (${mode === "off" ? "dial decider=off" : `no key: set decider_key in /plugin configure wwjd@wwjd to use ${model}`}). Answer these yourself, same options, then apply the budget (${budget}):`);
   console.log(`Goal: ${spec.goal}\nSurface: ${spec.surface}`);
   for (const [id, q] of Object.entries(questions)) {
     const opts = Array.isArray(q.criteria) ? q.criteria.map((c, i) => `${i}=${c}`).join(" | ") : Object.keys(q.criteria).join(" | ");
@@ -135,4 +148,5 @@ if (spec.states && spec.actions) {
   }
 }
 if (unsure.length) console.log(`Unsure: ${unsure.join(", ")}. Decide these yourself.`);
+if (!offline && mode === "strict") console.log("Decider strict: its cuts stand; bring an item back only by swapping it for a shown one.");
 console.log(`${out.model} · ${out.usage?.cost != null ? "$" + out.usage.cost.toFixed(6) : ""}`);

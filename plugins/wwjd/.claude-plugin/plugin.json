@@ -1,7 +1,82 @@
 {
   "name": "wwjd",
-  "version": "0.5.4",
+  "version": "0.6.0",
   "description": "What Would Johannes Do: opinionated UI/UX rules and workflow. Three skills (wwjd for structure, behaviour and copy; wwjd-look for the look; wwjd-animation for motion), a cold critic agent on request, a prompt hook that routes UI work, and an auto-lint hook after UI edits.",
-  "author": { "name": "Johannes Carlsten" },
-  "skills": "./skills/"
+  "author": {
+    "name": "Johannes Carlsten"
+  },
+  "skills": "./skills/",
+  "userConfig": {
+    "creativity": {
+      "type": "number",
+      "title": "Creativity",
+      "description": "1 safe, close to the kit · 3 one loud axis (default) · 5 art-directed, a distinct idea per page",
+      "default": 3,
+      "min": 1,
+      "max": 5
+    },
+    "budget": {
+      "type": "number",
+      "title": "Surface budget",
+      "description": "1 lean (every budget −2) · 3 as written (default) · 5 generous (+2); overflow rules always apply",
+      "default": 3,
+      "min": 1,
+      "max": 5
+    },
+    "density": {
+      "type": "number",
+      "title": "Density",
+      "description": "1 roomy · 3 by register (default) · 5 compact",
+      "default": 3,
+      "min": 1,
+      "max": 5
+    },
+    "motion": {
+      "type": "string",
+      "title": "Motion",
+      "description": "auto picks by register (default); or force a motion theme",
+      "options": [
+        "auto",
+        "instant",
+        "crisp",
+        "smooth",
+        "springy"
+      ],
+      "default": "auto"
+    },
+    "voice": {
+      "type": "number",
+      "title": "Voice",
+      "description": "1 terse, labels only · 3 plain (default) · 5 warm, a little personality in empty and success states",
+      "default": 3,
+      "min": 1,
+      "max": 5
+    },
+    "rigor": {
+      "type": "number",
+      "title": "Rigor",
+      "description": "1 one shot, lint only · 3 lint + one look (default) · 5 critic, fit and runtime checks, variants",
+      "default": 3,
+      "min": 1,
+      "max": 5
+    },
+    "decider": {
+      "type": "string",
+      "title": "Decider (system 1)",
+      "description": "off · assist: grades, you overrule unsure items (default) · strict: its cuts stand unless you swap",
+      "options": [
+        "off",
+        "assist",
+        "strict"
+      ],
+      "default": "assist"
+    },
+    "decider_key": {
+      "type": "string",
+      "title": "OpenRouter key",
+      "description": "Optional. Turns on the decision model for grade.mjs. Stored in the secure store, never in settings.",
+      "sensitive": true,
+      "required": false
+    }
+  }
 }

@@ -11,6 +11,7 @@ Axes, presets and clashes: `references/axes.md`. Where references come from and 
 
 ## Quick mode (no DESIGN.md, no board asked)
 wwjd runs this before the first build in a project without a look. About a minute; no screenshots, no questions.
+- **Read the `creativity` dial** (`wwjd.mjs dials`, wwjd `references/dials.md`): 1 stays near the kit, 3 is the steps below, 5 adds a second loud axis and one distinct visual idea per page.
 - **Subject first:** one line of the subject's world: materials, place, tools, audience, era.
 - **Anchor:** name one real product or site it should feel like (from what you know; no capture).
 - **Choose the open axes from the subject:** accent hue from its world (never the kit's default 258, never indigo/violet without a brand); neutral temperature; shape; surface; elevation. Density follows the register.

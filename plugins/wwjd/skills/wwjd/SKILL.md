@@ -7,7 +7,7 @@ description: What Would Johannes Do. Opinionated UI/UX rules and workflow. Use b
 Opinions backed by use. If a rule would hurt this case, say so, propose the exception, apply once agreed.
 
 ## 0. Entry (once per session)
-1. Run `node <skill>/scripts/wwjd.mjs status`.
+1. Run `node <skill>/scripts/wwjd.mjs status`; it also prints the dials (`references/dials.md`), which tune effort and boldness, never the Floor.
 2. Read what it lists: PRODUCT.md; DESIGN.md prose (Named rules, Do's/Don'ts in full); RATCHET.md Gotchas, Tells, `[design]`; decision-log lines naming the surface; 1-2 golden files; the user profile. Never imitate `legacy`.
 3. Create a missing file only when needed, short, vetoable defaults: PRODUCT.md if register or product type would be guessed; RATCHET.md to park a finding; no DESIGN.md: `wwjd-look` quick mode picks a subject-grounded look before the first build. Never block showing work on a question.
 4. Name the register ("Register: Operate, settings"), read `registers/<name>.md`, and route:
@@ -25,7 +25,7 @@ Opinions backed by use. If a rule would hurt this case, say so, propose the exce
 | small change | rules + loop only |
 
 ## 1. Precedence
-Floor > project DESIGN.md + decision log > wwjd (more specific file wins) > user profile (workflow, locale only). Old UI breaking rules: fix in scope, flag the rest.
+Floor > project DESIGN.md + decision log > dials > wwjd (more specific file wins) > user profile (workflow, locale only). Old UI breaking rules: fix in scope, flag the rest.
 
 ## 2. Floor
 - **Access:** AA contrast; visible focus ring >=3:1; zoom never disabled; targets >=24px web, 44pt iOS, 48dp Android; colour never alone; links in running text underlined; reduced motion respected; nothing clips at 200% zoom or text-spacing overrides; tooltips work on focus and tap, never hold essentials; explained disabled controls are `aria-disabled`, focusable; every drag has a non-drag path; scrollable regions focusable and labelled.
@@ -85,3 +85,4 @@ Mobile/native: plus `native.md`. The other width works, composed on its own. Hyb
 | no kit yet | `baseline.md` |
 | unclear rule | `examples.md` |
 | a term | `glossary.md` |
+| a dial or a nudge | `dials.md` |
