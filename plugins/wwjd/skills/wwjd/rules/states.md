@@ -6,6 +6,8 @@ The how behind SKILL.md's "every state" rule.
 - **Eight:** default, hover, focus-visible, active (pressed within 100ms), disabled, loading, error, success. Hover without focus is the common miss.
 - **One box per state:** a step, tab, row or chip that becomes done, active, selected or clickable keeps its element, padding, font and height. Never swap a `<span>` for a `<button>`; if one state is interactive, render all as that element, `aria-disabled` until it applies.
 - **Steps, tabs, chips and rows are never underlined;** affordance is hover fill and focus ring (lint `underlined-control`).
+- **One home per state:** one control and one mark per state; everything that depends on it shows the state in place, never a second control (a "Turn on" in a column header duplicating the switch above it). At most a link that scrolls to and focuses the one control. Owner, 2026-10-17.
+- **A change touches only what changed:** a click or selection never hides or swaps neighbouring meta; patch the element in place, never re-render the list (rebuilt rows replay their transitions and flash).
 - **All states side by side** in the workshop; a state that moves or restyles a neighbour is a defect.
 - **Hidden stays hidden:** `kit/base.css` ships `[hidden] { display: none !important }` (lint `hidden-guard`). One state per view: a result replaces the step it completes.
 

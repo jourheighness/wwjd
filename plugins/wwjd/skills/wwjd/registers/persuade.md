@@ -21,7 +21,7 @@ Success: the visitor decides and acts. A persuade page argues one claim and earn
 - **The hero may be the page's one centred moment:** ≤2 elements, the CTA off-axis.
 - **Hero composition serves the idea sentence:** utility-first tool, live product demo, type-only, full-bleed media, or a surprise. Left text / right image is overdone and never the default. Hero compositions: `references/heroes.md`.
 - **A hero tool carries its own CTA** (picker, estimator, calculator), and its input carries into the order or signup flow. Never a "try it" widget here and a "do it" button elsewhere: the split reads as not wanting the order.
-- **The fact that settles or delights gets its own moment** with a small visual ("68 °C in your hands"). System facts the person doesn't act on are cut (distance when flight time is shown).
+- **Grade every fact** (`references/budgets.md`): the one that settles or delights gets its own moment with a small visual; the deciding fact sits next to the action; facts nobody acts on are cut.
 - **Carry the idea** through pricing, FAQ and footer. Answer objections in the argument; a FAQ you keep uses `<details>`.
 - **Nav** is a plain bar: wordmark, 3–5 links, one action. **Footer** is a designed close (the name at full width, or one quiet line), not a link farm.
 

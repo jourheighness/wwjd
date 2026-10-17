@@ -6,11 +6,11 @@ For "too busy", "simplify", "clean up", "I got overloaded". Deleting alone is ha
 - **Explaining text:** intros, "how this works", helper text that restates the label, legends that repeat the axis, headers over things that say what they are, implementation commentary in UI or mock data.
 - **Reassurance and narration:** "Nothing is ever lost", "When you click X we will…".
 - **Duplicates:** a second control for one job; the same status twice ("Draft" + "Unpublished"); two paths to one place; the same avatar twice in a view.
-- **Nothing-facts:** grade each fact (decides, reassures/delights, nothing) and cut the third kind: system facts nobody acts on, counts that change no decision, zero counts. Big counts become a dot or go.
+- **Nothing-facts:** grade each fact (decides, delights, nothing; `references/budgets.md`) and cut the third kind: system facts nobody acts on, counts that change no decision, zero counts. Big counts become a dot or go.
 - **Unneeded controls:** toggles, filters, sort and search the task doesn't need; short lists need none.
 - **Machinery receipts:** steps run, files read, "AI is thinking…" once the result shows.
 
-- **Over budget:** check each surface against `references/budgets.md`; drop the "nothing" items, move the rest one step away by kind. With `OPENROUTER_API_KEY`, `scripts/grade.mjs spec.json --surface <row>` ranks them (experimental; answer its questions yourself without a key).
+- **Over budget:** check each surface against `references/budgets.md`; drop the "nothing" items, move the rest one step away by kind. `decider: on` in status: run `grade.mjs` once per over-budget surface first (budgets.md Decider); off: answer its questions yourself.
 
 ## 2. Reduce
 - **Status:** many statuses boil down to the one or two that need a person; the rest stays calm.

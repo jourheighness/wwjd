@@ -66,8 +66,8 @@ Size classes come from the slot: wrap it in `.fit`, never a shrink-wrapped flex 
 **Hover-revealed actions** (lint `hover-hidden`, `hover-no-fallback`; runtime `hover-shift`, `hover-unreachable`):
 - Only shortcuts hide, each also in the visible ⋯ or the detail view.
 - **Placement:** the toolbar sits at the row's top-end corner, in the same spot on every row, over the trailing meta (time); never mid-row or trailing variable-width text.
-- **Unread or new marks** sit at the row's end beside the time, never touching the avatar (a dot on or next to an avatar reads as presence). Owner, 2026-10-16.
-- Hidden only under `(hover: hover) and (pointer: fine)`, by opacity; shown while hovered, focused within, selected or menu open (`.row-actions`).
+- **A mark sits by what it describes:** an item's own state (unread, new, changed) sits at the row's end with its meta; a mark touching an avatar reads as that person's presence. Where the person can flip that state (read/unread), the mark is the toggle and the toolbar never repeats it (`rules/states.md` One home per state). Owner, 2026-10-16.
+- Hidden only under `(hover: hover) and (pointer: fine)`, by opacity; shown while hovered, keyboard-focused within (`:has(:focus-visible)`) or menu open (`.row-actions`). Never `:focus-within` or selection: a click would hide the meta it swaps with (lint `focus-within-swap`).
 - Space reserved: own column, or swapped with trailing meta in one grid area (`.swap-meta`). Never over the identifier; never animate width or margin.
 - Tab order row link → actions; each names its item (`aria-label="Archive <title>"`). Row actions appear at once; hover cards wait 300–500ms, stay ~500ms, close on Esc, are hoverable (WCAG 1.4.13).
 - **Never hover-reveal:** the view's main job (Approve in a review queue), touch-first registers, status and warnings, tables compared across rows, a destructive action with no other path.
@@ -75,7 +75,7 @@ Size classes come from the slot: wrap it in `.fit`, never a shrink-wrapped flex 
 **Test:** wrapper stories at 240, 320, 480, 720 with worst-case data plus one resizable `.probe` (viewport addons test media queries, not containers); then `scripts/render.mjs fit <url>`.
 
 ## Responsive structure
-- Check 320, 390, 768, 1440, 1920 (runtime `overflow`). Container queries for components, viewport queries for pages (lint `viewport-in-component`).
+- Check 320, 390, 768, 1440, 1920 (runtime `page-overflow`). Container queries for components, viewport queries for pages (lint `viewport-in-component`).
 - **Product UI responds structurally, not with fluid type:** sidebar → rail (56–72px, opt-in; labels stay in the DOM with tooltips) → off-canvas drawer on phones. Panes stack, collapse or resize; three fixed panes never crush main at 1280.
 - **Wide tables:** keep the 3 columns that carry the work; the rest to a drill-in or column picker. Sticky header and first column. Never shrink text.
 - **390 composed on its own,** by priority, not the desktop's order.

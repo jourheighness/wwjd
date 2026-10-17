@@ -2,7 +2,8 @@
 // wwjd: project status, static UI lint, baseline ratchet and debt map. No deps, Node 20.10+.
 //
 // Usage: node wwjd.mjs <command> [paths...] [options]
-//   status                     stage (scratch | kit | messy), baseline files, kit, Storybook, golden and legacy files
+//   status                     stage (scratch | kit | messy), baseline files, kit, Storybook, golden and legacy files,
+//                              decider on/off (OPENROUTER_API_KEY: grade.mjs grades over-budget surfaces)
 //   check [paths]              lint UI files (default: files changed against HEAD plus untracked)
 //     --register <name>        persuade showcase editorial reference operate monitor converse transact flow native
 //     --new                    only errors, plus warnings not in .wwjd-baseline.json (errors only when there is none)
@@ -109,6 +110,7 @@ const PROGRESS_WORD = /\b(done|complete[ds]?|finished|answered|scored|published|
 // sev: default severity. off: registers where the rule doesn't apply. ok(lines, i): context that makes the hit fine.
 const rules = [
   // ── floor: accessibility and honesty ──
+  { id: "focus-within-swap", sev: "warn", re: /:focus-within[^{}]*\{[^}]*\b(opacity:\s*0|visibility:\s*hidden|display:\s*none)/, msg: "toggles visibility on :focus-within, so a mouse click toggles it too (meta flashes on select); use :has(:focus-visible)" },
   { id: "default-look", sev: "warn", re: /--a:\s*258\s*;/, msg: "the kit's default accent, unchanged: pick the look (wwjd-look quick mode); default tokens are a floor" },
   { id: "no-zoom", sev: "error", re: /user-scalable\s*=\s*no|maximum-scale\s*=\s*1(\.0)?\b/, msg: "zoom disabled" },
   { id: "tabindex-positive", sev: "error", re: /tabIndex=\{?["']?[1-9]/, msg: "positive tabIndex breaks keyboard order" },
@@ -142,8 +144,8 @@ const rules = [
   { id: "native-title", sev: "warn", re: /<(?!svg\b|title\b|iframe\b|abbr\b|link\b|frame\b|object\b)[a-z][a-z0-9]*\b[^>]*\stitle=["{]/, only: MARKUP, msg: "native title tooltip; use the kit tooltip (works on focus and touch)" },
   // ── fit: components at every size ──
   { id: "identifier-truncate", sev: "error", re: /<(h[1-6]|label)\b[^>]*\b(truncate|text-ellipsis|line-clamp-1|whitespace-nowrap)\b|data-identifier[^>]*\b(truncate|text-ellipsis|line-clamp-\d|whitespace-nowrap)\b|\b(truncate|text-ellipsis|line-clamp-\d|whitespace-nowrap)\b[^>]*data-identifier/, only: MARKUP, msg: "identifier truncated; titles and names wrap (rules/layout.md)" },
-  { id: "hover-hidden", sev: "error", re: /\b(hidden|invisible)\b[^"'`]*\bgroup-hover:(flex|block|inline-flex|visible|grid)\b/, only: MARKUP, msg: "hover reveal with display/visibility: keyboard can't reach it; use opacity plus focus-within" },
-  { id: "hover-no-fallback", sev: "error", re: /\bopacity-0\b[^"'`]*\bgroup-hover:opacity-100\b/, unless: /group-focus-within:opacity-100/, only: MARKUP, msg: "hover-only reveal: add group-focus-within and keep it visible on touch (hover:none)" },
+  { id: "hover-hidden", sev: "error", re: /\b(hidden|invisible)\b[^"'`]*\bgroup-hover:(flex|block|inline-flex|visible|grid)\b/, only: MARKUP, msg: "hover reveal with display/visibility: keyboard can't reach it; use opacity, shown on group-has-[:focus-visible]" },
+  { id: "hover-no-fallback", sev: "error", re: /\bopacity-0\b[^"'`]*\bgroup-hover:opacity-100\b/, unless: /group-(has-\[:focus-visible\]|focus-within):opacity-100/, only: MARKUP, msg: "hover-only reveal: add group-has-[:focus-visible]:opacity-100 (keyboard focus, not clicks) and keep it visible on touch (hover:none)" },
   { id: "between-wrap", sev: "warn", re: /\bjustify-between\b[^"'`]*\bflex-wrap\b|\bflex-wrap\b[^"'`]*\bjustify-between\b/, only: MARKUP, msg: "space-between with wrap strands the wrapped item; use ms-auto on the trailing group" },
   { id: "viewport-in-component", sev: "warn", re: /@media\s*\((min|max)-width/, only: /\.(tsx|jsx|vue|svelte)$/, skip: (f) => !/components?\//.test(f), msg: "viewport breakpoint inside a component; use a container query" },
   { id: "component-placement", sev: "warn", re: /^\s*\.[\w-]+\s*\{[^}]*\b(grid-area:\s*[a-z][\w-]*|grid-column:\s*[a-z][\w-]*|order:\s*-?\d)/, only: /\.(css|scss|tsx|jsx|vue|svelte|html|astro)$/, msg: "placement on a component class leaks into every grid it's reused in; put it on the parent's child selector (.row > .x)" },
@@ -341,8 +343,9 @@ if (cmd === "status") {
   read.push(golden.length ? `golden: ${golden.slice(0, 2).join(", ")}` : picks.length ? `golden (suggested): ${picks.slice(0, 2).join(", ")}` : "no golden file yet");
   const profile = process.env.WWJD_PROFILE ? "$WWJD_PROFILE" : existsSync(join(userCfg, "profile.md")) ? "~/.config/wwjd/profile.md" : null;
   if (profile) read.push(`profile ${profile} (workflow, locale only)`);
+  const decider = process.env.OPENROUTER_API_KEY ? (process.env.WWJD_DECIDER || "typesafe/jev-1.14") : null;
   if (opt.json) {
-    console.log(JSON.stringify({ stage, uiFiles: files.length, findings: findings.length, open: open.length, density: +density.toFixed(2), kit, tokens, files: have, decisionLog: log, profile, storybook: storybook(), golden, goldenSuggested: picks, legacy: cfg.legacy || [], register: cfg.register || null, read }, null, 2));
+    console.log(JSON.stringify({ stage, uiFiles: files.length, findings: findings.length, open: open.length, density: +density.toFixed(2), kit, tokens, files: have, decisionLog: log, profile, storybook: storybook(), golden, goldenSuggested: picks, legacy: cfg.legacy || [], register: cfg.register || null, decider, read }, null, 2));
   } else {
     console.log(`stage: ${stage}  (${files.length} UI files, ${open.length} ${base ? "new " : ""}findings, ${density.toFixed(2)}/file)`);
     console.log(`files: ${have.join(" · ")}`);
@@ -352,6 +355,7 @@ if (cmd === "status") {
     console.log(`register: ${cfg.register || "unset (name it per surface)"}`);
     console.log(`golden: ${golden.join(", ") || (picks.length ? `none set; suggested ${picks.join(", ")} (confirm, then add "golden" to .wwjd.json)` : "none")}`);
     console.log(`legacy: ${[].concat(cfg.legacy || []).join(", ") || "none"}  (never imitate)`);
+    console.log(decider ? `decider: on (${decider}); grade.mjs once per over-budget surface, before building it` : "decider: off (optional; grade facts yourself, references/budgets.md)");
     console.log(`read: ${read.join("; ")}`);
   }
   process.exit(0);

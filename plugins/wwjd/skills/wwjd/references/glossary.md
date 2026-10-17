@@ -20,7 +20,13 @@ The owner's words, used literally. A drawer is not a rail.
 | Ground / ink / accent | Base background, text colour, the one emphasis colour |
 | Tone step | A small lightness difference between surfaces, instead of a border or shadow |
 | Act / attend / calm | Do something now / keep an eye on it / needs no one, no signal colour |
+| Mark | A small sign of state on the item itself (dot, glyph, strike, faded swatch); one per state |
 | Needs-you signal | A mark that something needs you (often a dot, not a count); findable at a glance |
+| Fact grade | Decides (changes what the person does next) / delights (true, specific, builds trust or joy; never copy about the interface) / nothing (cut). Home: `budgets.md` |
+| Budget | A surface's min–max of facts and actions (`budgets.md`) |
+| Decider | The optional fast decision model behind `scripts/grade.mjs`; `wwjd.mjs status` says on or off |
+| Stretched target | A row's or card's title link whose `::after` covers the whole container; one target, one behaviour |
+| Hover toolbar | A row's shortcuts, shown on hover, keyboard focus inside or an open menu; each also in ⋯ or the detail view |
 | Christmas tree | Colour on everything, so nothing stands out |
 | Status zoo | Too many statuses; boil down to the ones a person acts on |
 | Machinery receipts | UI reporting the process ("read 14 files") instead of the result |

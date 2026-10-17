@@ -4,32 +4,41 @@ Every surface has a range. Below the minimum it is too thin to earn its own box 
 
 **Facts** = visible pieces of information (a label + value is one). **Actions** = visible controls besides the whole-surface click. The identifier, legal, consent, price (commerce) and safety text never count against the budget and never move.
 
-| Surface | Facts | Actions | Overflow goes to |
+**Grades** (one per fact; this file is their home):
+| Grade | Means | Gets |
+|---|---|---|
+| Decides | changes what the person thinks or does next | a place by the action it informs; the settling one its own moment |
+| Delights | true, specific, makes it feel better or more trustworthy; never copy about the interface | at most one moment where the surface has room |
+| Nothing | changes nothing; includes raw inputs when their derived answer shows | cut |
+
+Example, coffee delivered by drone: arrival time decides; "68 °C in your hands" delights, so it gets its own line; the distance is an input to the time, so it is nothing.
+
+| Surface (`--surface`) | Facts | Actions | Overflow goes to |
 |---|---|---|---|
-| List / table row | identifier + 2–5, on ≤2 lines (meta on one line) | row click + ≤1 inline | hover toolbar or ⋯; detail or peek |
-| Table | 4–7 columns | 1 primary per view, bulk on selection | column picker; detail |
-| Entity card | title + 2–4 | ≤1 primary + 1 secondary | expand, or the detail view |
-| Product card (listing) | image + name + price + 1–2 decision facts | card click (+ ≤1 visible, never hover-only) | product page |
-| Stat tile | 1 number + label + ≤1 comparison | tile click | drill-down |
-| Record header | identifier + status + ≤3 key facts | 1 primary + ≤2 secondary | tabs, side panel, ⋯ |
-| Dashboard | ≤5 regions, ≤4 charts, ≤4 headline numbers | ≤1 per region | drill-down pages, a second view |
-| Hero | headline ≤2 lines + lede ≤2 lines + ≤1 moment (proof or delight) | 1 (+1 quiet link); a tool hero holds its own CTA, ≤3 inputs | the next sections |
-| Landing section | 1 claim + 1 proof, ≤3 sub-points | ≤1 | FAQ `<details>`, docs, comparison page |
-| Pricing card | plan + price + the total for the chosen quantity ("$120 a month for 10 seats") + who-for (≤8 words) + ≤5 feature names | 1 | comparison table |
-| Form step | 1 question or task; ≤7 fields | 1 primary (Back on top) | "+ Add details", a later step, derived values |
-| Settings group | ≤7 settings + ≤1 preview of their effect (a rendering, not a fact) | auto-save, or 1 save per page | sub-page, "Advanced" disclosure |
-| Dialog | title + ≤2 sentences + ≤3 fields | 1 primary + 1 secondary | a page or drawer |
-| Drawer / side panel | identifier + ≤8 facts in groups | 1 primary + ≤2 | the full record page |
-| Popover | ≤5 facts | ≤2 | the detail view |
-| Tooltip | 1 line, non-essential | 0 | (essential info never lives here) |
-| Toast | 1 line | ≤1 (Undo) | activity log |
-| Menu | ≤7 ungrouped, or groups of ≤5 | – | search inside the menu, sub-menu |
-| Toolbar | – | 1 primary + ≤3 visible | ⋯ |
-| Sidebar nav | ≤7 top items | 1 create | groups, "More", command palette |
-| Mobile tab bar | 3–5 tabs | – | a "More" tab, in-screen nav |
-| Empty state | title + 1 sentence | 1 | docs link |
-| Chat answer | the answer first, ≤1 screen | ≤3 follow-ups | collapsed sources, "Show steps" |
-| Notification item | 1 line + time | ≤1 | the thing it points to |
+| List / table row (`row`) | identifier + 2–5, on ≤2 lines (meta on one line) | row click + ≤1 inline | hover toolbar or ⋯; detail or peek |
+| Table (`table`) | 4–7 columns | 1 primary per view, bulk on selection | column picker; detail |
+| Entity card (`card`) | title + 2–4 | ≤1 primary + 1 secondary | expand, or the detail view |
+| Product card (listing) (`product-card`) | image + name + price + 1–2 decision facts | card click (+ ≤1 visible, never hover-only) | product page |
+| Stat tile (`stat`) | 1 number + label + ≤1 comparison | tile click | drill-down |
+| Record header (`header`) | identifier + status + ≤3 key facts | 1 primary + 1 secondary + ⋯ | tabs, side panel, ⋯ |
+| Dashboard (`dashboard`) | ≤5 regions, ≤4 charts, ≤4 headline numbers | ≤1 per region | drill-down pages, a second view |
+| Hero (`hero`) | headline ≤2 lines + lede ≤2 lines + ≤1 moment (proof or delight) | 1 (+1 quiet link); a tool hero holds its own CTA, ≤3 inputs | the next sections |
+| Landing section (`section`) | 1 claim + 1 proof, ≤3 sub-points | ≤1 | FAQ `<details>`, docs, comparison page |
+| Pricing card (`pricing`) | plan + price + the total for the chosen quantity ("$120 a month for 10 seats") + who-for (≤8 words) + ≤5 feature names | 1 | comparison table |
+| Form step (`form-step`) | 1 question or task; ≤7 fields | 1 primary (Back on top) | "+ Add details", a later step, derived values |
+| Settings group (`settings`) | ≤7 settings + ≤1 preview of their effect (a rendering, not a fact) | auto-save, or 1 save per page | sub-page, "Advanced" disclosure |
+| Dialog (`dialog`) | title + ≤2 sentences + ≤3 fields | 1 primary + 1 secondary | a page or drawer |
+| Drawer / side panel (`drawer`) | identifier + ≤8 facts in groups | 1 primary + 1 secondary + ⋯ | the full record page |
+| Popover (`popover`) | ≤5 facts | ≤2 | the detail view |
+| Tooltip (`tooltip`) | 1 line, non-essential | 0 | (essential info never lives here) |
+| Toast (`toast`) | 1 line | ≤1 (Undo) | activity log |
+| Menu (`menu`) | ≤7 ungrouped, or groups of ≤5 | – | search inside the menu, sub-menu |
+| Toolbar | – | 1 primary + ≤3 visible tools (icon toggles, filters) | ⋯ |
+| Sidebar nav (`nav`) | ≤7 top items | 1 create | groups, "More", command palette |
+| Mobile tab bar (`tabbar`) | 3–5 tabs | – | a "More" tab, in-screen nav |
+| Empty state (`empty`) | title + 1 sentence | 1 | docs link |
+| Chat answer (`chat`) | the answer first, ≤1 screen | ≤3 follow-ups | collapsed sources, "Show steps" |
+| Notification item (`notification`) | 1 line + time | ≤1 | the thing it points to |
 
 ## When it overflows
 1. **Inclusion needs proof.** Ask "should this stay?", never "should this go?". An item stays only if the person needs it here to decide or act now; the default is out.
@@ -39,7 +48,7 @@ Every surface has a range. Below the minimum it is too thin to earn its own box 
    - Would the person notice if it were gone?
    - Is it needed now, or only later or elsewhere?
    An item that restates or explains never stays, however "important" it sounds.
-3. **Throw away** what nobody would miss: system facts (sync time, internal IDs, warehouse, distance when time is shown), duplicates.
+3. **Throw away** what nobody would miss: system facts (sync time, internal IDs, warehouse), inputs whose answer is shown, duplicates.
 4. **Keep** what earned its place, ranked, up to the max, plus at most one "delights" moment where the surface has room (hero, empty state, success). A free slot stays empty unless an unsure item is justified.
 5. **Move** the rest one step away, by kind; explainers move, they don't vanish:
    - an explanation of something visible → tooltip (never essential);
@@ -52,4 +61,17 @@ Every surface has a range. Below the minimum it is too thin to earn its own box 
 7. **Say where it went** in the handover, one line per moved group ("SKU, weight → product page specs").
 8. **Log cuts** (`.wwjd/cuts.jsonl`; `grade.mjs` writes it when `.wwjd/` exists). Something cut again and again (subtitles, "Learn more", helper text under every field) becomes a ban in `bans.md` or DESIGN.md, so it stops being proposed.
 
-**Optional fast pass:** `scripts/grade.mjs spec.json --surface <row>` asks all of this of a decision model when `OPENROUTER_API_KEY` is set (experimental, `WWJD_DECIDER`, default `typesafe/jev-1.14`); unsure answers come back to you. Without a key it prints the same questions for you to answer.
+## Decider (optional)
+`scripts/grade.mjs` asks a fast decision model the questions above (OpenRouter, `OPENROUTER_API_KEY`, model `WWJD_DECIDER`, default `typesafe/jev-1.14`; experimental). `wwjd.mjs status` prints `decider: on` or `off`.
+- **When:** `on`, and a surface has more candidate facts than its budget: once, before building or simplifying it. Never per edit, never for a surface within budget.
+- **Off:** answer the same questions yourself (`grade.mjs spec.json --offline` prints them). Never wait for it, never ask for a key.
+- **Spec in a minute,** from the inventory you already have, at `.wwjd/grade/<surface>.json`:
+```json
+{ "goal": "find the order a customer is asking about", "surface": "order row in the support inbox",
+  "surfaceType": "row", "keep": ["customer"],
+  "items": { "customer": "Anna Berg", "total": "1 240 kr", "status": "Refund requested", "synced": "Synced 2 min ago" },
+  "object": "order", "actions": { "refund": "Refund", "reply": "Reply" },
+  "states": { "refund_requested": "the customer asked for a refund" } }
+```
+  `regions`, `actions` and `states` are optional; `keep` lists what never counts (identifier, legal, price, consent).
+- **Run** `node <skill>/scripts/grade.mjs .wwjd/grade/<surface>.json`. Apply `show` and `drop`; place moved items by their destination; decide every `?` yourself. Cuts are logged to `.wwjd/cuts.jsonl`. An error or timeout: carry on offline.

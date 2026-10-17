@@ -7,23 +7,21 @@ description: What Would Johannes Do. Opinionated UI/UX rules and workflow. Use b
 Opinions backed by use. If a rule would hurt this case, say so, propose the exception, apply once agreed.
 
 ## 0. Entry (once per session)
-1. Run `node <skill>/scripts/wwjd.mjs status` .
+1. Run `node <skill>/scripts/wwjd.mjs status`.
 2. Read what it lists: PRODUCT.md; DESIGN.md prose (Named rules, Do's/Don'ts in full); RATCHET.md Gotchas, Tells, `[design]`; decision-log lines naming the surface; 1-2 golden files; the user profile. Never imitate `legacy`.
-3. Create a missing file only when needed, short, vetoable defaults: PRODUCT.md if register or product type would be guessed; RATCHET.md to park a finding; no DESIGN.md: `wwjd-look` quick mode picks a subject-grounded look before the first build (default tokens are a floor, never the look). Never block showing work on a question.
-4. Name the register ("Register: Operate, settings") and route:
+3. Create a missing file only when needed, short, vetoable defaults: PRODUCT.md if register or product type would be guessed; RATCHET.md to park a finding; no DESIGN.md: `wwjd-look` quick mode picks a subject-grounded look before the first build. Never block showing work on a question.
+4. Name the register ("Register: Operate, settings"), read `registers/<name>.md`, and route:
 
 | Situation | Do (`commands/<verb>.md`) |
 |---|---|
 | `scratch`, "make me a...", no DESIGN.md | `start`, `wwjd-look` (quick mode), then explore or build |
-| add a component or screen | `build` (golden first) |
+| add a component or screen; messy screen in scope | `build` (golden first; messy: rebuild from a spec) |
 | "busy", "simplify", "clean up" | `simplify` (remove *and* reorder) |
 | "review", "what's wrong", screenshot | `review` |
 | "options", "show me", new flow | `explore` |
 | `messy` + broad ask, debt | `audit` |
 | palette, fonts, shape, brand, refs | `wwjd-look` skill |
 | motion, transitions, motion theme | `wwjd-animation` skill |
-| fault in a kit component | say so; fix it + its story, not the call site |
-| messy screen in scope | `build`: rebuild from a <=10-line spec |
 | small change | rules + loop only |
 
 ## 1. Precedence
@@ -36,18 +34,18 @@ Floor > project DESIGN.md + decision log > wwjd (more specific file wins) > user
 - **Reversibility:** money, legal commitments, account deletion, anything sent to others: a review step. All else undoable: undo lasts until the next action, announced (`role=status`), keyboard-reachable; no API undo: hide now, commit on expiry.
 - **Data:** judge UI only with realistic data.
 
-## 3. Rules (how: `rules/`)
-**Remove before adding.** Every element earns its place. No explaining or reassuring text; needing a caption means redesign. Nothing twice. **Grade every fact:** decides, delights/reassures, or nothing (cut it); the one that settles or delights gets its own moment; unequal facts never equal weight. **Surface budgets** (`references/budgets.md`): each surface has a min–max; overflow is thrown away or moved one step away, and the handover says where. Numbers: small-set progress yes ("3 of 8 done" muted above its bar, drops first); big counts: a dot or nothing; no zero or pressure counts; decision inputs stay. Labels: verb + target, sentence case, product words. Build what was asked; every state is part of it. **Intended flow first:** the backend never shrinks it; a named adapter marked `// TODO(api): ...`, never the worse pattern.
+## 3. Rules (how: `rules/<paragraph>.md`, copy: `rules/copy.md`)
+**Remove before adding.** Every element earns its place. No explaining or reassuring text; needing a caption means redesign. Nothing twice. **Grade every fact:** decides, delights, or nothing (cut it); the one that settles or delights gets its own moment; unequal facts never equal weight. **Surface budgets** (`references/budgets.md`): each surface has a min–max; overflow is thrown away or moved one step away, and the handover says where. Status shows `decider: on`: `grade.mjs` once per over-budget surface, before building it. Counts: small-set progress yes; big or zero counts become a dot or nothing; decision inputs stay. Labels: verb + target, sentence case, product words. Build what was asked; every state is part of it. **Intended flow first:** the backend never shrinks it; a named adapter marked `// TODO(api): ...`, never the worse pattern.
 
-**One system.** Kit and tokens; a missing look is a kit variant. Same job, same component; a better pattern replaces the old across the scope. Global (shell, nav, grid, spacing) before local; related parts mirror. Mature package first; fix the pattern. The user's surface words literally (a drawer is not a rail, panel or sheet).
+**One system.** Kit and tokens; a missing look is a kit variant; a faulty kit component is fixed in the kit with its story, never at the call site. Same job, same component; a better pattern replaces the old across the scope. Global (shell, nav, grid, spacing) before local; related parts mirror. Mature package first. The user's surface words literally (a drawer is not a rail, panel or sheet).
 
 **Layout.** Grid: content on column edges; surface and padding hang in the gutter. Start-aligned, one left edge; centre only when motivated, decided once per page kind. No slot for the absent; the longest real string. Scale spacing; no cards in cards. **The identifier never disappears:** wraps, never ellipsis; meta drops, then shortcuts fold into ⋯, then stack.
 
-**Actions.** One primary + one secondary per region, a tertiary only with a reason, the rest in ⋯, a hover toolbar or detail. Next action shown; details one step away. **Action stays with its context:** a widget that informs a decision (picker, estimator, calculator) holds its CTA and carries its input into the flow; splitting "try it" from "do it" reads as not wanting the person to act. Whole row is the target; only pressable looks pressable. Default, not asking; undo, not "are you sure".
+**Actions.** One primary + one secondary per region, a tertiary only with a reason, the rest in ⋯, a hover toolbar or detail. Next action shown; details one step away. **Action stays with its context:** a widget that informs a decision (picker, calculator) holds its CTA and carries its input into the flow. Whole row is the target; **one target, one behaviour:** one cursor, one hover and one click everywhere inside what looks like one thing. Only pressable looks pressable; an action never looks like a state. **One home per state:** each state has one control and one mark; everywhere else shows it, never repeats it. Default, not asking; undo, not "are you sure".
 
-**Stable under the hand.** State changes only on intent. Scroll and focus move only on action; overlays never cover the work. Motion explains a change or goes, interruptible, transform/opacity only.
+**Stable under the hand.** State changes only on intent, and a change touches only what changed: same box and height, nothing else hides, swaps or replays. Scroll and focus move only on action; overlays never cover the work. Motion explains a change or goes, interruptible, transform/opacity only.
 
-**Visual.** Colour means attention; needs-you findable at a glance. Ink text; contrast steps before borders or shadows; flat, no decorative gradient, glass or glow. Both themes cared for. The bar is the category's best, never tame. **Calm is not bare:** fewer elements, each designed. Nouns show their identity (icon, logo, avatar), values show in their form, and a setting that makes something visible shows a preview of it (`rules/visual.md` Crafted calm). Long-familiar high-trust surfaces: behaviour before looks; a 50ms glance must read "better", not "different".
+**Visual.** Colour means attention; needs-you findable at a glance. Ink text; contrast steps before borders or shadows; flat, no decorative gradient, glass or glow. Both themes cared for. The bar is the category's best, never tame. **Calm is not bare:** fewer elements, each designed. Nouns show their identity (icon, logo, avatar), values show in their form, and a setting that makes something visible shows a preview of it. Long-familiar high-trust surfaces: behaviour before looks; a 50ms glance must read "better", not "different".
 
 **States and flow.** First use, one, many, longest, empty, error, loading, no permission. A to B, obvious next step, no dead ends or circles, ends on the result.
 
@@ -73,4 +71,17 @@ Mobile/native: plus `native.md`. The other width works, composed on its own. Hyb
 - **On request** ("cold review", unattended loops): wwjd-critic, personas.
 
 ## 6. Corrections become rules
-"rule", "always", "never" or a repeated correction: write it that turn, dated, quoted. Rules: decision log or DESIGN.md; work: RATCHET.md Backlog `[design]`. Newest wins; mark the old superseded. Cross-project: propose a wwjd change. Help phrase it.
+"rule", "always", "never" or a repeated correction: write it that turn, dated, quoted. Rules: decision log or DESIGN.md; work: RATCHET.md Backlog `[design]`. Newest wins; mark the old superseded. Cross-project: propose a wwjd change as a general principle plus one example.
+
+## 7. Lookups (`references/`, one at a time)
+| Need | Read |
+|---|---|
+| over budget | `budgets.md` |
+| layout, shell | `layouts.md` (index, then one `### id`) |
+| app type | `product-types.md` (one block) |
+| landing hero | `heroes.md` |
+| AI feature | `ai.md` |
+| generic look | `bans.md` |
+| no kit yet | `baseline.md` |
+| unclear rule | `examples.md` |
+| a term | `glossary.md` |

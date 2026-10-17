@@ -4,7 +4,7 @@ The how behind SKILL.md's copy rules. Product UI copy is labels, values and one-
 
 ## Labels
 - **Verb + target:** "Send invite to Anna", "Delete 5 items". The verb carries through: "Publish" → "Published". Never OK, Submit, Yes/No, Click here, Learn more, Get started (lint `banned-label`).
-- **List items are names.** Feature, plan and setting lists name the thing in ≤ ~5 words; an explanatory tail on each item is an explainer, cut or moved to a tooltip or the comparison table.
+- **List items are names.** Feature, plan and setting lists name the thing in ≤ ~5 words ("Guest seats", not "Free guest seats, for clients who see only the projects you share"). A tail stays only when it is the difference ("5,000 runs a month"); any other tail is an explainer: cut it or move it to a tooltip or the comparison table. Owner, 2026-10-16: a better-looking pricing card lost on this alone.
 - **Remove** takes it out of here (it exists elsewhere); **delete** destroys it.
 - **≤ ~4 words.** Legally required wording (the EU order button) is never shortened.
 - **One term per concept,** from the product's glossary; no system words (status, event, run, signal, tenant, entity). Codes and IDs as quiet secondary text. Settings describe the outcome, not the implementation.

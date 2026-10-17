@@ -87,11 +87,12 @@ Success: the person completes the task and gets back to work. A calm product wit
 
 ## Settings
 - 5–9 categories in a sub-nav. Sections of rows: label + one-line hint at the start, control at the end; ≤7 fields per group.
-- Toggles and selects save instantly; text fields save per section. Never a toggle that waits for Save.
+- Toggles and selects save instantly (`rules/actions.md` Toggles); text fields save per section.
 - Members is a table. Billing and deletion go through review sheets. Advanced collapsed at the end; the danger zone kept apart, last.
 - Settings search once there are more than ~8 sections. Reset to default per setting or section.
 - Preferences persist per person: never reset on reload or another device.
-- **Rich, not loud:** row = glyph tile + label + value or hint at the start, control at the end. Channel and matrix headers carry the channel icon. Always-on = lock glyph + reason, never a faded control.
+- **Rich, not loud:** row = glyph tile + label + value or hint at the start, control at the end. A noun with identity carries its glyph wherever it labels something, column headers included (`rules/visual.md` Crafted calm). Always-on = lock glyph + reason, never a faded control.
+- **Dependent settings show the parent's state, never its control:** when a channel is off, its column header reads "Off" and its cells dim with saved values kept, same row height; the switch lives only on the channel row (`rules/states.md` One home per state).
 - **Show what it does:** notification, digest, theme and template settings get a live preview, as a sticky aside when the main pane is ≥62rem, inline under the control otherwise.
 
 ## Screen budgets

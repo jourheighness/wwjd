@@ -29,7 +29,7 @@ For anything that doesn't exist yet, or "show me options". Small fixes skip it. 
 - **The intended flow, not today's API:** every step, state and transition; note what needs backend support.
 - **Real material:** the project's tokens and kit, realistic messy data (long names, one, many, empty), shown where it lives at its real sizes next to its neighbours. Light and dark when visual; interactive when the feel matters.
 - **One comparison page** (an HTML file, an Artifact, a story, a sandbox): a letter and a short name per variant, no prose on the page (reasoning goes in the message), screens on a neutral dark surround. Cluttered → a fresh page with only the live candidates.
-- **Each variant meets every must-requirement,** or it's cut. A requirement no variant meets is the brief for a new one.
+- **Each variant meets every must-requirement and the surface budgets** (`references/budgets.md`), or it's cut. A requirement no variant meets is the brief for a new one.
 - **Before sharing:** `wwjd.mjs check` per variant. Lint only; the full checks wait for the milestone.
 
 ## 4. Picking

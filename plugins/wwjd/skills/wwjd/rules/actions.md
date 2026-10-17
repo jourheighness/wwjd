@@ -17,9 +17,11 @@ The how behind SKILL.md's Actions rules. A region is a card, row, toolbar, dialo
 - **Precise values:** number input with stepper, or slider plus input; never a slider alone.
 
 ## Affordance
-- **Row target:** the title is a link or button stretched over the row; inner actions sit above it as icon buttons. Never `onClick` on the container (lint `div-click`); no nested button for the same job. Links navigate, buttons act.
+- **Row target (one target, one behaviour):** the title is a link or button stretched over the row or card; inner actions sit above it as icon buttons. Never `onClick` on the container (lint `div-click`); no nested button for the same job. Links navigate, buttons act.
+- **The stretched target is the top layer:** only real controls rise above it (`position: relative; z-index: 1`). Positioned text or decoration inside lifts above the target: a text cursor, the hover drops (runtime `target-hole`). Hover fills key off the container (`.card:hover`), never the link. Owner, 2026-10-17 (a card's hover flickered over its text).
 - **Pressable:** filled or bordered, or a row with hover fill and chevron. Icon-only buttons have a resting container (subtle fill or outline), a tooltip, and a name containing the visible text.
 - **Not pressable:** status is a dot or muted text in a `<span>`, never a pill or button.
+- **Actions never look like states:** an action icon never borrows a state's mark (an empty ring reads as "unread"); use the verb's glyph (check, envelope) with a label.
 - **Icons** do exactly what they show; one library, one stroke; no emoji icons.
 - **Toggles:** icon, label and tooltip flip with state ("+ Zoom in" → "− Zoom out"), `aria-pressed` or updated name, pressed = filled container; out of sync is a defect. A settings toggle applies at once; needing Save makes it a checkbox; one save model per page (instant + undo). Label the setting positively ("Notifications"), never bare On/Off.
 - **Disabled = "not yet":** reason in a tooltip (`aria-disabled`, focusable) or inline. Hide what can never apply. Read-only looks different from disabled.

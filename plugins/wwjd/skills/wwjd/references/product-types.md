@@ -92,8 +92,8 @@ Grep `### <n>. <type>` and read only that block. Keys: **Obj** core objects · *
 - **Jobs:** an exec checks whether things are on track; the metric owner explains a variance; an analyst ships the weekly report.
 - **First:** a dashboard is right here. A scorecard of 4–8 metrics, each against target and a named prior period, with variance flagged.
 - **Struct:** Monitor (exec blueprint), plus Editorial for owner commentary; a scorecard table: metric, actual, target, change, sparkline, owner; each metric opens a detail view with its segment breakdown.
-- **Sig:** Weekly business review format: trailing 6 weeks plus 12 months, year over year; Plan vs actual; Metric definitions available on hover.
-- **Do:** show each metric's definition on hover; flag only variances beyond a threshold; put event annotations on the line; keep written commentary next to the number; offer scheduled email and export.
+- **Sig:** Weekly business review format: trailing 6 weeks plus 12 months, year over year; Plan vs actual; Metric definitions in a tooltip.
+- **Do:** show each metric's definition in a tooltip; flag only variances beyond a threshold; put event annotations on the line; keep written commentary next to the number; offer scheduled email and export.
 - **Don't:** green-arrow cards with no comparison → value, change against a named period, and target; 20 metrics → only those tied to decisions.
 - **#:** actual vs target, trend, the north-star metric and its inputs | cumulative totals that only go up.
 

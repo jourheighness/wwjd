@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // grade.mjs (experimental): grade content by the surface's goal with a fast decision model.
 //   node grade.mjs spec.json [--surface row|card|hero|…] [--budget N] [--offline]
-// Budgets: references/budgets.md (max visible facts; kept items never count).
+// When: once per surface with more candidate facts than its budget, before building it (references/budgets.md Decider).
+// Budgets: references/budgets.md (max visible facts; kept items never count); --surface keys are its `key` column.
 // spec.json: { "goal": "...", "surface": "...",
 //   "items":   { "key": "text as shown", ... },          role + placement + rank, budget split
 //   "keep":    ["key", ...],                              hard rules: identifier, legal, price, consent
@@ -16,13 +17,15 @@ import { readFileSync, existsSync, appendFileSync } from "node:fs";
 
 const args = process.argv.slice(2);
 const file = args.find(a => !a.startsWith("--"));
-if (!file) { console.error("usage: grade.mjs spec.json [--budget N] [--offline]"); process.exit(2); }
+if (!file) { console.error("usage: grade.mjs spec.json [--surface <key>] [--budget N] [--offline]"); process.exit(2); }
 const spec = JSON.parse(readFileSync(file, "utf8"));
-const SURFACES = { row: 5, table: 7, card: 4, "product-card": 3, stat: 2, header: 4, hero: 4, section: 4, pricing: 6,
-  "form-step": 7, settings: 7, dialog: 4, drawer: 9, popover: 5, toast: 1, empty: 2, notification: 1 };
+// Max counted facts per budgets.md row (identifier, legal, price, consent go in `keep` and never count).
+const SURFACES = { row: 5, table: 7, card: 4, "product-card": 3, stat: 2, header: 4, dashboard: 4, hero: 3, section: 5, pricing: 7,
+  "form-step": 7, settings: 8, dialog: 5, drawer: 8, popover: 5, tooltip: 1, toast: 1, menu: 7, nav: 7, tabbar: 5, empty: 2, chat: 3, notification: 2 };
 const opt = name => args.includes(name) ? args[args.indexOf(name) + 1] : undefined;
 const surfaceType = opt("--surface") || spec.surfaceType;
 const budget = Number(opt("--budget")) || spec.budget || SURFACES[surfaceType] || 4;
+if (!opt("--budget") && !spec.budget && !SURFACES[surfaceType]) console.error(`grade: no budget for surface "${surfaceType ?? ""}" (keys: ${Object.keys(SURFACES).join(" ")}); using 4. Pass --budget N.`);
 const key = process.env.OPENROUTER_API_KEY;
 const model = process.env.WWJD_DECIDER || "typesafe/jev-1.14";
 const offline = args.includes("--offline") || !key;
@@ -66,7 +69,7 @@ for (const k of Object.keys(spec.items || {})) {
 for (const k of Object.keys(spec.regions || {})) {
   questions[`region:${k}`] = { type: "score", instructions: `How prominent should region \`regions.${k}\` be, given \`goal\`?`, criteria: PROMINENCE };
 }
-for (const k of Object.keys(spec.states || {})) {
+for (const k of spec.actions ? Object.keys(spec.states || {}) : []) {
   questions[`state:${k}`] = { type: "choice", instructions: `For this \`object\` in state \`states.${k}\`, which one action should be the primary button?`, criteria: spec.actions };
 }
 const state = { goal: spec.goal, surface: spec.surface, items: spec.items, regions: spec.regions, object: spec.object, states: spec.states };
@@ -82,13 +85,16 @@ if (offline) {
   process.exit(0);
 }
 
-const res = await fetch("https://openrouter.ai/api/alpha/decisions", {
-  method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-  body: JSON.stringify({ model, state, questions }),
-});
-const out = await res.json();
+let res, out;
+try {
+  res = await fetch("https://openrouter.ai/api/alpha/decisions", {
+    method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model, state, questions }), signal: AbortSignal.timeout(20000),
+  });
+  out = await res.json();
+} catch (e) { console.error(`decider unreachable (${e.name}). Run with --offline and answer the questions yourself.`); process.exit(1); }
 if (!res.ok) { console.error(`decider error ${res.status}: ${JSON.stringify(out).slice(0, 300)}\nRun with --offline and answer the questions yourself.`); process.exit(1); }
-const a = out.answers;
+const a = out.answers || {};
 const sure = x => (x?.confidence ?? 0) >= .7;
 const unsure = [];
 
@@ -118,14 +124,14 @@ if (spec.items) {
   if (existsSync(".wwjd")) appendFileSync(".wwjd/cuts.jsonl", rows.filter(r => r.out !== "show").map(r => JSON.stringify({ at: new Date().toISOString(), surface: surfaceType || spec.surface, item: spec.items[r.k], to: r.out, flags: r.flags })).join("\n") + "\n");
 }
 if (spec.regions) {
-  const order = Object.keys(spec.regions).sort((x, y) => a[`region:${y}`].score - a[`region:${x}`].score);
+  const order = Object.keys(spec.regions).sort((x, y) => (a[`region:${y}`]?.score ?? 0) - (a[`region:${x}`]?.score ?? 0));
   console.log(`Leads: ${order[0]} (trust the lead; place the rest yourself). Order hint: ${order.join(" > ")}`);
 }
-if (spec.states) {
+if (spec.states && spec.actions) {
   console.log("Primary action per state");
   for (const k of Object.keys(spec.states)) {
     const s = a[`state:${k}`]; if (!sure(s)) unsure.push(`state:${k}`);
-    console.log(`${sure(s) ? " " : "?"} ${k.padEnd(14)} → ${spec.actions[s.choice]} (${s.confidence.toFixed(2)})`);
+    console.log(`${sure(s) ? " " : "?"} ${k.padEnd(14)} → ${spec.actions[s?.choice] ?? "?"} (${(s?.confidence ?? 0).toFixed(2)})`);
   }
 }
 if (unsure.length) console.log(`Unsure: ${unsure.join(", ")}. Decide these yourself.`);

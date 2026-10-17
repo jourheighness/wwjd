@@ -12,7 +12,8 @@
 //     text-collapsed · ring-clipped · value-fill-empty · control-height-mismatch
 //   runtime  the milestone checks: page-overflow (320/390/768/1440/1920), clipped-text, small-target (<24px),
 //     hover-shift (layout shift after hovering rows), focus-hidden (Tab stops invisible or under sticky chrome),
-//     reduced-motion (transform animations left under reduce), broken-image, spacing-drift (radii, max-widths, button styles)
+//     reduced-motion (transform animations left under reduce), broken-image, spacing-drift (radii, max-widths, button styles),
+//     target-hole (text above a stretched card link: a text cursor, the hover drops)
 //   --json    machine output. Exit 1 on errors.
 // Playwright: resolved from this project (npm i -D playwright) or this script's folder.
 // PW_EXE=<path to a Chromium binary> uses an existing build instead of the bundled one.
@@ -205,7 +206,9 @@ if (cmd === "runtime") {
         if (cs.overflowX === "visible" && el.scrollWidth > el.clientWidth + 1 && cs.display !== "inline" && cs.textOverflow !== "ellipsis") { out.push(["clipped-text", "warn", el.tagName.toLowerCase() + ": " + el.textContent.trim().slice(0, 40)]); break; }
       }
       const small = [...document.querySelectorAll("a[href], button, input, select, textarea, [role=button], [tabindex='0']")].filter((el) => {
-        if (!vis(el)) return false; const b = el.getBoundingClientRect();
+        if (!vis(el)) return false;
+        const st = getComputedStyle(el, "::after"); // a stretched link's target is its card
+        const b = (st.content !== "none" && st.position === "absolute" && el.offsetParent ? el.offsetParent : el).getBoundingClientRect();
         if (el.closest("p, li") && el.tagName === "A" && getComputedStyle(el).display === "inline") return false; // links in running text
         return b.width < 24 || b.height < 24;
       });
@@ -219,6 +222,17 @@ if (cmd === "runtime") {
       if (radii.size > 3) out.push(["spacing-drift", "warn", `${radii.size} radii: ${[...radii].slice(0, 6).join(" ")}`]);
       if (widths.size > 3) out.push(["spacing-drift", "warn", `${widths.size} max-widths`]);
       if (btn.size > 6) out.push(["spacing-drift", "warn", `${btn.size} button shapes`]);
+      const CTRL = "a[href], button, input, select, textarea, label, summary, [role=button], [tabindex]";
+      for (const t of [...document.querySelectorAll("a[href], button")].filter(vis).slice(0, 60)) {
+        const a = getComputedStyle(t, "::after"); if (a.content === "none" || a.position !== "absolute" || t.offsetParent === document.body) continue;
+        const c = t.offsetParent?.getBoundingClientRect(); if (!c || c.width < 80 || c.height < 40 || c.bottom < 0 || c.top > innerHeight) continue;
+        let hole = null;
+        for (let i = 1; i < 6 && !hole; i++) for (let j = 1; j < 6 && !hole; j++) {
+          const h = document.elementFromPoint(c.left + c.width * i / 6, c.top + c.height * j / 6);
+          if (h && h !== t && t.offsetParent.contains(h) && !h.closest(CTRL)) hole = h;
+        }
+        if (hole) { out.push(["target-hole", "error", `${(hole.className || hole.tagName).toString().split(" ")[0]} sits above the stretched link: text cursor, hover drops`]); break; }
+      }
       return out;
     });
     for (const [rule, sev, what] of r) add(w, rule, sev, what);
@@ -234,7 +248,10 @@ if (cmd === "runtime") {
         const bad = await page.evaluate(() => {
           const el = document.activeElement; if (!el || el === document.body) return null;
           const cs = getComputedStyle(el);
-          const ring = (cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0) || (cs.boxShadow && cs.boxShadow !== "none");
+          const has = (c) => (c.outlineStyle !== "none" && parseFloat(c.outlineWidth) > 0) || (c.boxShadow && c.boxShadow !== "none");
+          const ox = (c) => c.outlineStyle !== "none" && parseFloat(c.outlineWidth) > 0;
+          // the ring may sit on the stretched ::after or on the card (:has(:focus-visible))
+          const ring = has(cs) || has(getComputedStyle(el, "::after")) || [el.parentElement, el.parentElement?.parentElement, el.offsetParent].some((p) => p && ox(getComputedStyle(p)));
           const label = (el.getAttribute("aria-label") || el.textContent || el.tagName).trim().slice(0, 30);
           if (!ring) return "no visible focus on " + label;
           const b = el.getBoundingClientRect();

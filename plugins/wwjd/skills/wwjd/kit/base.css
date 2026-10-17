@@ -354,7 +354,7 @@ kbd, .kbd { display: inline-grid; place-items: center; min-width: 20px; height: 
 .hang-fill { position: relative; isolation: isolate; }
 .hang-fill::before { content: ""; position: absolute; inset: 0 calc(var(--pad-box) * -1); z-index: -1;
   border-radius: var(--r-2); background: var(--hover); opacity: 0; }
-.hang-fill:is(:hover, :focus-visible, :focus-within)::before { opacity: 1; }
+.hang-fill:is(:hover, :focus-visible, :has(:focus-visible))::before { opacity: 1; }
 .hang-fill:is([aria-selected="true"], [data-selected])::before { background: var(--selected); opacity: 1; }
 
 /* Size classes come from the slot. Put .fit on the slot wrapper, never on a shrink-wrapped flex item */
@@ -380,16 +380,17 @@ kbd, .kbd { display: inline-grid; place-items: center; min-width: 20px; height: 
 }
 
 /* Hover-revealed shortcuts: hidden by opacity only (keeps tab order), only where a fine pointer hovers,
-   and shown while the row is focused within, selected or has its menu open. Space stays reserved */
+   and shown while hovered, keyboard-focused inside (:has(:focus-visible), never :focus-within or selection:
+   a click must not swap the meta) or with its menu open. Space stays reserved */
 .row-actions { display: flex; gap: var(--space-1); transition: opacity var(--dur-fast) ease; }
 @media (hover: hover) and (pointer: fine) {
-  :is(.fit-row, .row):not(:hover, :focus-within, :has([aria-expanded="true"]), [aria-selected="true"]) .row-actions { opacity: 0; }
+  :is(.fit-row, .row):not(:hover, :has(:focus-visible), :has([aria-expanded="true"])) .row-actions { opacity: 0; } /* a click or selection never swaps meta */
 }
 /* Swap: trailing meta and actions share one grid area (mail-list pattern): the timestamp fades, actions appear */
 .swap-meta { display: grid; }
 .swap-meta > * { grid-area: 1 / 1; justify-self: end; transition: opacity var(--dur-fast) ease; }
 @media (hover: hover) and (pointer: fine) {
-  :is(.fit-row, .row):is(:hover, :focus-within, :has([aria-expanded="true"]), [aria-selected="true"]) .swap-meta > .meta-trailing { opacity: 0; }
+  :is(.fit-row, .row):is(:hover, :has(:focus-visible), :has([aria-expanded="true"])) .swap-meta > .meta-trailing { opacity: 0; }
 }
 @media not ((hover: hover) and (pointer: fine)) { .swap-meta > .meta-trailing { display: none; } } /* touch: actions stay visible */
 

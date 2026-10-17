@@ -18,19 +18,20 @@ plugins/wwjd/
     rules/          layout · actions · states · copy · visual (the how, read by topic)
     registers/      persuade · showcase · editorial · reference · operate · monitor ·
                     converse · transact · flow · native (platform overlay)
-    references/     product-types · layouts · ai · bans · examples · baseline · glossary
+    references/     budgets · product-types · layouts · heroes · ai · bans · examples · baseline · glossary
     kit/            tokens.css (look) · base.css (profiles, components, fit) · layouts.css
-    scripts/        wwjd.mjs (status, lint, baseline, debt map) · render.mjs (screenshots, fit, runtime)
+    scripts/        wwjd.mjs (status, lint, baseline, debt map) · render.mjs (screenshots, fit, runtime) ·
+                    grade.mjs (optional decider: grades facts against surface budgets)
   skills/wwjd-look/       the look
   skills/wwjd-animation/  motion
   agents/wwjd-critic.md   cold review, on request only
-  hooks/                  route.sh (points UI prompts at wwjd) · check.sh (lints each edited UI file)
+  hooks/                  route.sh (points UI prompts at wwjd, plus look or motion) · check.sh (lints each edited UI file)
   evals/                  trigger and quality evals for `claude plugin eval`
 docs/research/            archived research (faux-pas catalogue, layouts, look); not shipped in the skill
 ```
 
 ## How it runs
-1. **Entry, once per session:** `wwjd.mjs status` prints the stage (`scratch`, `kit`, `messy`), the baseline files, the kit, Storybook, golden and legacy files. The agent reads what it lists.
+1. **Entry, once per session:** `wwjd.mjs status` prints the stage (`scratch`, `kit`, `messy`), the baseline files, the kit, Storybook, golden and legacy files, and `decider: on|off`. The agent reads what it lists.
 2. **Route:** six verbs. `start` sets up a baseline, `build` builds or rebuilds, `simplify` removes and reorders, `review` returns a verdict and ranked findings, `explore` shows ~5 structure variants, `audit` maps the debt.
 3. **Loop:** show the work at once, react, adjust. A hook lints each edited UI file silently; one screenshot per handover; the full matrix only at milestones; the critic only when asked.
 
@@ -72,6 +73,7 @@ node plugins/wwjd/skills/wwjd/scripts/wwjd.mjs audit
 node plugins/wwjd/skills/wwjd/scripts/render.mjs shoot <url|file> [--one]
 node plugins/wwjd/skills/wwjd/scripts/render.mjs fit <url> [--selector css]
 node plugins/wwjd/skills/wwjd/scripts/render.mjs runtime <url>
+node plugins/wwjd/skills/wwjd/scripts/grade.mjs spec.json [--surface row] [--offline]   # decider; needs OPENROUTER_API_KEY, else prints the questions
 ```
 `wwjd.mjs` needs Node 20.10+ and nothing else. `render.mjs` needs Playwright in the project (`npm i -D playwright`), or `PW_EXE` pointing at an existing Chromium.
 

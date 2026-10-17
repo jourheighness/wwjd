@@ -18,6 +18,7 @@ The how behind SKILL.md's Visual rules. Choosing palette and faces is the `wwjd-
 - **Grounds:** tinted neutral, never yellow cream (`references/bans.md`); pure white when the brand needs it.
 
 ## Crafted calm (product screens)
+Calm is fewer elements, each designed; never a bare wireframe (Owner, 2026-10-16: "the settings got very very plain"). Test: `references/bans.md` Avoidance aesthetic.
 - **Three levels at a squint:** page title one tier above its section headings (app: `--text-display` vs `--text-heading`); group labels ink 600, never grey captions.
 - **Identity on nouns:** a channel, integration, place or person shows its glyph at the row start: a 16px icon on a 32px neutral `--fill` tile (`.mark`), or the real logo/avatar in its own colours (identity, not accent).
 - **The value in its form:** row ends show the current value in ink (`.setting-value`), connections a glyph + word, schedules a 3-stop line. A live preview of the effect (notification, email, theme) beats any caption; it uses seeded real data (`.preview-card`).

@@ -16,7 +16,7 @@ Review like an experienced designer: in one glance, by cutting. No scores. The o
 1. **Context:** the entry reads (SKILL.md), the register, the spec if any.
 2. **Render:** `render.mjs shoot` at both widths × light/dark; populated, empty, worst case (`rules/states.md`). `wwjd.mjs check` on the files.
 3. **What works, first,** in a few lines (calibration, not padding). Each deviation from the rules is intentional (applied consistently: note it), accidental (a finding) or unclear (ask).
-4. **Budgets and grades:** every surface against `references/budgets.md`; each fact decides, delights or nothing (`scripts/grade.mjs` optional). Over budget is a finding, with where the overflow goes.
+4. **Budgets and grades:** every surface against `references/budgets.md`; each fact decides, delights or nothing (`decider: on`: `grade.mjs` per over-budget surface). Over budget is a finding, with where the overflow goes.
 5. **UX laws pass** (below).
 6. **Findings, ranked** by severity (**blocks** the task · **major**, incl. any floor failure · **minor**). Each one: the element, where (`file:line` or screen), the rule it breaks, one concrete fix, stated as a count where possible ("Remind me later" ×4; 8 widgets at equal weight). Merge instances into their pattern; cross-screen patterns rank first.
 7. **Fault in the kit?** Say so: the fix goes to the component and its story, not each call site.

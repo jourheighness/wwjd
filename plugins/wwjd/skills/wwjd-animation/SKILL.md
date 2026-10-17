@@ -32,6 +32,7 @@ Motion explains a change, or it goes. Refines wwjd's motion rules; never loosens
 - **Springs:** for gestures (keep the throw's velocity) and the `springy` theme. Spatial springs may overshoot ≤2%; opacity and colour never spring. No elastic, no wobble.
 - **Origin:** popovers grow from their trigger (`--transform-origin`); dialogs from centre; sheets from their edge. Start at scale .95–.98, never 0.
 - **Interruptible:** CSS transitions, not keyframes, for anything toggled; `@starting-style` for entry. Re-trigger reverses from where it is. Never lock clicks while animating.
+- **State flips don't animate:** select, read and toggle states change instantly or with a ≤150ms colour fade; nothing swaps, slides or fades in. Patch in place, never rebuild the list, or rows replay their entry transitions (wwjd `rules/states.md`). Owner, 2026-10-17.
 - **One focus at a time:** one thing moves per moment; neighbours shift only via FLIP or a view transition.
 - **Reduced motion:** transforms drop; fades stay ≤120ms. Autoplay over 5s needs pause. Loops stop off-screen.
 - **Performance:** `transform` and `opacity` only (height via `grid-template-rows` or `<details>`); never `transition: all`; `will-change` only while moving; test at 4× CPU throttle.

@@ -175,12 +175,7 @@ Examples loaded live 2026-10-16 (headless Chromium, 1440×900 + 390×844). Godly
 | "Which one is right for me?" | 19 Finder, 1 Tool |
 
 ## Information grading
-- **Decides**: it changes whether they act. Keep it, next to the action.
-- **Delights**: true, small and specific. Give it **its own moment** (a line, a beat, a detail), never a bullet.
-- **Nothing**: cut it from the hero.
-- Coffee-to-a-flight example: flight time **decides** · arrival temperature **delights**, so it gets its own moment · distance is **nothing**.
-- Live precedent: Flighty's hero notification "Mom landed in New York, 6:32am (22m early) and ☀️ 88º" puts the deciding fact first and the delight last (flighty.com).
-- Test: if a competitor could say it unchanged, it is nothing.
+Grade every fact first (`budgets.md`). On a hero: the deciding fact sits next to the action; the delight gets its own beat, never a bullet; the rest is cut. Precedent: Flighty's hero notification "Mom landed in New York, 6:32am (22m early) and ☀️ 88º" puts the deciding fact first and the delight last (flighty.com). Test: if a competitor could say it unchanged, it is nothing.
 
 ## Bans
 - Left text / right image as the default. Use 14 only with a reason.
