@@ -3,3 +3,5 @@ name: dial-spacing-5
 tags: [dials]
 context:
   scaffold_script: fixture.sh
+max_turns: 40
+timeout_seconds: 900
