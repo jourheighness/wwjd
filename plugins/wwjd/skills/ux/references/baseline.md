@@ -2,7 +2,7 @@
 
 For a project with no design system, so a screen never comes out as raw HTML or an untouched library default. The project's own tokens and kit win; this fills gaps.
 
-- **Tokens:** `kit/tokens.css`, the default look preset (stone neutral, flat, Inter, radii 4/6/8/12). `wwjd-look` may replace it under the same variable names; never rename one. Re-check contrast after any change (4.5:1 text, 3:1 edges and focus).
+- **Tokens:** `kit/tokens.css`, the default look preset (stone neutral, flat, Inter, radii 4/6/8/12). `wwjd:look` may replace it under the same variable names; never rename one. Re-check contrast after any change (4.5:1 text, 3:1 edges and focus).
 - **Structure:** `kit/base.css` (components, `data-profile` type and rhythm, `data-density`); page frames in `kit/layouts.css`. Their comments carry the values.
 
 ## Primitives: never hand-roll dialogs, menus, selects or tooltips
@@ -39,7 +39,7 @@ For a project with no design system, so a screen never comes out as raw HTML or 
 | `.flow`, `.breakout` | Prose rhythm; reading column with feature/full breakouts |
 
 ## Faces
-- **Product UI:** Inter variable (opsz 14–32, 400–600) or the system stack when it should feel native. **Reading:** Source Serif 4 (`data-profile="reading"`). **Persuade/Showcase:** the brand face; choosing one is `wwjd-look`. **Mono:** only code, IDs, hashes.
+- **Product UI:** Inter variable (opsz 14–32, 400–600) or the system stack when it should feel native. **Reading:** Source Serif 4 (`data-profile="reading"`). **Persuade/Showcase:** the brand face; choosing one is `wwjd:look`. **Mono:** only code, IDs, hashes.
 
 ## The 15 details that make it read as a product
 1. Surfaces: a tone step first, a hairline second, a shadow only on overlays.

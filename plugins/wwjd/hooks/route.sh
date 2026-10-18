@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# UserPromptSubmit: point UI-shaped prompts at the wwjd skill, once per session.
+# UserPromptSubmit: point UI-shaped prompts at the wwjd:ux skill, once per session.
 # Silent for everything else. Extra words: WWJD_ROUTE_WORDS="banner|carousel|badge".
 command -v jq >/dev/null 2>&1 || exit 0
 input=$(cat)
@@ -46,15 +46,15 @@ if printf '%s' "$input" | jq -e --arg s "$strong${extra:+|$extra}" --arg w "$wea
   mkdir -p "$marker_dir" && touch "$marker_dir/$sid"
   also=$(printf '%s' "$input" | jq -r --arg l "$look" --arg m "$motion" --arg b "$b" --arg e "$e" '
     (.prompt // "") as $p
-    | [ (if ($p | test($b + "(" + $l + ")" + $e; "i")) then "wwjd-look for the look" else empty end),
-        (if ($p | test($b + "(" + $m + ")" + $e; "i")) then "wwjd-animation for motion" else empty end) ]
+    | [ (if ($p | test($b + "(" + $l + ")" + $e; "i")) then "wwjd:look for the look" else empty end),
+        (if ($p | test($b + "(" + $m + ")" + $e; "i")) then "wwjd:motion for motion" else empty end) ]
     | if length > 0 then " Also load " + join(" and ") + "." else "" end' 2>/dev/null)
   # Effective dials (plugin options reach hooks as CLAUDE_PLUGIN_OPTION_*; .wwjd.json overrides per project).
   dl=""; for k in creativity budget density motion voice rigor grade; do
     v=$(printenv "CLAUDE_PLUGIN_OPTION_$(printf '%s' "$k" | tr '[:lower:]' '[:upper:]')"); [[ "$v" =~ ^[a-z0-9]+$ ]] && dl="$dl $k=$v"; done
-  dline=$(WWJD_DIALS="${dl# }" node "${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/skills/wwjd/scripts/wwjd.mjs" dials 2>/dev/null)
+  dline=$(WWJD_DIALS="${dl# }" node "${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/skills/ux/scripts/wwjd.mjs" dials 2>/dev/null)
   case "$dline" in ""|"dials: all default") dline="" ;; *) dline=" $dline" ;; esac
-  jq -cn --arg c "This prompt looks like UI or UX work. Load the wwjd skill before designing, editing or reviewing UI; it routes to its rules and commands.$also$dline$nudge_text" \
+  jq -cn --arg c "This prompt looks like UI or UX work. Load the wwjd:ux skill before designing, editing or reviewing UI; it routes to its rules and commands.$also$dline$nudge_text" \
     '{hookSpecificOutput: {hookEventName: "UserPromptSubmit", additionalContext: $c}}'
 fi
 exit 0

@@ -9,6 +9,6 @@ Success: the visitor experiences the work; the interface recedes. Layouts: `case
 - **Index views** (list with hover preview, grid, full-bleed sequence) stay scannable: title, discipline, year, one line at most.
 - **Case studies read as Editorial** (`registers/editorial.md`): problem → move → result, told with real artefacts, captions with credit.
 - **Navigation:** next and previous project; back to the index restores scroll.
-- **Motion:** `wwjd-animation` skill. At most one signature transition between index and piece; never cursor-follow blobs, custom cursors or skill marquees.
+- **Motion:** `wwjd:motion` skill. At most one signature transition between index and piece; never cursor-follow blobs, custom cursors or skill marquees.
 - **Images:** modern formats, set dimensions, lazy below the fold.
 - **Contact:** one obvious way to reach the person or studio, on every page.

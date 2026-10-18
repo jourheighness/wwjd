@@ -1,17 +1,17 @@
 ---
-name: wwjd-look
-description: How a product looks. Palette, theme, colours, type face, shape, density, depth, brand and visual identity, chosen from live references and turned into contrast-checked tokens.css + DESIGN.md. Use for "make it look like…", "change the look/theme/palette/font", brand colours, a reference board or moodboard, look variants, or writing DESIGN.md. Pairs with the wwjd skill, which owns structure, flow and copy.
+name: look
+description: How a product looks. Palette, theme, colours, type face, shape, density, depth, brand and visual identity, chosen from live references and turned into contrast-checked tokens.css + DESIGN.md. Use for "make it look like…", "change the look/theme/palette/font", brand colours, a reference board or moodboard, look variants, or writing DESIGN.md. Pairs with wwjd:ux, which owns structure, flow and copy.
 compatibility: scripts/look.mjs needs Node 20.10+, no dependencies. Reference screenshots need Playwright.
 ---
 
-# wwjd-look
+# wwjd:look
 
 References → board → pick → `look.json` → `scripts/look.mjs` → `tokens.css` + `DESIGN.md` + `.wwjd/look.json`.
 Axes, presets and clashes: `references/axes.md`. Where references come from and the card format: `references/sources.md`.
 
 ## Quick mode (no DESIGN.md, no board asked)
-wwjd runs this before the first build in a project without a look. About a minute; no screenshots, no questions.
-- **Read the Look dial** (`creativity`; `wwjd.mjs dials`, wwjd `references/dials.md`): 1 Plain stays near the kit, 3 Balanced is the steps below, 5 Expressive adds a second loud axis and one distinct visual idea per page.
+wwjd:ux runs this before the first build in a project without a look. About a minute; no screenshots, no questions.
+- **Read the Look dial** (`creativity`; `wwjd.mjs dials`, wwjd:ux `references/dials.md`): 1 Plain stays near the kit, 3 Balanced is the steps below, 5 Expressive adds a second loud axis and one distinct visual idea per page.
 - **Subject first:** one line of the subject's world: materials, place, tools, audience, era.
 - **Anchor:** name one real product or site it should feel like (from what you know; no capture).
 - **Choose the open axes from the subject:** accent hue from its world (never the kit's default 258, never indigo/violet without a brand); neutral temperature; shape; surface; elevation. Density follows the register.
@@ -26,7 +26,7 @@ wwjd runs this before the first build in a project without a look. About a minut
 - Also read `PRODUCT.md` (the register), `.impeccable/design.json` and `.stitch/DESIGN.md`.
 - **impeccable, taste** (`design-taste-frontend`, `stitch-design-taste`) **or Stitch** skills installed (`.claude/skills`, `~/.claude/skills`, `.agents/skills`, plugin dirs)? Offer them first. DESIGN.md + the `tokens.css` names are the shared contract.
   - Upload to Stitch only through its skill or MCP, with the user's OK.
-  - taste dials: VISUAL_DENSITY → density, MOTION_INTENSITY → motion. DESIGN_VARIANCE is layout: wwjd's job.
+  - taste dials: VISUAL_DENSITY → density, MOTION_INTENSITY → motion. DESIGN_VARIANCE is layout: wwjd:ux's job.
 
 ## 1. Lock the identity
 - One identity sentence: what it is, who uses it, the feel. Example: "A dark, quiet, dense tool where structure comes from tone steps."
@@ -63,6 +63,6 @@ wwjd runs this before the first build in a project without a look. About a minut
 - `tokens.css` replaces the kit's `:root` token block. The names are the same; new tokens are only additions (`--font-display`, `--weight-heading`, `--tracking-display`, `--shadow-card`, `--r-button`, `--focus-width`, plus `--chrome-*`, `--surface-material` and `--accent-2` when the axis uses them). Components stay untouched.
 - Density is applied with `<html data-density="compact|comfortable">` (kit `base.css` owns the scale), as the tokens.css header says.
 - Load the font with the `<link>` in the tokens.css header. Licensed reference fonts map to the open preset with the same job.
-- **Motion:** name the theme only. Set `<html data-motion="…">` with wwjd-animation's `motion.css`; the theme owns the durations and easings.
+- **Motion:** name the theme only. Set `<html data-motion="…">` with wwjd:motion's `motion.css`; the theme owns the durations and easings.
 - Commit `tokens.css` and `DESIGN.md`. `.wwjd/` stays local, and `--look DESIGN.md` rebuilds the look from the DESIGN.md comment.
-- Then return to wwjd for structure, flow and copy.
+- Then return to wwjd:ux for structure, flow and copy.

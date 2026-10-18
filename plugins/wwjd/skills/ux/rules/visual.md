@@ -1,6 +1,6 @@
 # Visual: colour, surfaces, themes, contrast, type
 
-The how behind SKILL.md's Visual rules. Choosing palette and faces is the `wwjd-look` skill; each register file carries its colour line; charts live in `registers/monitor.md`.
+The how behind SKILL.md's Visual rules. Choosing palette and faces is the `wwjd:look` skill; each register file carries its colour line; charts live in `registers/monitor.md`.
 
 ## Colour
 - **One ground, one ink, one accent,** plus status colours only on status.
@@ -45,4 +45,4 @@ Calm is fewer elements, each designed; never a bare wireframe (Owner, 2026-10-16
 - **Figures:** `tabular-nums` where numbers align or change (`.num`); old-style in editorial prose. **Mono** for code, identifiers and hashes only. Headings roman unless a publication's convention.
 - **Loading:** preload the regular body weight; `font-display: swap` with a metric-matched fallback (`size-adjust`), or `optional` where zero shift matters most. `rem`/`clamp()`, never vw only.
 
-Motion: `wwjd-animation` skill.
+Motion: `wwjd:motion` skill.

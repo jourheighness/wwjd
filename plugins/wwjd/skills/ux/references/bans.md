@@ -1,6 +1,6 @@
 # Bans: never this, do that instead
 
-Generated UI drifts to the most probable output; ban a default and it falls to the next one. So every ban names its replacement, and the drift lanes name where models go next. `look` = a look lane: still a ban, but `wwjd-look` owns the choice and a DESIGN.md that owns it overrides. Last column: `P` product, `M` marketing.
+Generated UI drifts to the most probable output; ban a default and it falls to the next one. So every ban names its replacement, and the drift lanes name where models go next. `look` = a look lane: still a ban, but `wwjd:look` owns the choice and a DESIGN.md that owns it overrides. Last column: `P` product, `M` marketing.
 
 ## Ban → instead
 | Ban | Instead | |
@@ -34,7 +34,7 @@ Generated UI drifts to the most probable output; ban a default and it falls to t
 | Swapping the element on state change (span → button/link with its own padding or underline) | One element in every state; state via attributes and styles | P |
 | Confirm dialog for routine actions | Undo; the floor's exceptions get a review sheet with real choices | P |
 | OS dropdowns and pickers on the web (`<select>` popups, native date pickers); OS-styled checkboxes beside kit controls | The component system's Select / Combobox / DatePicker; in a single-file prototype a styled popover listbox. OS pickers only in native apps | P+M |
-| Bounce or elastic easing, `scale(0)` entrances, stagger or fade-up on every block | `wwjd-animation` skill | P+M |
+| Bounce or elastic easing, `scale(0)` entrances, stagger or fade-up on every block | `wwjd:motion` skill | P+M |
 | `→` on every link, "A · B · C" meta strings | Plain label | P+M |
 | Celebration toast for a visible effect | Silent success | P |
 | Jane Doe, Acme, 99.99%, identical avatars | Realistic messy seeded data | P+M |

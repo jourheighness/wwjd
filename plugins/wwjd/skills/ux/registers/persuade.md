@@ -40,7 +40,7 @@ Success: the visitor decides and acts. A persuade page argues one claim and earn
 - **B2B:** give the champion copy they can paste into an internal memo.
 
 ## Motion
-Motion: `wwjd-animation` skill. Never scroll hijack.
+Motion: `wwjd:motion` skill. Never scroll hijack.
 
 ## Performance and meta
 - **Performance is design:** preload the LCP image, ≤2 font files above the fold, metric-matched fallbacks, no shift as the hero loads.

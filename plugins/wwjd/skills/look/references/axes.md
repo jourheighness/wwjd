@@ -12,7 +12,7 @@ Ten axes. Light and dark are always both generated, so mode is not an axis. **Bo
 | density | compact 28/32, 13px · **regular** 32/36, 14px · comfortable 36/44, 14px · spacious 40/52, 16px, fluid display | `<html data-density>` (kit base.css owns the scale; tokens.css carries a fallback) |
 | contrast | soft · **standard** · high (text-3 = text-2, 4.5:1 borders, 3px focus) | L-table offsets; floors always hold |
 | elevation | flat (1px ring on overlays) · **hairline** (shadows on overlays only) · soft (card shadow, light mode) · layered (multi-layer, neutral-tinted) | `--shadow-*`, `--shadow-card` |
-| motion | instant · **crisp** · smooth · springy ★ | name only: wwjd-animation's `motion.css` owns the values |
+| motion | instant · **crisp** · smooth · springy ★ | name only: wwjd:motion's `motion.css` owns the values |
 | imagery | **ui** · photo · line-illustration · diagram · brand-shape | prose only; fixed to `ui` in Operate, Monitor, Flow and Converse |
 
 ## Clashes (look.mjs rejects; `"allow": [id]` only with the user's OK)

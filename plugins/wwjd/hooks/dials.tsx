@@ -1,10 +1,10 @@
 // The wwjd dials pane (/wwjd-dials): one slider per dial, for you (the plugin options) or for this project
 // (.wwjd.json "dials"). Stops are buttons, so Tab, arrows, Enter and the mouse all work. The dials, their ends and
-// what each stop does come from skills/wwjd/scripts/dials-spec.mjs. Scripts read WWJD_DIALS, then .wwjd.json.
+// what each stop does come from skills/ux/scripts/dials-spec.mjs. Scripts read WWJD_DIALS, then .wwjd.json.
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, PluginOptions, Register } from 'claude-code'
 
-import { DIALS, isDefault, stopOf, valueOf } from '../skills/wwjd/scripts/dials-spec.mjs'
+import { DIALS, isDefault, stopOf, valueOf } from '../skills/ux/scripts/dials-spec.mjs'
 import type { Scope } from '../types'
 
 type Dial = (typeof DIALS)[number]

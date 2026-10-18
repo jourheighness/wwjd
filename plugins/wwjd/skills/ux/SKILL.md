@@ -1,5 +1,5 @@
 ---
-name: wwjd
+name: ux
 description: What Would Johannes Do. Opinionated UI/UX rules and workflow. Use before building, changing, simplifying or reviewing any user-facing screen, panel, component, layout, styling or UI copy (landing, docs, apps, dashboards, chat, commerce, forms, onboarding, mobile), and to set up or clean up a UI baseline (DESIGN.md, PRODUCT.md, kit).
 ---
 
@@ -9,19 +9,19 @@ Opinions backed by use. If a rule would hurt this case, say so, propose the exce
 ## 0. Entry (once per session)
 1. Run `node <skill>/scripts/wwjd.mjs status`; it also prints the dials (`references/dials.md`), which tune effort and boldness, never the Floor.
 2. Read what it lists: PRODUCT.md; DESIGN.md prose (Named rules, Do's/Don'ts in full); RATCHET.md Gotchas, Tells, `[design]`; decision-log lines naming the surface; 1-2 golden files; the user profile. Never imitate `legacy`.
-3. Create a missing file only when needed, short, vetoable defaults: PRODUCT.md if register or product type would be guessed; RATCHET.md to park a finding; no DESIGN.md: `wwjd-look` quick mode picks a subject-grounded look before the first build. Never block showing work on a question.
+3. Create a missing file only when needed, short, vetoable defaults: PRODUCT.md if register or product type would be guessed; RATCHET.md to park a finding; no DESIGN.md: `wwjd:look` quick mode picks a subject-grounded look before the first build. Never block showing work on a question.
 4. Name the register ("Register: Operate, settings"), read `registers/<name>.md`, and route:
 
 | Situation | Do (`commands/<verb>.md`) |
 |---|---|
-| `scratch`, "make me a...", no DESIGN.md | `start`, `wwjd-look` (quick mode), then explore or build |
+| `scratch`, "make me a...", no DESIGN.md | `start`, `wwjd:look` (quick mode), then explore or build |
 | add a component or screen; messy screen in scope | `build` (golden first; messy: rebuild from a spec) |
 | "busy", "simplify", "clean up" | `simplify` (remove *and* reorder) |
 | "review", "what's wrong", screenshot | `review` |
 | "options", "show me", new flow | `explore` |
 | `messy` + broad ask, debt | `audit` |
-| palette, fonts, shape, brand, refs | `wwjd-look` skill |
-| motion, transitions, motion theme | `wwjd-animation` skill |
+| palette, fonts, shape, brand, refs | `wwjd:look` skill |
+| motion, transitions, motion theme | `wwjd:motion` skill |
 | small change | rules + loop only |
 
 ## 1. Precedence

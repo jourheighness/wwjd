@@ -5,4 +5,4 @@
 # Off for one project: WWJD_HOOK_CHECK=0.
 [ "${WWJD_HOOK_CHECK:-1}" = "0" ] && exit 0
 command -v node >/dev/null 2>&1 || exit 0
-node "${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}/skills/wwjd/scripts/wwjd.mjs" check --hook 2>/dev/null || exit 0
+node "${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}/skills/ux/scripts/wwjd.mjs" check --hook 2>/dev/null || exit 0

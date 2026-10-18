@@ -459,7 +459,7 @@ Kit: `.breakout .flow` (base.css) + `.article`; profile `reading`.
 ### bottom-sheet: content over context, with detents
 - **Regions:** detents peek / medium / large; behind stays interactive at peek and medium (non-modal); grabber + close button; scrolling inside first expands to the next detent.
 - **Desktop:** a side sheet or panel 22.5–25rem, never a bottom sheet.
-- **CSS:** `position:fixed; inset-inline:0; bottom:0; block-size:calc(100dvh - 3rem); translate:0 calc(100% - var(--detent,50dvh)); padding-block-end:env(safe-area-inset-bottom)`; peek `--detent:7.5rem`, large `100%`. Motion: `wwjd-animation` skill.
+- **CSS:** `position:fixed; inset-inline:0; bottom:0; block-size:calc(100dvh - 3rem); translate:0 calc(100% - var(--detent,50dvh)); padding-block-end:env(safe-area-inset-bottom)`; peek `--detent:7.5rem`, large `100%`. Motion: `wwjd:motion` skill.
 - **Mistakes:** drag the only way to close → close button; stacked sheets → navigate inside one; bottom sheet on desktop → side panel.
 - **Example:** Apple Maps.
 

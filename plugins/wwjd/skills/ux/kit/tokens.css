@@ -1,6 +1,6 @@
 /* tokens.css: the look. Default preset "baseline": stone neutral, one accent hue, flat, Inter, radii 4/6/8/12.
-   wwjd-look may replace this file; it keeps every custom property name (base.css, layouts.css and the
-   wwjd-animation skill's motion.css read them). Load order: tokens.css → base.css → layouts.css (→ motion.css).
+   wwjd:look may replace this file; it keeps every custom property name (base.css, layouts.css and the
+   wwjd:motion skill's motion.css read them). Load order: tokens.css → base.css → layouts.css (→ motion.css).
    Theme follows the system; <html data-theme="light|dark"> forces one.
    Font (optional): <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..600&display=swap" rel="stylesheet">
    Changing --a (accent hue)? Re-check every text token on every surface: 4.5:1 text, 3:1 edges and focus. */

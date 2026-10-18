@@ -114,7 +114,7 @@ const PROGRESS_WORD = /\b(done|complete[ds]?|finished|answered|scored|published|
 const rules = [
   // ── floor: accessibility and honesty ──
   { id: "focus-within-swap", sev: "warn", re: /:focus-within[^{}]*\{[^}]*\b(opacity:\s*0|visibility:\s*hidden|display:\s*none)/, msg: "toggles visibility on :focus-within, so a mouse click toggles it too (meta flashes on select); use :has(:focus-visible)" },
-  { id: "default-look", sev: "warn", re: /--a:\s*258\s*;/, msg: "the kit's default accent, unchanged: pick the look (wwjd-look quick mode); default tokens are a floor" },
+  { id: "default-look", sev: "warn", re: /--a:\s*258\s*;/, msg: "the kit's default accent, unchanged: pick the look (wwjd:look quick mode); default tokens are a floor" },
   { id: "no-zoom", sev: "error", re: /user-scalable\s*=\s*no|maximum-scale\s*=\s*1(\.0)?\b/, msg: "zoom disabled" },
   { id: "tabindex-positive", sev: "error", re: /tabIndex=\{?["']?[1-9]/, msg: "positive tabIndex breaks keyboard order" },
   { id: "div-click", sev: "error", re: /<(div|span|li|tr|td|article|Row|Card)\b[^>]*\bonClick=/, only: /\.(tsx|jsx)$/, msg: "clickable container; make the title a link/button stretched over the row, with inner actions above it" },
@@ -168,7 +168,7 @@ const rules = [
   { id: "glass", sev: "warn", re: /\bbackdrop-blur|backdrop-filter:\s*blur/, off: R("native"), msg: "glass/blur; flat by default" },
   { id: "accent-stripe", sev: "warn", re: /\bborder-[ls]-(?:[2-9]|\[)|border-left:\s*[2-9]px/, off: READING, msg: "thick accent stripe on a card is a generated-UI tell" },
   { id: "default-accent", sev: "warn", re: /#(6366f1|8b5cf6|7c3aed|a855f7|4f46e5|9333ea)\b|\b(bg|text|from|to)-(indigo|violet|purple)-(500|600)\b/i, skip: (f) => TOKEN_FILE.test(f), msg: "library default accent (indigo/violet); use the project accent" },
-  // ── motion floor (how-to lives in the wwjd-animation skill) ──
+  // ── motion floor (how-to lives in the wwjd:motion skill) ──
   { id: "transition-all", sev: "warn", re: /\btransition-all\b|transition:\s*all\b/, msg: "transition-all; animate transform and opacity only" },
   { id: "animate-layout", sev: "warn", re: /transition(-property)?:\s*[^;]*\b(width|height|top|left|margin|padding)\b/, msg: "animating layout properties causes shift and jank" },
   { id: "bounce", sev: "warn", re: /\banimate-bounce\b|@keyframes\s+(bounce|elastic|wobble|jiggle)|cubic-bezier\([^)]*(-0\.[2-9]|1\.[2-9])/, msg: "bounce/elastic easing; use ease-out" },

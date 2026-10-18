@@ -5,14 +5,14 @@ Design skills for coding agents. When an agent builds, simplifies or reviews an 
 Works in Claude Code, Codex and any agent that reads skill files.
 
 ## Three skills, one plugin
-- **wwjd:** structure, behaviour, copy and workflow. Opinionated.
-- **wwjd-look:** palette, type face, shape and depth from real references; writes `DESIGN.md` and tokens under wwjd's variable names. Neutral, so impeccable, taste or Stitch can replace it.
-- **wwjd-animation:** motion themes and micro-interactions; `motion.css` on the same token names.
+- **wwjd:ux:** structure, behaviour, copy and workflow. Opinionated. The entry skill.
+- **wwjd:look:** palette, type face, shape and depth from real references; writes `DESIGN.md` and tokens under wwjd's variable names. Neutral, so impeccable, taste or Stitch can replace it.
+- **wwjd:motion:** motion themes and micro-interactions; `motion.css` on the same token names.
 
 ## What's inside
 ```
 plugins/wwjd/
-  skills/wwjd/
+  skills/ux/
     SKILL.md        entry, precedence, floor, rules, registers, the loop (always loaded, <7.5KB)
     commands/       start · build · simplify · review · explore · audit
     rules/          layout · actions · states · copy · visual (the how, read by topic)
@@ -22,10 +22,10 @@ plugins/wwjd/
     kit/            tokens.css (look) · base.css (profiles, components, fit) · layouts.css
     scripts/        wwjd.mjs (status, lint, baseline, debt map) · render.mjs (screenshots, fit, runtime) ·
                     grade.mjs (the grade gate: a sheet per over-budget surface)
-  skills/wwjd-look/       the look
-  skills/wwjd-animation/  motion
+  skills/look/            the look
+  skills/motion/          motion
   agents/wwjd-critic.md   cold review, on request only
-  hooks/                  route.sh (points UI prompts at wwjd, plus look or motion) · check.sh (lints each edited UI file)
+  hooks/                  route.sh (points UI prompts at wwjd:ux, plus look or motion) · check.sh (lints each edited UI file)
   evals/                  trigger and quality evals for `claude plugin eval`
 docs/research/            archived research (faux-pas catalogue, layouts, look); not shipped in the skill
 ```
@@ -41,14 +41,14 @@ docs/research/            archived research (faux-pas catalogue, layouts, look);
 claude plugin marketplace add <this repo's git URL or local path>
 claude plugin install wwjd@wwjd
 ```
-**Codex and other agents:** copy or symlink each folder under `plugins/wwjd/skills/` into the agent's skills folder (`~/.agents/skills/` or `.agents/skills/` in a repo). There are no hooks there, so the skill runs the lint itself before handover. Backstop in `AGENTS.md`:
+**Codex and other agents:** copy or symlink `ux`, `look` and `motion` from `plugins/wwjd/skills/` into the agent's skills folder (`~/.agents/skills/` or `.agents/skills/` in a repo). There are no hooks there, so the skill runs the lint itself before handover. Backstop in `AGENTS.md`:
 ```markdown
 ## UI work
-Before designing, building or reviewing any interface, read the wwjd skill and follow it.
+Before designing, building or reviewing any interface, read the `ux` skill (wwjd) and follow it.
 ```
 
 ## Dials
-Seven sliders tune how wwjd designs, never the floor: **Look** (plain ↔ expressive), **Content** (lean ↔ rich), **Spacing** (roomy ↔ compact), **Motion** (still ↔ lively), **Copy** (terse ↔ warm), **Checking** (quick ↔ thorough) and **Grading** (written sheet or in your head). Every stop is listed in `plugins/wwjd/skills/wwjd/references/dials.md`.
+Seven sliders tune how wwjd designs, never the floor: **Look** (plain ↔ expressive), **Content** (lean ↔ rich), **Spacing** (roomy ↔ compact), **Motion** (still ↔ lively), **Copy** (terse ↔ warm), **Checking** (quick ↔ thorough) and **Grading** (written sheet or in your head). Every stop is listed in `plugins/wwjd/skills/ux/references/dials.md`.
 - **`/wwjd-dials`:** a pane with one slider per dial, for you or for this project (writes `.wwjd.json`). The line under the sliders says what the focused stop does.
 - **Also:** `/plugin configure wwjd@wwjd`, the wwjd rows in `/config`, or `"dials": { "creativity": 4 }` in `.wwjd.json`.
 - **Per request:** words like "bolder", "leaner", "airier", "calmer" or "thorough" move one dial one stop; the prompt hook names the nudge.
@@ -73,13 +73,13 @@ Seven sliders tune how wwjd designs, never the floor: **Look** (plain ↔ expres
 
 ## Scripts
 ```bash
-node plugins/wwjd/skills/wwjd/scripts/wwjd.mjs status
-node plugins/wwjd/skills/wwjd/scripts/wwjd.mjs check [paths] [--register operate] [--new] [--baseline] [--json]
-node plugins/wwjd/skills/wwjd/scripts/wwjd.mjs audit
-node plugins/wwjd/skills/wwjd/scripts/render.mjs shoot <url|file> [--one]
-node plugins/wwjd/skills/wwjd/scripts/render.mjs fit <url> [--selector css]
-node plugins/wwjd/skills/wwjd/scripts/render.mjs runtime <url>
-node plugins/wwjd/skills/wwjd/scripts/grade.mjs spec.json [--surface row]   # prints the grade sheet for one surface
+node plugins/wwjd/skills/ux/scripts/wwjd.mjs status
+node plugins/wwjd/skills/ux/scripts/wwjd.mjs check [paths] [--register operate] [--new] [--baseline] [--json]
+node plugins/wwjd/skills/ux/scripts/wwjd.mjs audit
+node plugins/wwjd/skills/ux/scripts/render.mjs shoot <url|file> [--one]
+node plugins/wwjd/skills/ux/scripts/render.mjs fit <url> [--selector css]
+node plugins/wwjd/skills/ux/scripts/render.mjs runtime <url>
+node plugins/wwjd/skills/ux/scripts/grade.mjs spec.json [--surface row]   # prints the grade sheet for one surface
 ```
 `wwjd.mjs` needs Node 20.10+ and nothing else. `render.mjs` needs Playwright in the project (`npm i -D playwright`), or `PW_EXE` pointing at an existing Chromium.
 

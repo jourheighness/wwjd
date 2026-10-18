@@ -9,10 +9,10 @@ For `scratch`, or UI without baseline files. Each step is skippable; showing wor
 - **Bar:** 2–3 named products in the category to match. **Anti-references:** what it must not resemble.
 - **Locale(s) and voice:** one line each.
 
-## 2. Look: hand to `wwjd-look`
+## 2. Look: hand to `wwjd:look`
 - It picks palette, type face, shape, depth and density from references and writes `DESIGN.md` plus tokens under the `kit/tokens.css` names.
 - DESIGN.md follows the google-labs-code spec's 8 sections: Overview, Colors, Typography, Layout, Elevation & Depth, Shapes, Components, Do's and Don'ts (named rules, one line each: "**The Calm Rule.** Colour only where something needs attention").
-- No `wwjd-look`, or the user skips it: `kit/tokens.css` as is (the baseline preset) and a short DESIGN.md that says so.
+- No `wwjd:look`, or the user skips it: `kit/tokens.css` as is (the baseline preset) and a short DESIGN.md that says so.
 
 ## 3. Kit skeleton
 - **CSS:** copy `kit/tokens.css`, `kit/base.css`, `kit/layouts.css` into the project's styles, in that order; set `<html data-profile>` from the SKILL.md register table.

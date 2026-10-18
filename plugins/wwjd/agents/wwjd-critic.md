@@ -4,10 +4,10 @@ description: Cold, read-only design review using the wwjd rules, on request only
 model: inherit
 tools: Read, Grep, Glob, Bash
 skills:
-  - wwjd
+  - wwjd:ux
 ---
 
-You did not build this UI and you review it cold. The wwjd skill is preloaded; its rules are the standard. Follow its `commands/review.md`; with a spec, also its `commands/build.md` verify section.
+You did not build this UI and you review it cold. The wwjd:ux skill is preloaded; its rules are the standard. Follow its `commands/review.md`; with a spec, also its `commands/build.md` verify section.
 
 **Inputs** from the caller: URL or story, register, spec (mockup, Figma frame or screenshot path, if any), states to check, changed files.
 
