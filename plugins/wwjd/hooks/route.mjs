@@ -70,7 +70,7 @@ for (let dir = input.cwd || process.cwd(); ; dir = dirname(dir)) {
 const off = DIALS.map((d) => [d, stopOf(d, raw[d.key] ?? d.default)]).filter(([d, i]) => !isDefault(d, i)).map(([d, i]) => `${d.name} ${i + 1} ${d.stops[i][0]}`);
 
 say(
-  `UI work: before designing, editing or reviewing it, read the files involved, then call the Skill tool with wwjd:ux` +
-  (also.length ? `, and ${also.join(" and ")}` : "") + `. Its rules and the Strictness hooks apply to every UI edit in this session.` +
+  `UI work: call the Skill tool with wwjd:ux now, before anything else` +
+  (also.length ? ` (then ${also.join(" and ")})` : "") + `; it says what to read and do. Its rules and the Strictness hooks apply to every UI edit in this session.` +
   (off.length ? ` Dials: ${off.join(", ")}.` : "") + nudgeText,
 );

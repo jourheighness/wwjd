@@ -1,6 +1,6 @@
 ---
 name: ux
-description: 'ALWAYS use before building, changing, simplifying or reviewing anything a person sees: screens, pages, panels, components, layouts, settings, tables, forms, styling, UI copy, empty or error states, in any stack (React, Vue, Svelte, HTML/CSS, Tailwind, SwiftUI). Opinionated UI/UX rules, budgets and a show-react loop (What Would Johannes Do); also sets up a UI baseline (DESIGN.md, PRODUCT.md, kit). Not for build config, CSS tooling errors, API docs, schemas, migrations or data analysis.'
+description: 'UI/UX design rules and workflow (What Would Johannes Do). ALWAYS use before building, changing, simplifying or reviewing any user-facing UI: screens, pages, panels, components, layouts, settings, tables, forms, dashboards, landing pages, docs sites, chat panels, checkout, dark mode, styling, UI copy, empty and error states, in any stack. Also sets up a UI baseline (DESIGN.md, PRODUCT.md, kit). Not for build config, CSS tooling errors, API docs, schemas, migrations or data analysis.'
 when_to_use: '"redesign this", "clean up the settings page", "this looks busy", "make it bolder", "review this screen", "build a dashboard", "add a component", "fix the layout on mobile", a UI screenshot.'
 ---
 
