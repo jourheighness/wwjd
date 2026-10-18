@@ -12,8 +12,9 @@ Seven dials tune how wwjd works, never what is correct. Set them per person with
 | **motion** | – | `auto`: the register's motion theme | – | (set a theme: `instant`, `crisp`, `smooth`, `springy`) |
 | **voice** | Terse: labels and values, sentences only in errors | Plain (`rules/copy.md`) | Warm: a light personality in empty, success and onboarding; never in errors, money or safety | warmer / terser |
 | **rigor** | One shot, lint only | Lint + one screenshot per handover | Critic agent, `render.mjs fit` and `runtime`, 2–3 variants before building | thorough, polish / quick, rough |
-| **decider** | `off`: grade yourself | `assist`: `grade.mjs` grades over-budget surfaces; you decide the unsure ones | `strict`: its cuts stand; bring an item back only by swapping | – |
+| **decider** (default `off`) | `off`: grade yourself | `assist`: `grade.mjs` grades over-budget surfaces; you decide the unsure ones | `strict`: its cuts stand; bring an item back only by swapping | – |
 
 - **2 and 4** sit between their neighbours (`wwjd.mjs dials` says what each means).
 - **A nudge moves one dial one stop for that request only**, and the handover names it ("creativity 4 for this page").
+- **The decider is experimental and off by default** (blind tests: a coin flip against grading yourself). Grading itself is not optional, only who answers.
 - **The decider needs a key:** `decider_key` in the plugin options (secure store; exported to scripts as `WWJD_DECIDER_KEY`) or `OPENROUTER_API_KEY`. Without one, `decider` behaves as `off`.

@@ -61,8 +61,8 @@ Example, coffee delivered by drone: arrival time decides; "68 °C in your hands"
 7. **Say where it went** in the handover, one line per moved group ("SKU, weight → product page specs").
 8. **Log cuts** (`.wwjd/cuts.jsonl`; `grade.mjs` writes it when `.wwjd/` exists). Something cut again and again (subtitles, "Learn more", helper text under every field) becomes a ban in `bans.md` or DESIGN.md, so it stops being proposed.
 
-## Decider (optional)
-`scripts/grade.mjs` asks a fast decision model the questions above (OpenRouter, `OPENROUTER_API_KEY`, model `WWJD_DECIDER`, default `typesafe/jev-1.14`; experimental). `wwjd.mjs status` prints `decider: on` or `off`.
+## Decider (experimental, off by default)
+`scripts/grade.mjs` asks a fast decision model the questions above when the `decider` dial is `assist` or `strict` and a key is set (OpenRouter, `decider_key` or `OPENROUTER_API_KEY`, model `WWJD_DECIDER`, default `typesafe/jev-1.14`). `wwjd.mjs status` prints `decider: on` or `off`.
 - **When:** `on`, and a surface has more candidate facts than its budget: once, before building or simplifying it. Never per edit, never for a surface within budget.
 - **Off:** answer the same questions yourself (`grade.mjs spec.json --offline` prints them). Never wait for it, never ask for a key.
 - **Spec in a minute,** from the inventory you already have, at `.wwjd/grade/<surface>.json`:

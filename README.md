@@ -49,7 +49,7 @@ Before designing, building or reviewing any interface, read the wwjd skill and f
 
 ## Dials
 Seven dials tune effort and boldness, never the floor: **creativity, budget, density, motion, voice, rigor, decider** (`plugins/wwjd/skills/wwjd/references/dials.md`).
-- **Per person:** `/plugin configure wwjd@wwjd`, or the wwjd rows in `/config`. The optional `decider_key` (OpenRouter) is stored in the secure store and turns on `grade.mjs`.
+- **Per person:** `/plugin configure wwjd@wwjd`, or the wwjd rows in `/config`. `decider` is off by default (experimental); `assist` or `strict` plus the optional `decider_key` (OpenRouter, secure store) lets `grade.mjs` ask a model.
 - **Per project:** `"dials": { "creativity": 4, "budget": 2 }` in `.wwjd.json`.
 - **Per request:** words like "bolder", "leaner", "airier" or "thorough" move one dial one stop; the prompt hook names the nudge.
 

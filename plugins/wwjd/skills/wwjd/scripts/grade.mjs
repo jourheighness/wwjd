@@ -10,7 +10,7 @@
 //   "object":  "invoice", "actions": { "key": "label" }, "states": { "key": "state description" } }  primary action per state
 // With a key (plugin option decider_key → WWJD_DECIDER_KEY, or OPENROUTER_API_KEY): OpenRouter Decisions API,
 // model $WWJD_DECIDER (default typesafe/jev-1.14). Dials (wwjd.mjs dials): budget shifts every budget by (dial − 3),
-// decider off = offline, strict = its cuts stand unless swapped.
+// decider off (default) = offline, assist = it grades, you decide the unsure, strict = its cuts stand unless swapped.
 // Without it (or --offline): prints the same typed questions for the agent to answer itself.
 // Inclusion needs proof: an item stays only with stay >= .7 and no restates/explains flag. Explainers move (tooltip,
 // empty state, onboarding), never just vanish. Unsure items go to the thinking model; scores rank only.
@@ -36,7 +36,7 @@ for (let d = process.cwd(); ; d = dirname(d)) {
   if (dirname(d) === d) break;
 }
 const shift = Math.min(2, Math.max(-2, Math.round(Number(dial.budget ?? 3) - 3) || 0));
-const mode = ["off", "assist", "strict"].includes(dial.decider) ? dial.decider : "assist";
+const mode = ["off", "assist", "strict"].includes(dial.decider) ? dial.decider : "off";
 const budget = Number(opt("--budget")) || spec.budget || Math.max(1, (SURFACES[surfaceType] || 4) + shift);
 if (!opt("--budget") && !spec.budget && !SURFACES[surfaceType]) console.error(`grade: no budget for surface "${surfaceType ?? ""}" (keys: ${Object.keys(SURFACES).join(" ")}); using 4. Pass --budget N.`);
 const key = mode === "off" ? null : process.env.WWJD_DECIDER_KEY || process.env.OPENROUTER_API_KEY;
@@ -88,7 +88,7 @@ for (const k of spec.actions ? Object.keys(spec.states || {}) : []) {
 const state = { goal: spec.goal, surface: spec.surface, items: spec.items, regions: spec.regions, object: spec.object, states: spec.states };
 
 if (offline) {
-  console.log(`No decider (${mode === "off" ? "dial decider=off" : `no key: set decider_key in /plugin configure wwjd@wwjd to use ${model}`}). Answer these yourself, same options, then apply the budget (${budget}):`);
+  console.log(`No decider (${mode === "off" ? "dial decider=off" : `decider ${mode} but no key: set decider_key in /plugin configure wwjd@wwjd`}). Answer these yourself, same options, then apply the budget (${budget}):`);
   console.log(`Goal: ${spec.goal}\nSurface: ${spec.surface}`);
   for (const [id, q] of Object.entries(questions)) {
     const opts = Array.isArray(q.criteria) ? q.criteria.map((c, i) => `${i}=${c}`).join(" | ") : Object.keys(q.criteria).join(" | ");

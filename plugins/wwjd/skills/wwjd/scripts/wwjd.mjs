@@ -3,7 +3,7 @@
 //
 // Usage: node wwjd.mjs <command> [paths...] [options]
 //   status                     stage (scratch | kit | messy), baseline files, kit, Storybook, golden and legacy files,
-//                              dials, decider on/off (a key + decider ≠ off: grade.mjs grades over-budget surfaces)
+//                              dials, decider on/off (decider assist|strict + a key: grade.mjs grades over-budget surfaces)
 //   dials                      the effective dials, one line: plugin options (/plugin configure wwjd@wwjd), then
 //                              "dials" in .wwjd.json override per project; meanings in references/dials.md
 //   check [paths]              lint UI files (default: files changed against HEAD plus untracked)
@@ -324,7 +324,7 @@ const kb = (f) => { try { return Math.round(statSync(join(ROOT, f)).size / 1024)
 const fmt = (x) => `${x.file}:${x.line}  ${x.severity === "error" ? "ERROR" : "warn "} ${x.rule}: ${x.message}`;
 
 // ── dials: plugin options (WWJD_DIALS, set by hooks/session.sh) < project .wwjd.json "dials" ──
-const DIAL_DEFAULTS = { creativity: 3, budget: 3, density: 3, motion: "auto", voice: 3, rigor: 3, decider: "assist" };
+const DIAL_DEFAULTS = { creativity: 3, budget: 3, density: 3, motion: "auto", voice: 3, rigor: 3, decider: "off" };
 const DIAL_SAYS = {
   creativity: ["close to the kit: brand hue only, no display face, the plainest fitting hero", "one quiet custom axis", "", "two loud axes, a display face in every register, a less common hero, one signature moment", "art-directed: one distinct visual idea per page, an unusual layout, motion one step livelier"],
   budget: ["every budget −2 (min 1); throw away before moving", "every budget −1", "", "every budget +1", "every budget +2; overflow rules still apply"],
@@ -338,14 +338,14 @@ function dials() {
   for (const [k, v] of Object.entries(cfg.dials || {})) if (k in d) { d[k] = String(v); from[k] = ".wwjd.json"; }
   for (const k of ["creativity", "budget", "density", "voice", "rigor"]) d[k] = Math.min(5, Math.max(1, Math.round(Number(d[k]) || 3)));
   if (!["auto", "instant", "crisp", "smooth", "springy"].includes(d.motion)) d.motion = "auto";
-  if (!["off", "assist", "strict"].includes(d.decider)) d.decider = "assist";
+  if (!["off", "assist", "strict"].includes(d.decider)) d.decider = "off";
   return { d, from };
 }
 function dialLine() {
   const { d } = dials();
   const off = Object.keys(DIAL_SAYS).filter((k) => d[k] !== 3).map((k) => `${k} ${d[k]} (${DIAL_SAYS[k][d[k] - 1]})`);
   if (d.motion !== "auto") off.push(`motion ${d.motion} (data-motion="${d.motion}")`);
-  if (d.decider !== "assist") off.push(`decider ${d.decider}`);
+  if (d.decider !== "off") off.push(`decider ${d.decider}`);
   return off.length ? `dials: ${off.join(" · ")}; the rest default. DESIGN.md and the Floor still win.` : "dials: all default";
 }
 const deciderKey = () => process.env.WWJD_DECIDER_KEY || process.env.OPENROUTER_API_KEY;
