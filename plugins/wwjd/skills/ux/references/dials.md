@@ -48,7 +48,7 @@ Six dials tune how wwjd designs, never what is correct. Each runs between two na
 How hard the agent is on its own work: grading before it builds, checks after. Hooks enforce it (`scripts/gate.mjs`): from 3, a new UI file waits for a grade sheet written this session; from 2, the turn can't end until the checks below exist, newer than the last UI edit (`.wwjd/shots/UNAVAILABLE` stands in when no renderer can run), and asks once per run of edits for the unasked design choices to be logged (`mcp__wwjd__log`; they show in the `/wwjd` sidebar).
 - **1 Fast:** Over-budget surfaces graded in your head; after: lint only.
 - **2 Light:** Over-budget surfaces graded in your head; after: lint and one desktop screenshot.
-- **3 Standard (default):** A written grade sheet per over-budget surface before it is built; after: lint and screenshots at desktop and phone width.
+- **3 Standard (default):** A written grade sheet per over-budget surface before it is built; after: lint, screenshots at desktop and phone width and a clean fit check.
 - **4 Careful:** Grade sheets; after: adds dark mode, the key states and render.mjs runtime checks.
 - **5 Strict:** Grade sheets; after: adds the critic agent, and explore's variants before building.
 - Nudge words: thorough, polish / quick, rough.

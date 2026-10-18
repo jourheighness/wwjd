@@ -47,3 +47,5 @@ Calm is fewer elements, each designed; never a bare wireframe (Owner, 2026-10-16
 - **Loading:** preload the regular body weight; `font-display: swap` with a metric-matched fallback (`size-adjust`), or `optional` where zero shift matters most. `rem`/`clamp()`, never vw only.
 
 Motion: `wwjd:motion` skill.
+
+**Long-familiar surfaces:** change behaviour before looks; a 50ms glance must read "better", not "different". No token or layout change without the owner's OK.

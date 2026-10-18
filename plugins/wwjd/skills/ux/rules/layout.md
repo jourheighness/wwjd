@@ -49,7 +49,9 @@ Size classes come from the slot: wrap it in `.fit`, never a shrink-wrapped flex 
 
 **Identifier** (`data-identifier`; lint `identifier-truncate`, runtime `identifier-clipped`, `identifier-long`):
 - Lists keep one row height sized for the usual identifier (often 2 lines); a rare longer one clamps there with full text on hover, focus, tap and in detail. Often longer → fix the layout.
-- Meta stays one line; a value that would wrap goes compact (avatar, short date) or drops.
+- Meta stays one line (`flex-wrap: nowrap`; runtime `orphan-item`); a value that would wrap goes compact (avatar, short date) or drops in give-way order.
+- **No lone item:** a row never holds one small thing (an avatar, icon or badge alone on its line, often pushed to the far edge). It joins the row it belongs to; a footer exists only for an action or ≥2 items. Example: the assignee avatar sits in the meta row, not on its own line under it.
+- **Who sits with what:** a person's avatar goes where the eye reads ownership: before the meta (start) or as the meta row's last item, never floating alone at the opposite edge of the card.
 - Track `minmax(12ch, 1fr)`, never `minmax(0, 1fr)` beside fixed columns.
 - **Exception, fixed-height dense UI** (tables, trees, tabs, file pickers): one line may truncate if the column resizes or detail has the full text, full text shows on hover/focus/tap, ≥4 characters stay, and shared-prefix siblings truncate in the middle.
 - Breadcrumbs collapse middle items into a "…" menu; the current page never shortens. At S, numbers may go compact (`Intl.NumberFormat` `notation: "compact"`) with the exact value in the name or tooltip.
@@ -58,7 +60,7 @@ Size classes come from the slot: wrap it in `.fit`, never a shrink-wrapped flex 
 - Rows and cards are grids; placement on the parent's child selector (`.row > .check`), never the component class (lint `component-placement`); optional children placed by name.
 - Every text container has a definite or floored width (panels `inline-size: min(480px, 100%)`), never an auto or icon-sized track (runtime `text-collapsed`).
 - A row chevron gets its own `auto` column, `align-self: center`. A phrase icon (↗, ▾) is glued to the last word in `.nowrap` with `&nbsp;` (`data-trailing-icon`; runtime `icon-detached`). A badge flows after the title's last word (`.title-badge`); a tag group is a `.cluster` on its own line.
-- Trailing groups use `margin-inline-start: auto` or a grid column, never `space-between` with wrap (lint `between-wrap`).
+- Trailing groups use a grid column (`grid-template-columns: 1fr auto`) or `margin-inline-start: auto` in a `nowrap` row; never `space-between` or an auto-margin item in a wrapping row, where it falls to its own line (lint `between-wrap`, runtime `orphan-item`).
 - Button groups switch as a whole (`.switcher`, `.cluster`, short `nowrap` labels); never a 2-line button beside a 1-line one.
 
 **Rings never clipped** (runtime `ring-clipped`): any non-`visible` overflow clips both axes. In scrollers draw rings inset (`.ring-inset`) or pad by ring + offset with matching `scroll-padding` (`.reel`). Rounded cards use `.clip-ring`, never `overflow: hidden` (it also clips diacritics).

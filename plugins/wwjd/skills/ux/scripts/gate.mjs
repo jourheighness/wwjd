@@ -137,6 +137,14 @@ function checks(ledger, s) {
   if (s >= 2) out.push(s >= 3
     ? { key: "shots", label: "Shots at 2 widths", done: unavailable || widths.size >= 2, how: `screenshots at desktop and phone width: node ${RENDER} shoot ${target} --theme light` }
     : { key: "shots", label: "Screenshot", done: unavailable || pngs.length > 0, how: `a screenshot: node ${RENDER} shoot ${target} --one, then look at it` });
+  if (s >= 3) {
+    // Fit runs at 320–720px and must come back clean: wrapping, clipping and lone items are layout bugs, not taste.
+    let fit = null;
+    try { fit = mtime(join(root(), ".wwjd", "fit.json")) > since ? JSON.parse(readFileSync(join(root(), ".wwjd", "fit.json"), "utf8")) : null; } catch { /* unreadable: not done */ }
+    const errs = fit ? fit.findings.filter((f) => f.severity === "error").map((f) => `${f.width}px ${f.rule}: ${f.what}`) : [];
+    out.push({ key: "fit", label: errs.length ? "Fit errors" : "Fit check", done: unavailable || (fit !== null && errs.length === 0),
+      how: errs.length ? `fix the fit errors, then rerun fit: ${[...new Set(errs)].slice(0, 4).join("; ")}` : `the fit check: node ${RENDER} fit ${target} --widths 320,480,720` });
+  }
   if (s >= 4) {
     out.push({ key: "dark", label: "Dark shot", done: unavailable || pngs.some((f) => f.includes("-dark.")), how: `a dark-mode shot: node ${RENDER} shoot ${target} --theme dark` });
     out.push({ key: "runtime", label: "Runtime checks", done: unavailable || mtime(join(root(), ".wwjd", "runtime.json")) > since, how: `the runtime checks: node ${RENDER} runtime ${target}` });

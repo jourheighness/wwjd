@@ -7,7 +7,8 @@
 //     --width <px>       primary width for --one (default: 1440 for operate/monitor, else 390; from --register or .wwjd.json)
 //     --theme light|dark --widths 1440,390 --out <dir> (default .wwjd/shots)  --full (full page with --one)
 //   .wwjd/ is at the nearest folder up with .wwjd.json or .wwjd/, else the git root, else here (what gate.mjs reads).
-//   fit      resize a page or story and catch components that break as they shrink
+//   fit      resize a page or story and catch components that break as they shrink (also orphan-item: a lone
+//            avatar, icon or badge wrapped onto its own line); writes .wwjd/fit.json for the Strictness gate
 //     --widths 240,320,480,720  --selector "<container css>" (resize that element, not the viewport)
 //     identifier-clipped · identifier-long · icon-detached · overflow · hover-shift · hover-unreachable ·
 //     text-collapsed · ring-clipped · value-fill-empty · control-height-mismatch
@@ -155,6 +156,24 @@ if (cmd === "fit") {
         if (!el.offsetParent && el.tagName !== "BODY") continue;
         if (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1) out.push(["identifier-clipped", "error", name(el)]);
         else if (el.getBoundingClientRect().height / lineH(el) > 3.5) out.push(["identifier-long", "warn", name(el)]);
+      }
+      // A wrapping flex row that left one child alone on a line, or a row holding one small item: a lone item.
+      for (const el of root.querySelectorAll("*")) {
+        const cs = getComputedStyle(el);
+        if (!cs.display.includes("flex") || !el.getClientRects().length) continue;
+        const kids = [...el.children].filter((k) => k.getClientRects().length && getComputedStyle(k).position !== "absolute");
+        if (cs.flexWrap !== "nowrap" && cs.flexDirection.startsWith("row") && kids.length >= 3) {
+          const tops = kids.map((k) => Math.round(k.getBoundingClientRect().top));
+          const lines = [...new Set(tops)];
+          if (lines.length > 1) { const box = el.getBoundingClientRect(); const alone = kids.find((k, i) => { const kb = k.getBoundingClientRect(); return tops[i] !== lines[0] && tops.filter((t) => t === tops[i]).length === 1 && (kb.width < 56 || kb.left - box.left > box.width * 0.4); }); if (alone) { out.push(["orphan-item", "error", (alone.getAttribute("aria-label") || alone.className || alone.tagName) + " wrapped onto a line of its own"]); break; } }
+        }
+      }
+      for (const el of root.querySelectorAll("*")) {
+        const kids = [...el.children].filter((k) => k.getClientRects().length);
+        const sib = el.parentElement ? [...el.parentElement.children].filter((k) => k.getClientRects().length) : [];
+        if (kids.length !== 1 || sib.length < 2 || el.textContent.trim().length > 3 || !el.getClientRects().length) continue;
+        const b = kids[0].getBoundingClientRect(), row = el.getBoundingClientRect();
+        if (b.width < 56 && row.width > b.width * 4 && b.height < 56) { out.push(["orphan-item", "error", (kids[0].getAttribute("aria-label") || kids[0].className || kids[0].tagName) + " sits alone in its own row"]); break; }
       }
       for (const el of root.querySelectorAll("*")) {
         const cs = getComputedStyle(el);
@@ -344,8 +363,8 @@ if (cmd === "runtime") {
 function finish(label) {
   const errors = findings.filter((f) => f.severity === "error").length;
   const report = { url: target, errors, findings };
-  // The runtime report: what the Strictness gate (gate.mjs) reads at 4 and up.
-  if (cmd === "runtime") { try { mkdirSync(join(ROOT, ".wwjd"), { recursive: true }); writeFileSync(join(ROOT, ".wwjd", "runtime.json"), JSON.stringify(report, null, 2)); } catch { /* read-only */ } }
+  // The reports the Strictness gate (gate.mjs) reads: fit.json from 3, runtime.json from 4.
+  if (cmd === "runtime" || cmd === "fit") { try { mkdirSync(join(ROOT, ".wwjd"), { recursive: true }); writeFileSync(join(ROOT, ".wwjd", `${cmd}.json`), JSON.stringify(report, null, 2)); } catch { /* read-only */ } }
   if (json) console.log(JSON.stringify(report, null, 2));
   else { for (const f of findings) console.log(`${String(f.width).padStart(4)}px  ${f.severity === "error" ? "ERROR" : "warn "} ${f.rule}: ${f.what}`); console.log(`\nrender ${label}: ${errors} errors, ${findings.length - errors} warnings`); }
   browser.close().then(() => process.exit(errors ? 1 : 0));

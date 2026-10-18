@@ -349,7 +349,10 @@ function dialLine() {
     const i = stopOf(dial, d[dial.key]); const [name, does] = dial.stops[i];
     return `${dial.name} (${dial.key}) ${i + 1}/5 ${name}: ${does}`;
   });
-  return off.length ? `dials: ${off.join(" · ")} The rest default; DESIGN.md and the Floor still win.` : "dials: all default";
+  if (!off.length) return "dials: all default";
+  // An order, not a note: agents read "dials:" as information and build the default.
+  const look = stopOf(DIALS[0], d.creativity) >= 3 ? " Look 4-5: call the Skill tool with wwjd:look (quick mode) before building, even for one component." : "";
+  return `dials (apply each to everything you build and write this session; the handover names how each showed): ${off.join(" · ")}${look} The rest default; DESIGN.md and the Floor still win.`;
 }
 
 if (cmd === "dials") {

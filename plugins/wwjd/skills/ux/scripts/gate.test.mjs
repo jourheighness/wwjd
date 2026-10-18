@@ -90,6 +90,7 @@ test("stop: Strictness 3 wants two widths; an UNAVAILABLE marker from render.mjs
   p.file(".wwjd/shots/card-390-light.png", "png", 5);
   assert.equal(p.run("stop", { stop_hook_active: false }).decision, "block");
   p.file(".wwjd/shots/card-1440-light.png", "png", 5);
+  p.file(".wwjd/fit.json", JSON.stringify({ findings: [] }), 5);
   assert.equal(p.run("stop", { stop_hook_active: false }), null);
 
   const q = project(3);
@@ -104,6 +105,7 @@ test("stop: Strictness 4 adds a dark shot and a runtime report", () => {
   p.edit("card.html");
   p.file(".wwjd/shots/card-390-light.png", "png", 5);
   p.file(".wwjd/shots/card-1440-light.png", "png", 5);
+  p.file(".wwjd/fit.json", JSON.stringify({ findings: [] }), 5);
   assert.match(p.run("stop", { stop_hook_active: false }).reason, /dark/);
   p.file(".wwjd/shots/card-390-dark.png", "png", 5);
   assert.match(p.run("stop", { stop_hook_active: false }).reason, /runtime/);
@@ -115,6 +117,7 @@ test("stop: Strictness 5 adds a wwjd-critic run after the last edit", () => {
   const p = project(5);
   p.edit("card.html");
   for (const f of ["card-390-light.png", "card-1440-light.png", "card-390-dark.png"]) p.file(`.wwjd/shots/${f}`, "png", 5);
+  p.file(".wwjd/fit.json", JSON.stringify({ findings: [] }), 5);
   p.file(".wwjd/runtime.json", "{}", 5);
   assert.match(p.run("stop", { stop_hook_active: false }).reason, /critic/);
   const read = new Date(Date.now() + 5000).toISOString();
@@ -152,7 +155,7 @@ test("status reports the dial, the sheet and each check", () => {
   p.edit("card.html");
   s = p.run("status", {});
   assert.equal(s.sheet.file, "task-card.md");
-  assert.deepEqual(s.checks.map((c) => [c.key, c.done]), [["shots", false], ["log", false]]);
+  assert.deepEqual(s.checks.map((c) => [c.key, c.done]), [["shots", false], ["fit", false], ["log", false]]);
   p.file(".wwjd/shots/card-390-light.png", "png", 5);
   p.file(".wwjd/shots/card-1440-light.png", "png", 5);
   assert.equal(p.run("status", {}).checks[0].done, true);
@@ -243,4 +246,16 @@ test("stop: from Strictness 2 asks once per run of edits for logged decisions", 
   p.file(".wwjd/decisions.jsonl", JSON.stringify({ id: "d1", at: new Date(Date.now() + 5000).toISOString(), surface: "Card", kind: "choice", text: "x" }));
   assert.equal(p.run("stop", { stop_hook_active: false }), null);
   assert.equal(project(1).run("stop", { stop_hook_active: false }), null);
+});
+
+test("stop: from Strictness 3 a fit report with errors blocks and names them", () => {
+  const p = project(3);
+  p.edit("card.html");
+  p.file(".wwjd/decisions.jsonl", JSON.stringify({ id: "d1", at: new Date(Date.now() + 5000).toISOString(), surface: "Card", kind: "choice", text: "x" }));
+  p.file(".wwjd/shots/card-390-light.png", "png", 5);
+  p.file(".wwjd/shots/card-1440-light.png", "png", 5);
+  p.file(".wwjd/fit.json", JSON.stringify({ findings: [{ width: 480, rule: "orphan-item", severity: "error", what: "Assignee wrapped onto a line of its own" }] }), 5);
+  assert.match(p.run("stop", { stop_hook_active: false }).reason, /orphan-item: Assignee/);
+  p.file(".wwjd/fit.json", JSON.stringify({ findings: [] }), 6);
+  assert.equal(p.run("stop", { stop_hook_active: false }), null);
 });

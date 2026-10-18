@@ -41,7 +41,7 @@ export const DIALS = [
   { key: "strictness", name: "Strictness", ends: ["fast", "strict"], default: 3, stops: [
     ["Fast", "Over-budget surfaces graded in your head; after: lint only."],
     ["Light", "Over-budget surfaces graded in your head; after: lint and one desktop screenshot."],
-    ["Standard", "A written grade sheet per over-budget surface before it is built; after: lint and screenshots at desktop and phone width."],
+    ["Standard", "A written grade sheet per over-budget surface before it is built; after: lint, screenshots at desktop and phone width and a clean fit check."],
     ["Careful", "Grade sheets; after: adds dark mode, the key states and render.mjs runtime checks."],
     ["Strict", "Grade sheets; after: adds the critic agent, and explore's variants before building."],
   ] },
