@@ -48,11 +48,10 @@ Before designing, building or reviewing any interface, read the wwjd skill and f
 ```
 
 ## Dials
-Seven dials tune effort and boldness, never the floor: **creativity, budget, density, motion, voice, rigor, grade** (`plugins/wwjd/skills/wwjd/references/dials.md`).
-- **`/wwjd-dials`:** a pane with one picker per dial, for you or for this project (writes `.wwjd.json`).
-- **Per person:** `/plugin configure wwjd@wwjd`, or the wwjd rows in `/config`.
-- **Per project:** `"dials": { "creativity": 4, "budget": 2 }` in `.wwjd.json`.
-- **Per request:** words like "bolder", "leaner", "airier" or "thorough" move one dial one stop; the prompt hook names the nudge.
+Seven sliders tune how wwjd designs, never the floor: **Look** (plain ↔ expressive), **Content** (lean ↔ rich), **Spacing** (roomy ↔ compact), **Motion** (still ↔ lively), **Copy** (terse ↔ warm), **Checking** (quick ↔ thorough) and **Grading** (written sheet or in your head). Every stop is listed in `plugins/wwjd/skills/wwjd/references/dials.md`.
+- **`/wwjd-dials`:** a pane with one slider per dial, for you or for this project (writes `.wwjd.json`). The line under the sliders says what the focused stop does.
+- **Also:** `/plugin configure wwjd@wwjd`, the wwjd rows in `/config`, or `"dials": { "creativity": 4 }` in `.wwjd.json`.
+- **Per request:** words like "bolder", "leaner", "airier", "calmer" or "thorough" move one dial one stop; the prompt hook names the nudge.
 
 ## Per project
 - **`.wwjd.json`** (committed, repo-relative paths only):

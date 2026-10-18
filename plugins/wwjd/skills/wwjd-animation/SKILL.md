@@ -21,7 +21,7 @@ Motion explains a change, or it goes. Refines wwjd's motion rules; never loosens
 | `crisp` | 120 / 160 / 220ms | ease-out from .97 (baseline, = kit/tokens.css) | Operate, Converse, Flow, checkout |
 | `smooth` | 180 / 240 / 320ms | drawer curve, more travel | consumer apps, commerce browse, Editorial chrome |
 | `springy` | 120 / 180 / 320ms + 420ms spring | M3 Expressive spatial spring, ≈1.2% overshoot on transform only | Persuade, Showcase, Native, playful consumer |
-- The `motion` dial (wwjd `references/dials.md`) forces a theme unless DESIGN.md records one; `auto` uses this table.
+- **Read the Motion dial** (`wwjd.mjs dials`; wwjd `references/dials.md`): 1 Still = `instant`, 2 = `crisp`, 3 = this table, 4 = `smooth`, 5 Lively = `springy`. A theme DESIGN.md records wins.
 - Set once: `<html data-motion="…">` with `motion.css` after the kit's `base.css`; record `motion:` in DESIGN.md.
 - `springy` never in Operate, Flow or Transact. One theme per surface.
 - Per product type and signature moments: `references/themes.md`.

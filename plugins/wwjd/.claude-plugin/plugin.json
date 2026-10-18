@@ -1,6 +1,6 @@
 {
   "name": "wwjd",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "What Would Johannes Do: opinionated UI/UX rules and workflow. Three skills (wwjd for structure, behaviour and copy; wwjd-look for the look; wwjd-animation for motion), a cold critic agent on request, a prompt hook that routes UI work, and an auto-lint hook after UI edits.",
   "author": {
     "name": "Johannes Carlsten"
@@ -9,61 +9,61 @@
   "userConfig": {
     "creativity": {
       "type": "number",
-      "title": "Creativity",
-      "description": "1 safe, close to the kit · 3 one loud axis (default) · 5 art-directed, a distinct idea per page",
+      "title": "Look: plain ↔ expressive",
+      "description": "1 Plain … 3 Balanced (default) … 5 Expressive. /wwjd-dials shows every stop.",
       "default": 3,
       "min": 1,
       "max": 5
     },
     "budget": {
       "type": "number",
-      "title": "Surface budget",
-      "description": "1 lean (every budget −2) · 3 as written (default) · 5 generous (+2); overflow rules always apply",
+      "title": "Content: lean ↔ rich",
+      "description": "1 Minimal … 3 Balanced (default) … 5 Rich. /wwjd-dials shows every stop.",
       "default": 3,
       "min": 1,
       "max": 5
     },
     "density": {
       "type": "number",
-      "title": "Density",
-      "description": "1 roomy · 3 by register (default) · 5 compact",
+      "title": "Spacing: roomy ↔ compact",
+      "description": "1 Roomy … 3 By product (default) … 5 Compact. /wwjd-dials shows every stop.",
       "default": 3,
       "min": 1,
       "max": 5
     },
     "motion": {
       "type": "string",
-      "title": "Motion",
-      "description": "auto picks by register (default); or force a motion theme",
+      "title": "Motion: still ↔ lively",
+      "description": "1 Still … 3 By product (default) … 5 Lively. /wwjd-dials shows every stop.",
       "options": [
-        "auto",
-        "instant",
-        "crisp",
-        "smooth",
-        "springy"
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
       ],
-      "default": "auto"
+      "default": "3"
     },
     "voice": {
       "type": "number",
-      "title": "Voice",
-      "description": "1 terse, labels only · 3 plain (default) · 5 warm, a little personality in empty and success states",
+      "title": "Copy: terse ↔ warm",
+      "description": "1 Terse … 3 Plain (default) … 5 Warm. /wwjd-dials shows every stop.",
       "default": 3,
       "min": 1,
       "max": 5
     },
     "rigor": {
       "type": "number",
-      "title": "Rigor",
-      "description": "1 one shot, lint only · 3 lint + one look (default) · 5 critic, fit and runtime checks, variants",
+      "title": "Checking: quick ↔ thorough",
+      "description": "1 Quick … 3 Standard (default) … 5 Thorough. /wwjd-dials shows every stop.",
       "default": 3,
       "min": 1,
       "max": 5
     },
     "grade": {
       "type": "string",
-      "title": "Grade gate",
-      "description": "gate: write a grade sheet for each over-budget surface before building it (default) · light: grade in your head, list the cuts in the handover",
+      "title": "Grading",
+      "description": "Written (default): A grade sheet for each over-budget surface before it is built. · In your head: Over-budget surfaces graded without a sheet; the handover lists what moved.",
       "options": [
         "gate",
         "light"

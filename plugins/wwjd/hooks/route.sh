@@ -17,6 +17,8 @@ nud 'leaner|less busy|less cluttered|strip (it )?down|fewer things' 'budget -1'
 nud 'show more|more detail|more info(rmation)?|richer' 'budget +1'
 nud 'denser|more compact|tighter' 'density +1'
 nud 'airier|roomier|more breathing room|more space' 'density -1'
+nud 'livelier|more (motion|animation)|more alive' 'motion +1'
+nud 'calmer|less (motion|animation)|no animations?' 'motion -1'
 nud 'warmer|friendlier|more human' 'voice +1'
 nud 'terser|drier|less chatty|less wordy' 'voice -1'
 nud 'quick|quickly|rough|just ship' 'rigor -1'
@@ -30,7 +32,7 @@ fi
 # Strong: UI on its own. Weak nouns only count next to a design word.
 strong='ui|ux|(chat|assistant|copilot|agent) (panel|ui|interface|window|sidebar|view)|redesign|layouts?|mock-?ups?|wireframes?|figma|storybook|landing ?page|hero|dashboard|css|tailwind|styling|typography|fonts?|colou?r ?palette|contrast|dark mode|light mode|animations?|hover|tooltips?|modal|drawer|sidebar|navbar|buttons?|cards?|components?|design system|design\.md|onboarding|empty state|ui copy|microcopy|a11y|accessibility'
 weak='page|screen|view|form|table|menu|header|footer|input|labels?|copy|charts?|list|panel|chat|checkout|article|docs|blog|templates?|settings|pricing|navigation'
-verb='design|redesign|bolder|safer|leaner|richer|denser|airier|roomier|warmer|terser|make it|looks?|align|aligned|spacing|padding|polish|prettier|cleaner|clean ?up|busy|cluttered|messy|ugly|nicer|simplify|style|restyle|tidy|centered|centred|wrap|jumps?|responsive|mobile|reads? well|readab(le|ility)|hard to (use|read|find|navigate)'
+verb='design|redesign|bolder|safer|leaner|richer|denser|airier|roomier|livelier|calmer|warmer|terser|make it|looks?|align|aligned|spacing|padding|polish|prettier|cleaner|clean ?up|busy|cluttered|messy|ugly|nicer|simplify|style|restyle|tidy|centered|centred|wrap|jumps?|responsive|mobile|reads? well|readab(le|ility)|hard to (use|read|find|navigate)'
 # Companion skills, named in the nudge when their words appear.
 look='palette|colou?rs?|fonts?|typeface|typography|theme|brand(ing)?|moodboard|dark mode|light mode|look and feel'
 motion='animat[a-z]*|motion|transitions?|micro-?interactions?|smoother|snappier|feel alive'

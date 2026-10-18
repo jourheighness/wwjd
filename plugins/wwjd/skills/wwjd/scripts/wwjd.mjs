@@ -25,6 +25,7 @@ import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync, statSync, readdirSync, existsSync } from "node:fs";
 import { join, extname, resolve, relative, dirname, basename, sep } from "node:path";
 import { homedir } from "node:os";
+import { DIALS, stopOf, valueOf, isDefault } from "./dials-spec.mjs";
 
 const [major, minor] = process.versions.node.split(".").map(Number);
 if (major < 20 || (major === 20 && minor < 10)) { console.error("wwjd needs Node 20.10 or newer"); process.exit(2); }
@@ -323,30 +324,22 @@ const kb = (f) => { try { return Math.round(statSync(join(ROOT, f)).size / 1024)
 // ── commands ───────────────────────────────────────────────────────
 const fmt = (x) => `${x.file}:${x.line}  ${x.severity === "error" ? "ERROR" : "warn "} ${x.rule}: ${x.message}`;
 
-// ── dials: plugin options (WWJD_DIALS, set by hooks/session.sh) < project .wwjd.json "dials" ──
-const DIAL_DEFAULTS = { creativity: 3, budget: 3, density: 3, motion: "auto", voice: 3, rigor: 3, grade: "gate" };
-const DIAL_SAYS = {
-  creativity: ["close to the kit: brand hue only, no display face, the plainest fitting hero", "one quiet custom axis", "", "two loud axes, a display face in every register, a less common hero, one signature moment", "art-directed: one distinct visual idea per page, an unusual layout, motion one step livelier"],
-  budget: ["every budget −2 (min 1); throw away before moving", "every budget −1", "", "every budget +1", "every budget +2; overflow rules still apply"],
-  density: ["roomy: data-density=comfortable", "roomier than the register", "", "denser than the register", "compact: data-density=compact"],
-  voice: ["terse: labels and values only, no sentences outside errors", "plain, shorter", "", "warmer: one human line in empty and success states", "warm: a light personality in empty, success and onboarding; never in errors or money"],
-  rigor: ["one shot, lint only", "lint + one screenshot", "", "lint, screenshots at two widths, runtime checks", "critic agent, fit and runtime checks, 2-3 variants before building"],
-};
+// ── dials (dials-spec.mjs): plugin options (WWJD_DIALS, from hooks) < project .wwjd.json "dials" ──
 function dials() {
-  const d = { ...DIAL_DEFAULTS }, from = {};
-  for (const [k, v] of (process.env.WWJD_DIALS || "").split(/\s+/).filter(Boolean).map((x) => x.split("="))) if (k in d) { d[k] = v; from[k] = "plugin"; }
-  for (const [k, v] of Object.entries(cfg.dials || {})) if (k in d) { d[k] = String(v); from[k] = ".wwjd.json"; }
-  for (const k of ["creativity", "budget", "density", "voice", "rigor"]) d[k] = Math.min(5, Math.max(1, Math.round(Number(d[k]) || 3)));
-  if (!["auto", "instant", "crisp", "smooth", "springy"].includes(d.motion)) d.motion = "auto";
-  if (!["gate", "light"].includes(d.grade)) d.grade = "gate";
+  const raw = {}, from = {};
+  for (const [k, v] of (process.env.WWJD_DIALS || "").split(/\s+/).filter(Boolean).map((x) => x.split("="))) { raw[k] = v; from[k] = "plugin"; }
+  for (const [k, v] of Object.entries(cfg.dials || {})) { raw[k] = v; from[k] = ".wwjd.json"; }
+  const d = {};
+  for (const dial of DIALS) d[dial.key] = valueOf(dial, stopOf(dial, raw[dial.key] ?? dial.default));
   return { d, from };
 }
 function dialLine() {
   const { d } = dials();
-  const off = Object.keys(DIAL_SAYS).filter((k) => d[k] !== 3).map((k) => `${k} ${d[k]} (${DIAL_SAYS[k][d[k] - 1]})`);
-  if (d.motion !== "auto") off.push(`motion ${d.motion} (data-motion="${d.motion}")`);
-  if (d.grade !== "gate") off.push("grade light (grade in your head; the handover lists the cuts)");
-  return off.length ? `dials: ${off.join(" · ")}; the rest default. DESIGN.md and the Floor still win.` : "dials: all default";
+  const off = DIALS.filter((dial) => !isDefault(dial, stopOf(dial, d[dial.key]))).map((dial) => {
+    const i = stopOf(dial, d[dial.key]); const [name, does] = dial.stops[i];
+    return `${dial.name} (${dial.key}) ${dial.values ? name : `${i + 1}/5 ${name}`}: ${does}`;
+  });
+  return off.length ? `dials: ${off.join(" · ")} The rest default; DESIGN.md and the Floor still win.` : "dials: all default";
 }
 
 if (cmd === "dials") {
