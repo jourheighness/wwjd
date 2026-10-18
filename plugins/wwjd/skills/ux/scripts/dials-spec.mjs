@@ -1,4 +1,4 @@
-// The wwjd dials: one source for the /wwjd-dials pane (hooks/dials.tsx), wwjd.mjs and references/dials.md.
+// The wwjd dials: one source for the Settings view of /wwjd (hooks/dials.tsx), wwjd.mjs and references/dials.md.
 // Each dial runs between two named ends; stop 3 is wwjd's default (the product type decides).
 // `does` is what the agent does at that stop: concrete, checkable, one line.
 

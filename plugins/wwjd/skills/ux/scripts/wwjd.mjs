@@ -368,10 +368,12 @@ if (cmd === "status") {
   if (log.length) read.push(`decision-log lines that grep for the surface's names (${log.join(", ")})`);
   read.push(golden.length ? `golden: ${golden.slice(0, 2).join(", ")}` : picks.length ? `golden (suggested): ${picks.slice(0, 2).join(", ")}` : "no golden file yet");
   const profile = process.env.WWJD_PROFILE ? "$WWJD_PROFILE" : existsSync(join(userCfg, "profile.md")) ? "~/.config/wwjd/profile.md" : null;
+  const taste = process.env.WWJD_TASTE ? "$WWJD_TASTE" : existsSync(join(userCfg, "taste.md")) ? "~/.config/wwjd/taste.md" : null;
+  if (taste) read.push(`taste ${taste} (your design rules for every project; the project's DESIGN.md and decision log outrank them)`);
   if (profile) read.push(`profile ${profile} (workflow, locale only)`);
   const dd = dials().d;
   if (opt.json) {
-    console.log(JSON.stringify({ stage, uiFiles: files.length, findings: findings.length, open: open.length, density: +density.toFixed(2), kit, tokens, files: have, decisionLog: log, profile, storybook: storybook(), golden, goldenSuggested: picks, legacy: cfg.legacy || [], register: cfg.register || null, dials: dd, read }, null, 2));
+    console.log(JSON.stringify({ stage, uiFiles: files.length, findings: findings.length, open: open.length, density: +density.toFixed(2), kit, tokens, files: have, decisionLog: log, taste, profile, storybook: storybook(), golden, goldenSuggested: picks, legacy: cfg.legacy || [], register: cfg.register || null, dials: dd, read }, null, 2));
   } else {
     console.log(`stage: ${stage}  (${files.length} UI files, ${open.length} ${base ? "new " : ""}findings, ${density.toFixed(2)}/file)`);
     console.log(`files: ${have.join(" · ")}`);

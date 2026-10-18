@@ -27,7 +27,7 @@ plugins/wwjd/
   agents/wwjd-critic.md   cold review, on request only
   hooks/                  route.sh (points UI prompts at wwjd:ux, plus look or motion) · check.sh (lints each edited UI file) ·
                           gate.mjs via hooks.json (Strictness: grade sheet before a new UI file, checks before the turn ends) ·
-                          main.tsx (the /wwjd-dials pane; a status-line entry and a band naming the checks still due)
+                          main.tsx (the /wwjd sidebar: decisions, corrections, Settings; a status line and a band naming the checks still due)
   evals/                  trigger, quality and dial evals for `claude plugin eval` (`--tag dials`: one card per dial end)
 docs/research/            archived research (faux-pas catalogue, layouts, look); not shipped in the skill
 ```
@@ -51,7 +51,7 @@ Before designing, building or reviewing any interface, read the `ux` skill (wwjd
 
 ## Dials
 Six dials tune how wwjd designs, never the floor: **Look** (plain ↔ expressive), **Content** (lean ↔ rich), **Spacing** (roomy ↔ compact), **Motion** (still ↔ lively), **Copy** (terse ↔ warm) and **Strictness** (fast ↔ strict: how hard the agent is on its own work). Every stop is listed in `plugins/wwjd/skills/ux/references/dials.md`.
-- **`/wwjd-dials`:** a pane with one row of stops per dial, for you or for this project (writes `.wwjd.json`). The line below says what the focused stop does.
+- **`/wwjd` → Settings:** one row of stops per dial, for you or for this project (writes `.wwjd.json`). The line below says what the focused stop does.
 - **Also:** `/plugin configure wwjd@wwjd`, the wwjd rows in `/config`, or `"dials": { "creativity": 4 }` in `.wwjd.json`.
 - **Per request:** words like "bolder", "leaner", "airier", "calmer" or "thorough" move one dial one stop; the prompt hook names the nudge.
 
@@ -68,10 +68,14 @@ Six dials tune how wwjd designs, never the floor: **Look** (plain ↔ expressive
 - **One-off exceptions:** a trailing `wwjd-ignore: <reason>` comment on the line.
 - **Hook off for a project:** `WWJD_HOOK_CHECK=0`.
 
-## Your profile
-`~/.config/wwjd/profile.md` (or `$WWJD_PROFILE`): workflow and locale only, never design rules. Project rules go in the decision log or `DESIGN.md`; a rule for every project is proposed as a change to this skill.
+## Decisions and corrections
+`/wwjd` opens the sidebar: every design assumption and choice the agent made without being told, grouped by component, screen or layout (the agent logs them with the `mcp__wwjd__log` tool into `.wwjd/decisions.jsonl`). **Correct** one with a note for **This project** (its decision log: `docs/decisions/design.md`, else a Decisions section in `DESIGN.md`) or **You, every project** (your taste file); the note also goes straight to the agent. The dials sit behind **Settings**.
 
-**Precedence:** the floor › the project's DESIGN.md and decision log › wwjd (the more specific file wins) › your profile.
+## Your taste and profile
+- **`~/.config/wwjd/taste.md`** (or `$WWJD_TASTE`): your design rules for every project, written by sidebar corrections or by hand.
+- **`~/.config/wwjd/profile.md`** (or `$WWJD_PROFILE`): workflow and locale only.
+
+**Precedence:** the floor › the project's DESIGN.md and decision log › your taste file › dials › wwjd (the more specific file wins) › your profile.
 
 ## Scripts
 ```bash
@@ -89,6 +93,6 @@ node plugins/wwjd/skills/ux/scripts/grade.mjs spec.json [--surface row]   # prin
 ```bash
 cd plugins/wwjd
 claude plugin eval . --case 'pos-*' --case 'neg-*'          # triggers on UI work, and only there
-claude plugin eval . --tag quality --scaffold                # changes the output
-claude plugin eval . --tag dials --scaffold                  # each dial moves the output the way its stops say
+claude plugin eval . --tag quality --scaffold --allow-tools Write Edit Bash   # changes the output
+claude plugin eval . --tag dials --scaffold --allow-tools Write Edit Bash     # each dial moves the output the way its stops say
 ```

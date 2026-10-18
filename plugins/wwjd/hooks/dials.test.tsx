@@ -1,8 +1,8 @@
 import { expect, test } from 'claude-code/testing'
 
 const opened = { value: { isPlaced: true } } as never
-const PANE = { component: 'Pane', requestId: 'wwjd-dials' } as const
-const props = { title: 'wwjd dials', isFocused: true, bodyColumns: 60, placement: 'dock' } as never
+const PANE = { component: 'Pane', requestId: 'wwjd' } as const
+const props = { title: 'wwjd', isFocused: true, bodyColumns: 60, placement: 'dock' } as never
 
 test('project picks land in .wwjd.json dials; inherit removes them', async ($, on) => {
   const files: Record<string, string> = { '/p/.wwjd.json': '{\n  "register": "operate"\n}\n' }
@@ -18,9 +18,10 @@ test('project picks land in .wwjd.json dials; inherit removes them', async ($, o
     return { value: undefined }
   })
   on('ui.open', () => opened)
-  await $.command.run({ command: 'wwjd-dials' } as never)
+  await $.command.run({ command: 'wwjd' } as never)
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ plugin: 'wwjd', surface, ...PANE, props })
+    await ui.press({ key: 'to-settings' })
     await ui.press({ key: 'scope:1' })
     await ui.press({ key: 'creativity:4' })
     await ui.press({ key: 'strictness:0' })
@@ -31,6 +32,7 @@ test('project picks land in .wwjd.json dials; inherit removes them', async ($, o
     await ui.press({ key: 'strictness:reset' })
     expect(JSON.parse(files['/p/.wwjd.json'] ?? '{}').dials).toBeUndefined()
     await ui.press({ key: 'scope:0' })
+    await ui.press({ key: 'to-log' })
     await ui.unmount()
   }
 })
@@ -45,8 +47,9 @@ test('person picks go to the plugin options', async ($, on) => {
   on('fs.exists', () => ({ value: false }))
   on('fs.read', () => { throw new Error('missing') })
   on('ui.open', () => opened)
-  await $.command.run({ command: 'wwjd-dials' } as never)
+  await $.command.run({ command: 'wwjd' } as never)
   const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'terminal', ...PANE, props })
+  await ui.press({ key: 'to-settings' })
   expect(await ui.find({ type: 'Text', text: /Content/ })).toBeDefined()
   await ui.press({ key: 'budget:1' })
   await ui.press({ key: 'motion:1' })
@@ -59,8 +62,9 @@ test('the detail line names the focused stop and what it does', async ($, on) =>
   on('fs.read', () => { throw new Error('missing') })
   on('config.set', (_$, e) => ({ value: e.value }))
   on('ui.open', () => opened)
-  await $.command.run({ command: 'wwjd-dials' } as never)
+  await $.command.run({ command: 'wwjd' } as never)
   const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })
+  await ui.press({ key: 'to-settings' })
   await ui.press({ key: 'density:4' })
   expect(await ui.find({ type: 'Text', text: 'Spacing · Compact' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /32px rows/ })).toBeDefined()

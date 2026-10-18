@@ -1,15 +1,15 @@
-// The wwjd dials pane (/wwjd-dials): one row per dial, for you (the plugin options) or for this project
+// The Settings view of the wwjd sidebar (sidebar.tsx): one row per dial, for you (the plugin options) or for this project
 // (.wwjd.json "dials"). Each dial is a segmented control of its named stops: native buttons on the desktop, [ ] on
 // the terminal, so Tab, Enter and the pointer all work. The stops and what each does come from
 // skills/ux/scripts/dials-spec.mjs. Scripts read WWJD_DIALS, then .wwjd.json.
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, PluginOptions, Register } from 'claude-code'
+import type { EngineInterface, PluginOptions, Register, RenderInput } from 'claude-code'
 
 import { DIALS, isDefault, stopOf, valueOf } from '../skills/ux/scripts/dials-spec.mjs'
 import type { Scope } from '../types'
 
 type Dial = (typeof DIALS)[number]
-const PANE = 'wwjd-dials'
+export const PANE = 'wwjd'
 
 const scope = atom({ plugin: 'wwjd', key: 'scope' } as const, 'person')
 const project = atom({ plugin: 'wwjd', key: 'project' } as const, {})
@@ -28,7 +28,7 @@ async function projectFile($: EngineInterface): Promise<string> {
     d = up
   }
 }
-async function readProject($: EngineInterface): Promise<Record<string, unknown>> {
+export async function readProject($: EngineInterface): Promise<Record<string, unknown>> {
   try {
     return JSON.parse(await $.fs.read(await projectFile($)))
   } catch {
@@ -37,7 +37,7 @@ async function readProject($: EngineInterface): Promise<Record<string, unknown>>
 }
 
 // WWJD_DIALS for every Bash child from now on (hooks/session.sh sets it only at session start).
-async function exportDials($: EngineInterface, options: PluginOptions) {
+export async function exportDials($: EngineInterface, options: PluginOptions) {
   const set = DIALS.filter(d => !isDefault(d, mine(options, d))).map(d => `${d.key}=${valueOf(d, mine(options, d))}`)
   await $.env.set('WWJD_DIALS', set.join(' '))
 }
@@ -62,27 +62,23 @@ async function pick($: EngineInterface, key: string, stop: number) {
   await update($, project, () => dials)
 }
 
-export const register: Register = (on, options) => {
-  on('session.start', async ($, e, next) => {
-    await $.command.register({ name: 'wwjd-dials', description: 'Set how wwjd designs: look, content, spacing, motion, copy, strictness' })
-    await exportDials($, options)
-    return next(e)
-  })
-
-  on('command.run', { command: 'wwjd-dials' }, async $ => {
-    const json = await readProject($)
-    await update($, project, () => (json.dials && typeof json.dials === 'object' ? (json.dials as Record<string, string | number>) : {}))
-    await $.ui.open({ id: PANE, title: 'wwjd dials', focus: true, closeOnEscape: true })
-    return { text: 'Dials open. DESIGN.md and the floor still win over any dial.' }
-  })
-
+export const register: Register = on => {
   // The detail line follows the focus ring and the last pick, so a stop explains itself before it is set.
   on('ui.focus', { requestId: PANE }, async ($, e, next) => {
     await update($, focused, () => e.element ?? '').catch(() => undefined)
     return next(e)
   })
 
-  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+}
+
+/** The project's dials into state, before the sidebar opens. */
+export async function loadProjectDials($: EngineInterface) {
+  const json = await readProject($)
+  await update($, project, () => (json.dials && typeof json.dials === 'object' ? (json.dials as Record<string, string | number>) : {}))
+}
+
+/** The dials grid, the sidebar's Settings view. */
+export async function settingsView($: EngineInterface, e: RenderInput, options: PluginOptions) {
     const { Box, Text, Button } = $.ui.resolve(e)
     const where = await read($, scope)
     const proj = (await read($, project)) as Record<string, string | number>
@@ -150,7 +146,7 @@ export const register: Register = (on, options) => {
             : ['', '']
 
     return (
-      <Box flexDirection="column" padding="md" gap="md">
+      <Box flexDirection="column" gap="md">
         {row('scope', 'Applies to', segment('scope', ['You, every project', 'This project'], where === 'person' ? 0 : 1, false, i => update($, scope, () => (i === 0 ? 'person' : 'project') as Scope)))}
         <Box flexDirection="column" gap="sm">{dialRows}</Box>
         <Box flexDirection="column" minHeight={3}>
@@ -159,5 +155,4 @@ export const register: Register = (on, options) => {
         </Box>
       </Box>
     )
-  })
 }

@@ -9,6 +9,17 @@ export type Gate = {
   checks: { key: string; label: string; done: boolean; how: string }[]
 }
 
+/** One line of .wwjd/decisions.jsonl: a design assumption or choice the agent logged, and its correction if any. */
+export type Entry = {
+  id: string
+  at: string
+  surface: string
+  kind: 'assumption' | 'choice'
+  text: string
+  why?: string
+  correction?: { note: string; scope: Scope; file: string; at: string }
+}
+
 declare module 'claude-code' {
   interface PluginState {
     wwjd: {
@@ -17,6 +28,11 @@ declare module 'claude-code' {
       focused: string
       gate: Gate | null
       isActive: boolean
+      view: 'log' | 'settings'
+      editing: string
+      draft: string
+      noteScope: Scope
+      logVersion: number
     }
   }
 }

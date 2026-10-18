@@ -1,6 +1,6 @@
 {
   "name": "wwjd",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "What Would Johannes Do: opinionated UI/UX rules and workflow. Three skills (wwjd:ux for structure, behaviour and copy; wwjd:look for the look; wwjd:motion for motion), a cold critic agent on request, a prompt hook that routes UI work, and an auto-lint hook after UI edits.",
   "author": {
     "name": "Johannes Carlsten"
@@ -10,7 +10,7 @@
     "creativity": {
       "type": "number",
       "title": "Look: plain ↔ expressive",
-      "description": "1 Plain … 3 Balanced (default) … 5 Expressive. /wwjd-dials shows every stop.",
+      "description": "1 Plain … 3 Balanced (default) … 5 Expressive. /wwjd → Settings shows every stop.",
       "default": 3,
       "min": 1,
       "max": 5
@@ -18,7 +18,7 @@
     "budget": {
       "type": "number",
       "title": "Content: lean ↔ rich",
-      "description": "1 Minimal … 3 Balanced (default) … 5 Rich. /wwjd-dials shows every stop.",
+      "description": "1 Minimal … 3 Balanced (default) … 5 Rich. /wwjd → Settings shows every stop.",
       "default": 3,
       "min": 1,
       "max": 5
@@ -26,7 +26,7 @@
     "density": {
       "type": "number",
       "title": "Spacing: roomy ↔ compact",
-      "description": "1 Roomy … 3 By product (default) … 5 Compact. /wwjd-dials shows every stop.",
+      "description": "1 Roomy … 3 By product (default) … 5 Compact. /wwjd → Settings shows every stop.",
       "default": 3,
       "min": 1,
       "max": 5
@@ -34,7 +34,7 @@
     "motion": {
       "type": "number",
       "title": "Motion: still ↔ lively",
-      "description": "1 Still … 3 By product (default) … 5 Lively. /wwjd-dials shows every stop.",
+      "description": "1 Still … 3 By product (default) … 5 Lively. /wwjd → Settings shows every stop.",
       "default": 3,
       "min": 1,
       "max": 5
@@ -42,7 +42,7 @@
     "voice": {
       "type": "number",
       "title": "Copy: terse ↔ warm",
-      "description": "1 Terse … 3 Plain (default) … 5 Warm. /wwjd-dials shows every stop.",
+      "description": "1 Terse … 3 Plain (default) … 5 Warm. /wwjd → Settings shows every stop.",
       "default": 3,
       "min": 1,
       "max": 5
@@ -50,7 +50,7 @@
     "strictness": {
       "type": "number",
       "title": "Strictness: fast ↔ strict",
-      "description": "1 Fast … 3 Standard (default) … 5 Strict. /wwjd-dials shows every stop.",
+      "description": "1 Fast … 3 Standard (default) … 5 Strict. /wwjd → Settings shows every stop.",
       "default": 3,
       "min": 1,
       "max": 5

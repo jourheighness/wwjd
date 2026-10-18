@@ -8,7 +8,7 @@ Opinions backed by use. If a rule would hurt this case, say so, propose the exce
 
 ## 0. Entry (once per session)
 1. Run `node <skill>/scripts/wwjd.mjs status`; it also prints the dials (`references/dials.md`), which tune effort and boldness, never the Floor.
-2. Read what it lists: PRODUCT.md; DESIGN.md prose (Named rules, Do's/Don'ts in full); RATCHET.md Gotchas, Tells, `[design]`; decision-log lines naming the surface; 1-2 golden files; the user profile. Never imitate `legacy`.
+2. Read what it lists: PRODUCT.md; DESIGN.md prose (Named rules, Do's/Don'ts in full); RATCHET.md Gotchas, Tells, `[design]`; decision-log lines naming the surface; 1-2 golden files; your taste file and profile. Never imitate `legacy`.
 3. Create a missing file only when needed, short, vetoable defaults: PRODUCT.md if register or product type would be guessed; RATCHET.md to park a finding; no DESIGN.md: `wwjd:look` quick mode picks a subject-grounded look before the first build. Never block showing work on a question.
 4. Name the register ("Register: Operate, settings"), read `registers/<name>.md`, and route:
 
@@ -25,7 +25,7 @@ Opinions backed by use. If a rule would hurt this case, say so, propose the exce
 | small change | rules + loop only |
 
 ## 1. Precedence
-Floor > project DESIGN.md + decision log > dials > wwjd (more specific file wins) > user profile (workflow, locale only). Old UI breaking rules: fix in scope, flag the rest.
+Floor > project DESIGN.md + decision log > taste file (yours, every project) > dials > wwjd (more specific file wins) > user profile (workflow, locale only). Old UI breaking rules: fix in scope, flag the rest.
 
 ## 2. Floor
 - **Access:** AA contrast; visible focus ring >=3:1; zoom never disabled; targets >=24px web, 44pt iOS, 48dp Android; colour never alone; links in running text underlined; reduced motion respected; nothing clips at 200% zoom or text-spacing overrides; tooltips work on focus and tap, never hold essentials; explained disabled controls are `aria-disabled`, focusable; every drag has a non-drag path; scrollable regions focusable and labelled.
@@ -64,6 +64,7 @@ Mobile/native: plus `native.md`. The other width works, composed on its own. Hyb
 
 ## 5. Loop: show, react, adjust
 - **Show** the smallest renderable slice, realistic data; hand over link + what changed at once, never after a review. Owner live: say where to look; no shot per change, no hot-reload mid-test.
+- **Log as you go:** each assumption (product, data, intent) and each choice nobody asked for: one `mcp__wwjd__log` call (surface, kind, one-line text, why). The person corrects them in `/wwjd`. No tool: one JSON line in `.wwjd/decisions.jsonl`.
 - **Auto:** a hook runs `wwjd.mjs check <file> --new` per UI edit (vs `.wwjd-baseline.json`); no hook: run it before handover.
 - **Each handover:** one `render.mjs shoot <url> --one`, read by you, not a report; `TODO(api)` list + what the backend must provide.
 - **React:** change only what was named, keep what they liked; pick by letter. Two rounds no closer: 3 structurally different options or one question with a default. No scores.
