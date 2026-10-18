@@ -17,7 +17,10 @@
 //   --json    machine output. Exit 1 on errors.
 // Playwright: resolved from this project (npm i -D playwright) or this script's folder.
 // PW_EXE=<path to a Chromium binary> uses an existing build instead of the bundled one.
+// No Playwright: shoot falls back to an installed Chrome or Chromium (PW_EXE, CHROME_PATH, the usual places), headless,
+// one viewport per shot (no full page); fit and runtime still need Playwright.
 // Read every PNG yourself: a report about a screenshot is not a look.
+import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, join } from "node:path";
@@ -50,6 +53,40 @@ function unavailable(why) {
   console.error(why);
   try { mkdirSync(".wwjd/shots", { recursive: true }); writeFileSync(".wwjd/shots/UNAVAILABLE", why + "\n"); } catch { /* read-only */ }
   process.exit(2);
+}
+// Shots without Playwright: a system Chrome's own headless screenshot, the same file names as below.
+function systemChrome() {
+  const named = [process.env.PW_EXE, process.env.CHROME_PATH].filter(Boolean);
+  const mac = ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary", "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"];
+  for (const p of [...named, ...mac]) if (existsSync(p)) return p;
+  for (const bin of ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser"]) {
+    try { return execFileSync("which", [bin], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() || null; } catch { /* next */ }
+  }
+  return null;
+}
+if (!chromium && cmd === "shoot") {
+  const exe = systemChrome();
+  if (exe) {
+    const out = opt("--out", ".wwjd/shots");
+    mkdirSync(out, { recursive: true });
+    const slug = (url.startsWith("file:") ? target.split("/").pop().replace(/\.\w+$/, "") : target.replace(/^[a-z]+:\/\//, "")).replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+    let reg = null;
+    try { reg = opt("--register") || JSON.parse(readFileSync(".wwjd.json", "utf8")).register; } catch { /* none */ }
+    const primary = Number(opt("--width", 0)) || (["operate", "monitor"].includes((reg || "operate").toLowerCase()) ? 1440 : 390);
+    const widths = flag("--one") ? [primary] : opt("--widths", "1440,390").split(",").map(Number);
+    const themes = flag("--one") || opt("--theme") ? [opt("--theme", "light")] : ["light", "dark"];
+    for (const w of widths) for (const scheme of themes) {
+      const f = join(out, `${slug}-${w}-${scheme}.png`);
+      try {
+        execFileSync(exe, ["--headless=new", "--disable-gpu", "--hide-scrollbars", "--no-first-run", "--no-default-browser-check",
+          `--window-size=${w},${w < 800 ? 844 : 900}`, `--blink-settings=preferredColorScheme=${scheme === "dark" ? 0 : 1}`,
+          "--virtual-time-budget=1500", `--screenshot=${resolve(f)}`, url], { stdio: "ignore", timeout: 30000 });
+        console.log(f + "  (system Chrome, viewport only)");
+      } catch (e) { console.error(`render: Chrome could not shoot ${w}px ${scheme}: ${e.message.split("\n")[0]}`); }
+    }
+    process.exit(0);
+  }
 }
 if (!chromium) unavailable("render needs Playwright: npm i -D playwright (and npx playwright install chromium, or set PW_EXE)");
 let browser;

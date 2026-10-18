@@ -124,3 +124,28 @@ test("stop: blocks at most twice in a row, then lets the turn end", () => {
   assert.equal(p.run("stop", { stop_hook_active: true }).decision, "block");
   assert.equal(p.run("stop", { stop_hook_active: true }), null);
 });
+
+test("post notes a wwjd-critic run, which satisfies Strictness 5", () => {
+  const p = project(5);
+  p.edit("card.html");
+  p.file(".wwjd/shots/UNAVAILABLE", "no playwright", 5);
+  assert.match(p.run("stop", { stop_hook_active: false }).reason, /critic/);
+  p.run("post", { tool_name: "Agent", tool_input: { subagent_type: "wwjd:wwjd-critic", prompt: "review" } });
+  assert.equal(p.run("stop", { stop_hook_active: false }), null);
+});
+
+test("status reports the dial, the sheet and each check", () => {
+  const p = project(3);
+  let s = p.run("status", {});
+  assert.equal(s.strictness, 3);
+  assert.deepEqual(s.sheet, { needed: true, file: null });
+  assert.equal(s.hasEdits, false);
+  p.file(".wwjd/grade/task-card.md", "within budget");
+  p.edit("card.html");
+  s = p.run("status", {});
+  assert.equal(s.sheet.file, "task-card.md");
+  assert.deepEqual(s.checks.map((c) => [c.key, c.done]), [["shots", false]]);
+  p.file(".wwjd/shots/card-390-light.png", "png", 5);
+  p.file(".wwjd/shots/card-1440-light.png", "png", 5);
+  assert.equal(p.run("status", {}).checks[0].done, true);
+});

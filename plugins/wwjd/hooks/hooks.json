@@ -37,6 +37,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}\"/skills/ux/scripts/gate.mjs post",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "PreToolUse": [
@@ -64,6 +74,6 @@
     ]
   },
   "modules": [
-    "./dials.tsx"
+    "./main.tsx"
   ]
 }

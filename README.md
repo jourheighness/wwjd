@@ -26,8 +26,9 @@ plugins/wwjd/
   skills/motion/          motion
   agents/wwjd-critic.md   cold review, on request only
   hooks/                  route.sh (points UI prompts at wwjd:ux, plus look or motion) · check.sh (lints each edited UI file) ·
-                          gate.mjs via hooks.json (Strictness: grade sheet before a new UI file, checks before the turn ends)
-  evals/                  trigger and quality evals for `claude plugin eval`
+                          gate.mjs via hooks.json (Strictness: grade sheet before a new UI file, checks before the turn ends) ·
+                          main.tsx (the /wwjd-dials pane; a status-line entry and a band naming the checks still due)
+  evals/                  trigger, quality and dial evals for `claude plugin eval` (`--tag dials`: one card per dial end)
 docs/research/            archived research (faux-pas catalogue, layouts, look); not shipped in the skill
 ```
 
@@ -82,11 +83,12 @@ node plugins/wwjd/skills/ux/scripts/render.mjs fit <url> [--selector css]
 node plugins/wwjd/skills/ux/scripts/render.mjs runtime <url>
 node plugins/wwjd/skills/ux/scripts/grade.mjs spec.json [--surface row]   # prints the grade sheet for one surface
 ```
-`wwjd.mjs` needs Node 20.10+ and nothing else. `render.mjs` needs Playwright in the project (`npm i -D playwright`), or `PW_EXE` pointing at an existing Chromium.
+`wwjd.mjs` needs Node 20.10+ and nothing else. `render.mjs` needs Playwright in the project (`npm i -D playwright`), or `PW_EXE` pointing at an existing Chromium; without either, `shoot` uses an installed Chrome (viewport shots), and `fit` and `runtime` say they can't run.
 
 ## Evals
 ```bash
 cd plugins/wwjd
 claude plugin eval . --case 'pos-*' --case 'neg-*'          # triggers on UI work, and only there
 claude plugin eval . --tag quality --scaffold                # changes the output
+claude plugin eval . --tag dials --scaffold                  # each dial moves the output the way its stops say
 ```
