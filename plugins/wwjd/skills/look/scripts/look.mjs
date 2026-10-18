@@ -4,7 +4,7 @@
 //   node look.mjs --look look.json --variants 3 [--sweep neutral,surface,type]   → .wwjd/variants/A….{json,css}
 //   node look.mjs --card .wwjd/refs/B.yaml [--brand "#5E6AD2"] [--register operate]   → look.json on stdout
 //   node look.mjs --pick 5 .wwjd/refs/*.yaml                                          → relevant, mutually distant refs
-// --look also takes a DESIGN.md this script wrote (reads its <!-- wwjd-look … --> line).
+// --look also takes a DESIGN.md this script wrote (reads its <!-- wwjd:look … --> line).
 // Exit 1: a clash or ban rejected the look, or a contrast floor failed. Exit 2: usage.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -296,7 +296,7 @@ function designMd(look, x, B, au) {
   const okc = role => `\`${hex(R[role].l)}\` / dark \`${hex(R[role].d)}\` (${ok(R[role].l, null)})`;
   const keep = { identity: look.identity, name: look.name, register: x.register, brand: look.brand, brand2: look.brand2, hue: look.hue, axes: Object.fromEntries(AXES.map(k => [k, x[k]])),
     lock: look.lock, allow: look.allow, ref: look.ref, fixed: look.fixed, inkChroma: look.inkChroma, brandAsset: look.brandAsset, fonts: look.fonts };
-  const body = [`<!-- wwjd-look ${JSON.stringify(keep)} -->`, '', `# ${look.name || 'Design'}`, '', '## Overview', '',
+  const body = [`<!-- wwjd:look ${JSON.stringify(keep)} -->`, '', `# ${look.name || 'Design'}`, '', '## Overview', '',
     look.identity || '', '', `- Look: ${AXES.map(k => `${k} ${x[k]}`).join(' · ')}`, `- Register: ${x.register}`,
     ...(look.ref ? [`- Reference: ${[look.ref.id, look.ref.name, look.ref.url].filter(Boolean).join(' ')} (axes only; nothing copied)`] : []),
     `- Motion: \`${x.motion}\` (wwjd:motion \`motion.css\`, \`<html data-motion="${x.motion}">\`)`, `- Imagery: ${x.imagery}`,
@@ -389,7 +389,7 @@ const argv = process.argv.slice(2), args = { rest: [] };
 for (let i = 0; i < argv.length; i++) { const k = argv[i];
   if (/^--(force|verbose)$/.test(k)) args[k.slice(2)] = true; else if (k.startsWith('--')) args[k.slice(2)] = argv[++i]; else args.rest.push(k); }
 const readLook = file => { const t = fs.readFileSync(file, 'utf8'); if (!/\.md$/i.test(file)) return JSON.parse(t);
-  const m = t.match(/<!-- wwjd-look (\{.*\}) -->/); if (!m) die(`${file} was not written by wwjd:look; describe its look in a look.json and pass --design ${file} to pin its colours`); return JSON.parse(m[1]); };
+  const m = t.match(/<!-- wwjd:look (\{.*\}) -->/); if (!m) die(`${file} was not written by wwjd:look; describe its look in a look.json and pass --design ${file} to pin its colours`); return JSON.parse(m[1]); };
 const designColors = file => { const fmx = fs.readFileSync(file, 'utf8').match(/^---\n([\s\S]*?)\n---/), o = {}; if (!fmx) return o; let inC = false;
   for (const line of fmx[1].split('\n')) { if (/^\S/.test(line)) { inC = /^colors:/.test(line); continue; } const m = inC && line.match(/^\s+([\w-]+):\s*["']?([^"'\s]+)/); if (m) o[m[1]] = m[2]; }
   return o; };
@@ -423,7 +423,7 @@ if (args.variants) {
 }
 const tokens = args.tokens || path.join(out, 'tokens.css');
 let dm = path.join(out, 'DESIGN.md');
-if (fs.existsSync(dm) && !/<!-- wwjd-look /.test(fs.readFileSync(dm, 'utf8')) && !args.force) {
+if (fs.existsSync(dm) && !/<!-- wwjd:look /.test(fs.readFileSync(dm, 'utf8')) && !args.force) {
   dm = path.join(out, 'DESIGN.look.md'); console.log('  DESIGN.md exists and wins: wrote DESIGN.look.md; merge only its open axes (or --design DESIGN.md to pin its colours, --force to replace)'); }
 const ramp = m => { const S = B.R.accent[m][0], T = B.R['accent-text'][m][0], C = B.R.accent[m][1];
   const Ls = m == 'l' ? [.993, .983, .955, .925, .89, .85, .79, .71, S, S - .04, T, .30] : [.18, .21, .26, .30, .34, .38, .44, .52, S, S + .04, T, .93];
