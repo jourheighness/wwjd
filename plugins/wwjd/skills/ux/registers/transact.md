@@ -1,6 +1,6 @@
 # Transact: stores, product pages, listings, cart, checkout
 
-Profile: `data-profile="consumer"`. Colour: product photography carries it; the UI stays neutral.
+Profile: `data-profile="consumer"`, primary width 390. Colour: product photography carries it; the UI stays neutral.
 
 Success: the person buys with confidence and without surprises. Layouts: `product-detail`, `listing-search`, `cart-checkout`, `pricing`.
 

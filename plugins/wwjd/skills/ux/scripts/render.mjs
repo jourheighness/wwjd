@@ -6,6 +6,7 @@
 //     --one              one shot: the primary width, one theme (the quick loop's per-handover look)
 //     --width <px>       primary width for --one (default: 1440 for operate/monitor, else 390; from --register or .wwjd.json)
 //     --theme light|dark --widths 1440,390 --out <dir> (default .wwjd/shots)  --full (full page with --one)
+//   .wwjd/ is at the nearest folder up with .wwjd.json or .wwjd/, else the git root, else here (what gate.mjs reads).
 //   fit      resize a page or story and catch components that break as they shrink
 //     --widths 240,320,480,720  --selector "<container css>" (resize that element, not the viewport)
 //     identifier-clipped · identifier-long · icon-detached · overflow · hover-shift · hover-unreachable ·
@@ -18,13 +19,15 @@
 // Playwright: resolved from this project (npm i -D playwright) or this script's folder.
 // PW_EXE=<path to a Chromium binary> uses an existing build instead of the bundled one.
 // No Playwright: shoot falls back to an installed Chrome or Chromium (PW_EXE, CHROME_PATH, the usual places), headless,
-// one viewport per shot (no full page); fit and runtime still need Playwright.
+// one viewport per shot (no full page); fit and runtime still need Playwright. No shot at all → exit 2 and
+// .wwjd/shots/UNAVAILABLE; some shots failed → exit 1.
 // Read every PNG yourself: a report about a screenshot is not a look.
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { artifactRoot, nearestConfig } from "./paths.mjs";
 
 const args = process.argv.slice(2);
 const cmd = args[0];
@@ -40,6 +43,25 @@ const target = args.slice(1).find((a, i, xs) => !a.startsWith("--") && !VALUED.h
 if (!target) { console.error(`usage: render.mjs ${cmd} <url|file> [options]`); process.exit(2); }
 const url = /^[a-z][\w+.-]*:/i.test(target) ? target : pathToFileURL(resolve(target)).href;
 const json = flag("--json");
+const ROOT = artifactRoot(process.cwd());
+const SHOTS = join(ROOT, ".wwjd", "shots");
+const register = () => {
+  if (opt("--register")) return opt("--register").toLowerCase();
+  try { return JSON.parse(readFileSync(nearestConfig(process.cwd()), "utf8")).register?.toLowerCase() || null; } catch { return null; }
+};
+const H = (w) => (w < 800 ? 844 : 900);
+
+// shoot: one capture plan, whichever browser takes it
+const plan = (() => {
+  if (cmd !== "shoot") return null;
+  const out = opt("--out") ? resolve(opt("--out")) : SHOTS;
+  const slug = (url.startsWith("file:") ? target.split("/").pop().replace(/\.\w+$/, "") : target.replace(/^[a-z]+:\/\//, "")).replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+  const primary = Number(opt("--width", 0)) || (["operate", "monitor"].includes(register() || "operate") ? 1440 : 390);
+  const widths = flag("--one") ? [primary] : opt("--widths", "1440,390").split(",").map(Number);
+  const themes = flag("--one") || opt("--theme") ? [opt("--theme", "light")] : ["light", "dark"];
+  const shots = widths.flatMap((w) => themes.map((scheme) => ({ w, scheme, file: join(out, `${slug}-${w}-${scheme}.png`) })));
+  return { out, shots, fullPage: !flag("--one") || flag("--full") };
+})();
 
 let chromium;
 for (const from of [import.meta.url, pathToFileURL(join(process.cwd(), "package.json")).href]) {
@@ -51,7 +73,7 @@ for (const from of [import.meta.url, pathToFileURL(join(process.cwd(), "package.
 // Can't render: say so, and leave .wwjd/shots/UNAVAILABLE so the Strictness gate (gate.mjs) knows it was tried.
 function unavailable(why) {
   console.error(why);
-  try { mkdirSync(".wwjd/shots", { recursive: true }); writeFileSync(".wwjd/shots/UNAVAILABLE", why + "\n"); } catch { /* read-only */ }
+  try { mkdirSync(SHOTS, { recursive: true }); writeFileSync(join(SHOTS, "UNAVAILABLE"), why + "\n"); } catch { /* read-only */ }
   process.exit(2);
 }
 // Shots without Playwright: a system Chrome's own headless screenshot, the same file names as below.
@@ -68,56 +90,47 @@ function systemChrome() {
 if (!chromium && cmd === "shoot") {
   const exe = systemChrome();
   if (exe) {
-    const out = opt("--out", ".wwjd/shots");
-    mkdirSync(out, { recursive: true });
-    const slug = (url.startsWith("file:") ? target.split("/").pop().replace(/\.\w+$/, "") : target.replace(/^[a-z]+:\/\//, "")).replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
-    let reg = null;
-    try { reg = opt("--register") || JSON.parse(readFileSync(".wwjd.json", "utf8")).register; } catch { /* none */ }
-    const primary = Number(opt("--width", 0)) || (["operate", "monitor"].includes((reg || "operate").toLowerCase()) ? 1440 : 390);
-    const widths = flag("--one") ? [primary] : opt("--widths", "1440,390").split(",").map(Number);
-    const themes = flag("--one") || opt("--theme") ? [opt("--theme", "light")] : ["light", "dark"];
-    for (const w of widths) for (const scheme of themes) {
-      const f = join(out, `${slug}-${w}-${scheme}.png`);
+    mkdirSync(plan.out, { recursive: true });
+    let failed = 0;
+    for (const { w, scheme, file } of plan.shots) {
+      const before = (() => { try { return statSync(file).mtimeMs; } catch { return 0; } })();
       try {
         execFileSync(exe, ["--headless=new", "--disable-gpu", "--hide-scrollbars", "--no-first-run", "--no-default-browser-check",
-          `--window-size=${w},${w < 800 ? 844 : 900}`, `--blink-settings=preferredColorScheme=${scheme === "dark" ? 0 : 1}`,
-          "--virtual-time-budget=1500", `--screenshot=${resolve(f)}`, url], { stdio: "ignore", timeout: 30000 });
-        console.log(f + "  (system Chrome, viewport only)");
-      } catch (e) { console.error(`render: Chrome could not shoot ${w}px ${scheme}: ${e.message.split("\n")[0]}`); }
+          `--window-size=${w},${H(w)}`, `--blink-settings=preferredColorScheme=${scheme === "dark" ? 0 : 1}`,
+          "--virtual-time-budget=1500", `--screenshot=${file}`, url], { stdio: "ignore", timeout: 30000 });
+        // Chrome can exit 0 without writing: only a fresh file counts
+        if (!((() => { try { return statSync(file).mtimeMs; } catch { return 0; } })() > before)) throw new Error("no screenshot written");
+        console.log(file + "  (system Chrome, viewport only)");
+      } catch (e) { failed++; console.error(`render: Chrome could not shoot ${w}px ${scheme}: ${e.message.split("\n")[0]}`); }
     }
-    process.exit(0);
+    if (failed === plan.shots.length) unavailable(`render: system Chrome (${exe}) took no shot of ${target}`);
+    process.exit(failed ? 1 : 0);
   }
 }
 if (!chromium) unavailable("render needs Playwright: npm i -D playwright (and npx playwright install chromium, or set PW_EXE)");
 let browser;
 try { browser = await chromium.launch({ headless: true, executablePath: process.env.PW_EXE || undefined }); }
 catch (e) { unavailable("render: no Chromium. Run npx playwright install chromium, or set PW_EXE.\n" + e.message.split("\n")[0]); }
-const H = (w) => (w < 800 ? 844 : 900);
 const findings = [];
 const add = (width, rule, severity, what) => findings.push({ width, rule, severity, what });
 
-function register() {
-  if (opt("--register")) return opt("--register").toLowerCase();
-  try { return JSON.parse(readFileSync(".wwjd.json", "utf8")).register?.toLowerCase(); } catch { return null; }
+// Load, then a short settle; no networkidle (a busy page never idles) and no reload.
+async function open(page, settle = 300) {
+  try { await page.goto(url, { waitUntil: "load", timeout: 30000 }); }
+  catch (e) { console.error(`render: ${url} did not finish loading (${e.message.split("\n")[0]}); checking what rendered`); }
+  await page.waitForTimeout(settle);
 }
 
 // ── shoot ──────────────────────────────────────────────────────────
 if (cmd === "shoot") {
-  const out = opt("--out", ".wwjd/shots");
-  mkdirSync(out, { recursive: true });
-  const slug = (url.startsWith("file:") ? target.split("/").pop().replace(/\.\w+$/, "") : target.replace(/^[a-z]+:\/\//, "")).replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
-  const primary = Number(opt("--width", 0)) || (["operate", "monitor"].includes(register() || "operate") ? 1440 : 390);
-  const widths = flag("--one") ? [primary] : opt("--widths", "1440,390").split(",").map(Number);
-  const themes = flag("--one") || opt("--theme") ? [opt("--theme", "light")] : ["light", "dark"];
-  for (const w of widths) for (const scheme of themes) {
+  mkdirSync(plan.out, { recursive: true });
+  for (const { w, scheme, file } of plan.shots) {
     const page = await browser.newPage({ viewport: { width: w, height: H(w) }, colorScheme: scheme });
     const errs = []; page.on("pageerror", (e) => errs.push(e.message));
-    await page.goto(url, { waitUntil: "networkidle" }).catch(() => page.goto(url));
-    await page.waitForTimeout(500);
-    const f = join(out, `${slug}-${w}-${scheme}.png`);
-    await page.screenshot({ path: f, fullPage: !flag("--one") || flag("--full") });
+    await open(page, 500);
+    await page.screenshot({ path: file, fullPage: plan.fullPage });
     const ox = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
-    console.log(f + (ox > 1 ? `  (scrolls sideways by ${ox}px)` : "") + (errs.length ? `  (page errors: ${errs.slice(0, 2).join(" | ")})` : ""));
+    console.log(file + (ox > 1 ? `  (scrolls sideways by ${ox}px)` : "") + (errs.length ? `  (page errors: ${errs.slice(0, 2).join(" | ")})` : ""));
     await page.close();
   }
   await browser.close();
@@ -130,7 +143,7 @@ if (cmd === "fit") {
   const selector = opt("--selector", null);
   for (const w of widths) {
     const page = await browser.newPage({ viewport: { width: selector ? 1280 : w, height: 900 } });
-    await page.goto(url, { waitUntil: "networkidle" });
+    await open(page, 0);
     if (selector) await page.evaluate(([s, w]) => { const el = document.querySelector(s); if (el) { el.style.inlineSize = w + "px"; el.style.containerType = "inline-size"; } }, [selector, w]);
     await page.waitForTimeout(150);
     const r = await page.evaluate((sel) => {
@@ -216,17 +229,28 @@ if (cmd === "fit") {
   finish(`fit ${widths.join("/")}px`);
 }
 
-// hovering the first rows must not move their siblings
+// hovering the first rows must not move their siblings; a sibling that hover removes or adds is not compared
 async function hoverShift(page, selector) {
   const rows = await page.$$(`${selector ? selector + " " : ""}:is([data-row], [role=row], li, tr)`);
   for (const row of rows.slice(0, 5)) {
     if (!(await row.isVisible())) continue;
-    const boxes = () => page.evaluate((row) => [...row.parentElement.children].map((c) => { const b = c.getBoundingClientRect(); return [b.x, b.y, b.width, b.height]; }), row);
-    const before = await boxes();
+    const took = await page.evaluate((row) => {
+      if (!row.parentElement) return false;
+      window.__wwjdBoxes = new Map([...row.parentElement.children].map((c) => { const b = c.getBoundingClientRect(); return [c, [b.x, b.y, b.width, b.height]]; }));
+      return true;
+    }, row);
+    if (!took) continue;
     try { await row.hover({ timeout: 2000 }); } catch { continue; }
     await page.waitForTimeout(160);
-    const after = await boxes();
-    if (before.some((b, i) => b.some((v, j) => Math.abs(v - after[i][j]) > 0.5))) return true;
+    const moved = await page.evaluate(() => {
+      for (const [c, b] of window.__wwjdBoxes || []) {
+        if (!c.isConnected) continue;
+        const n = c.getBoundingClientRect();
+        if ([n.x, n.y, n.width, n.height].some((v, j) => Math.abs(v - b[j]) > 0.5)) return true;
+      }
+      return false;
+    });
+    if (moved) return true;
   }
   return false;
 }
@@ -236,8 +260,7 @@ if (cmd === "runtime") {
   const widths = opt("--widths", "320,390,768,1440,1920").split(",").map(Number);
   for (const w of widths) {
     const page = await browser.newPage({ viewport: { width: w, height: H(w) } });
-    await page.goto(url, { waitUntil: "networkidle" }).catch(() => page.goto(url));
-    await page.waitForTimeout(300);
+    await open(page, 300);
     const r = await page.evaluate(() => {
       const out = [];
       const vis = (el) => el.getClientRects().length && getComputedStyle(el).visibility !== "hidden";
@@ -311,7 +334,7 @@ if (cmd === "runtime") {
   }
   // reduced motion: no transform animation may remain
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
-  await page.goto(url, { waitUntil: "networkidle" }).catch(() => page.goto(url));
+  await open(page, 300);
   const moving = await page.evaluate(() => document.getAnimations().filter((a) => a.playState === "running" && a.effect?.getKeyframes?.().some((k) => k.transform || k.translate || k.scale || k.rotate)).length);
   if (moving) add(1440, "reduced-motion", "error", `${moving} transform animations still run under prefers-reduced-motion`);
   await page.close();
@@ -320,9 +343,10 @@ if (cmd === "runtime") {
 
 function finish(label) {
   const errors = findings.filter((f) => f.severity === "error").length;
-  if (json) console.log(JSON.stringify({ url: target, errors, findings }, null, 2));
+  const report = { url: target, errors, findings };
   // The runtime report: what the Strictness gate (gate.mjs) reads at 4 and up.
-  if (cmd === "runtime") { try { mkdirSync(".wwjd", { recursive: true }); writeFileSync(".wwjd/runtime.json", JSON.stringify({ url: target, errors, findings }, null, 2)); } catch { /* read-only */ } }
+  if (cmd === "runtime") { try { mkdirSync(join(ROOT, ".wwjd"), { recursive: true }); writeFileSync(join(ROOT, ".wwjd", "runtime.json"), JSON.stringify(report, null, 2)); } catch { /* read-only */ } }
+  if (json) console.log(JSON.stringify(report, null, 2));
   else { for (const f of findings) console.log(`${String(f.width).padStart(4)}px  ${f.severity === "error" ? "ERROR" : "warn "} ${f.rule}: ${f.what}`); console.log(`\nrender ${label}: ${errors} errors, ${findings.length - errors} warnings`); }
   browser.close().then(() => process.exit(errors ? 1 : 0));
 }

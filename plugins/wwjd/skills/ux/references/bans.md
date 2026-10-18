@@ -20,7 +20,9 @@ Generated UI drifts to the most probable output; ban a default and it falls to t
 | Uppercase tracked eyebrow or kicker | Nothing, or fold it into the heading | P+M |
 | Pill "New" / "Beta" / "Introducing" badges | Plain text or nothing | P+M |
 | 01/02/03 markers | Order by position; `<ol>` only for real sequences | P+M |
-| Hero-metric strip ("10K+ users · 99.9%") | Real numbers, or drop the slot | M |
+| Hero-metric strip ("10K+ users · 99.9%"), "Trusted by 10,000+ teams", fake logo strip | Real numbers and real logos, or drop the slot | M |
+| Centred headline over 3 icon cards | One composed argument (`registers/persuade.md`) | M |
+| FAQ accordion standing in for the argument; link-farm footer | Answer objections in the argument; a designed close | M |
 | Coloured glow or shadow on buttons and cards | No shadow at rest; overlays only | P+M |
 | Hairlines on everything, outlined boxes | Space or a tone step (tables and inputs may keep lines) | P+M |
 | Border + shadow + white default card | Background only, or spacing only | P |
@@ -51,7 +53,7 @@ Generated UI drifts to the most probable output; ban a default and it falls to t
 9. **Tame:** new features bolted onto the old page instead of a redesign. If it looks like the old thing with additions, redo it (long-familiar surfaces excepted, SKILL.md).
 
 ## Quick tests
-- **Squint:** primary, secondary and groups still read when blurred.
-- **One second:** exactly one thing is seen first, and it's the right one.
+- **Squint** (the one definition; others point here): blurred, only the primary, the needs-you signals and the groups still read.
+- **First look:** exactly one thing is seen first, and it's the right one.
 - **Cover the logo:** could a competitor use this marketing page? Then it's a category page.
 - **Count left edges:** 2–3 per page; six means elements were placed one at a time.

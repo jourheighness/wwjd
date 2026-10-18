@@ -1,6 +1,6 @@
 # Motion bans: the tell → instead
 
-Each ban names its replacement. Extends wwjd:ux's `references/bans.md`; that file wins on conflict.
+Each ban names its replacement. Extends wwjd:ux's `references/bans.md`; for motion this file wins (more specific wins).
 
 | Tell | Instead |
 |---|---|

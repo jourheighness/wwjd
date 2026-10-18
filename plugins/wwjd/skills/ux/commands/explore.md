@@ -1,10 +1,10 @@
 # explore: options for something new
 
-For anything that doesn't exist yet, or "show me options". Small fixes skip it. Structure only: the look comes from `wwjd:look` (3 look variants); here ~5 structure variants.
+For anything that doesn't exist yet, or "show me options". Small fixes skip it. Structure only: the look comes from `wwjd:look` (3 look variants); here ~5 structure variants (the count Strictness 5 means).
 
 ## 1. Research before drawing
 - **The best current examples of this exact job:** real products at the top of this register and category, not the domain's dated look. A few named references, each with the move to steal; verified facts apart from inference.
-- **A mature package** (editor, picker, chart, docs framework) before inventing one.
+- **A mature package first:** before hand-building an editor, picker, chart or date input, name the package rejected and why.
 - **Workaround features** in the current product (`review.md`) name the failing area to research first.
 - **Layout candidates:** `references/layouts.md` index; the verb → layout table in `registers/operate.md`.
 
@@ -26,6 +26,7 @@ For anything that doesn't exist yet, or "show me options". Small fixes skip it. 
 
 ## 3. Variants
 - **About 5, A–E,** different in structure, never in tint. Persuade and Showcase: each pushes further than the last. Operate, Monitor, Reference: organisation changes, no decoration added.
+- **Interaction concepts ship clickable:** a concept that changes how something is done (edit in place, pickers, drag) is shown as clickable variants before asking "which one". Static mocks only for layout and look questions.
 - **The intended flow, not today's API:** every step, state and transition; note what needs backend support.
 - **Real material:** the project's tokens and kit, realistic messy data (long names, one, many, empty), shown where it lives at its real sizes next to its neighbours. Light and dark when visual; interactive when the feel matters.
 - **One comparison page** (an HTML file, an Artifact, a story, a sandbox): a letter and a short name per variant, no prose on the page (reasoning goes in the message), screens on a neutral dark surround. Cluttered → a fresh page with only the live candidates.

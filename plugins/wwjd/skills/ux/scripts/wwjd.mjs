@@ -14,18 +14,20 @@
 //     --hook                   PostToolUse mode: reads the hook JSON on stdin, checks the edited file with --new,
 //                              prints ≤5 lines as additionalContext, nothing when clean
 //   audit [paths]              debt map: findings by area, rebuild candidates, golden picks, RATCHET.md [design] lines
-// Config: --config <file>, else <root>/.wwjd.json, else ~/.config/wwjd/wwjd.json (or ui-check.json)
+// Config: --config <file>, else the nearest .wwjd.json up from the first path (or cwd), else ~/.config/wwjd/wwjd.json
+//   (or ui-check.json)
 //   { "register": "operate", "locale": ["en"], "kitDirs": ["packages/ui"], "tokenFiles": "regex",
 //     "rules": { "<id>": "off"|"warn"|"error" }, "golden": ["src/pages/Orders.tsx"], "legacy": ["src/old/**"],
 //     "storybook": "pnpm storybook", "tags": { "design": "[design]", "eng": "[eng]" } }
 //   Repo-relative paths only; never preview URLs or hosts (use WWJD_PREVIEW or an untracked AGENTS.local.md).
 // Ignore one line with a trailing comment containing `wwjd-ignore: <reason>` (ui-check-ignore also works).
 // Findings are leads, not verdicts: fix each one or justify it.
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, statSync, readdirSync, existsSync } from "node:fs";
 import { join, extname, resolve, relative, dirname, basename, sep } from "node:path";
 import { homedir } from "node:os";
 import { DIALS, stopOf, valueOf, isDefault, isGated } from "./dials-spec.mjs";
+import { STORY, TEST, UI_EXT, nearestConfig } from "./paths.mjs";
 
 const [major, minor] = process.versions.node.split(".").map(Number);
 if (major < 20 || (major === 20 && minor < 10)) { console.error("wwjd needs Node 20.10 or newer"); process.exit(2); }
@@ -67,19 +69,25 @@ if (opt.hook) {
 }
 
 // ── project root and config ────────────────────────────────────────
-const sh = (c, cwd) => { try { return execSync(c, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); } catch { return null; } };
+const git = (args, cwd) => { try { return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 << 20 }); } catch { return null; } };
+// NUL-separated, so names with spaces, quotes or non-ASCII come through verbatim
+const gitPaths = (args, cwd) => { const out = git([...args, "-z"], cwd); return out === null ? null : out.split("\0").filter(Boolean); };
 function findRoot(start) {
   let d = start;
   try { if (statSync(d).isFile()) d = dirname(d); } catch { d = dirname(d); }
-  const top = existsSync(d) ? sh("git rev-parse --show-toplevel", d) : null;
+  const top = existsSync(d) ? git(["rev-parse", "--show-toplevel"], d)?.trim() : null;
   if (top) return top;
   for (let p = d; ; p = dirname(p)) { if (existsSync(join(p, ".wwjd.json"))) return p; if (dirname(p) === p) break; }
   return d;
 }
-const ROOT = findRoot(opt.paths.length ? resolve(opt.paths[0]) : process.cwd());
+const START = opt.paths.length ? resolve(opt.paths[0]) : process.cwd();
+const ROOT = findRoot(START);
 let cfg = {};
 const userCfg = join(process.env.XDG_CONFIG_HOME || join(homedir(), ".config"), "wwjd");
-for (const p of [opt.config, join(ROOT, ".wwjd.json"), join(userCfg, "wwjd.json"), join(userCfg, "ui-check.json")]) {
+const startDir = (() => { try { return statSync(START).isDirectory() ? START : dirname(START); } catch { return dirname(START); } })();
+// the nearest .wwjd.json up from where we start, like gate.mjs and grade.mjs
+const PROJECT_CFG = nearestConfig(startDir);
+for (const p of [opt.config, PROJECT_CFG, join(userCfg, "wwjd.json"), join(userCfg, "ui-check.json")]) {
   if (p && existsSync(p)) { try { cfg = JSON.parse(readFileSync(p, "utf8")); } catch (e) { if (!opt.hook) console.error(`wwjd: bad config ${p}: ${e.message}`); process.exit(opt.hook ? 0 : 2); } break; }
 }
 const REGISTER = (opt.register || cfg.register || "operate").toLowerCase();
@@ -90,14 +98,13 @@ const ENGLISH_ONLY = LOCALES.length > 0 && LOCALES.every((l) => /^en([-_]|$)/i.t
 const TOKEN_FILE = new RegExp(cfg.tokenFiles || "(tokens?|theme|palette|colou?rs?|variables|globals?)\\.(css|scss|ts|js|json)$|(^|/)tokens?/", "i");
 const BASELINE = join(ROOT, ".wwjd-baseline.json");
 const rel = (f) => relative(ROOT, resolve(f)).split(sep).join("/");
-const glob = (g) => new RegExp("^" + g.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*\*\/?/g, "\u0000").replace(/\*/g, "[^/]*").replace(/\?/g, "[^/]").replace(/\u0000/g, "(.*/)?") + "$");
+// ** / matches any folders (or none); a ** elsewhere, like a trailing src/old/**, matches everything below
+const glob = (g) => new RegExp("^" + g.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*\*\//g, "\u0000").replace(/\*\*/g, "\u0001")
+  .replace(/\*/g, "[^/]*").replace(/\?/g, "[^/]").replace(/\u0000/g, "(.*/)?").replace(/\u0001/g, ".*") + "$");
 const LEGACY = [].concat(cfg.legacy || []).map(glob);
 const isLegacy = (f) => LEGACY.some((re) => re.test(f));
 
-const UI_EXT = new Set([".tsx", ".jsx", ".vue", ".svelte", ".astro", ".html", ".mdx", ".css", ".scss"]);
 const SKIP_DIR = /(^|\/)(node_modules|dist|build|out|\.next|\.svelte-kit|\.astro|\.nuxt|coverage|storybook-static|\.storybook-static|vendor|\.git|\.wwjd)(\/|$)/;
-const STORY = /\.stories\.|\.story\.|(^|\/)stories\//;
-const TEST = /\.(test|spec)\.|__tests__|__fixtures__|fixtures?\//;
 const MARKUP = /\.(tsx|jsx|vue|svelte|astro|html)$/;
 const COMPONENT = /\.(tsx|jsx|vue|svelte|astro)$/;
 const inKit = (f) => KIT_DIRS.some((d) => f === d || f.startsWith(d + "/") || f.includes("/" + d + "/"));
@@ -186,9 +193,8 @@ for (const r of rules) {
 
 // ── files ──────────────────────────────────────────────────────────
 function changedFiles() {
-  let out = sh("git diff --name-only HEAD", ROOT) || "";
-  out += "\n" + (sh("git ls-files --others --exclude-standard", ROOT) || "");
-  return out.split("\n").filter(Boolean).map((f) => join(ROOT, f));
+  const names = [...(gitPaths(["diff", "--name-only", "HEAD"], ROOT) || []), ...(gitPaths(["ls-files", "--others", "--exclude-standard"], ROOT) || [])];
+  return names.map((f) => join(ROOT, f));
 }
 function walk(p, acc, limit = 30000) {
   if (acc.length >= limit) return;
@@ -204,8 +210,8 @@ function walk(p, acc, limit = 30000) {
 let gitList = null;
 function gitFiles() {
   if (gitList) return gitList;
-  const out = sh("git ls-files -co --exclude-standard", ROOT);
-  gitList = out === null ? [] : out.split("\n").filter((f) => f && UI_EXT.has(extname(f)) && !SKIP_DIR.test(f)).map((f) => join(ROOT, f));
+  const out = gitPaths(["ls-files", "-co", "--exclude-standard"], ROOT);
+  gitList = out === null ? [] : out.filter((f) => UI_EXT.has(extname(f)) && !SKIP_DIR.test(f)).map((f) => join(ROOT, f));
   return gitList;
 }
 function collect(paths) {
@@ -239,20 +245,22 @@ function scan(files) {
         findings.push({ file: f, line: i + 1, rule: r.id, severity: r.level, message: r.msg, text: line.trim() });
       });
     }
-    // file-level: hidden attribute without a global [hidden] guard; dark theme painting body but not html
-    const off = (id) => cfg.rules?.[id] === "off";
+    // file-level: hidden attribute without a global [hidden] guard; dark theme painting body but not html.
+    // Severity: the configured level ("off" | "warn" | "error"), else the rule's own.
+    const level = (id, sev) => cfg.rules?.[id] || sev;
+    const off = (id, sev) => level(id, sev) === "off";
     const usesHidden = /\shidden(\s|>|=|\})|\.hidden\s*=|toggleAttribute\(\s*["']hidden/.test(text);
     const setsDisplay = /\{[^}]*\bdisplay:\s*(grid|flex|block|inline-flex|inline-grid)/.test(text);
     const guarded = /(^|[\s,}])\[hidden\](:not\([^)]*\))?\s*\{[^}]*display:\s*none/m.test(text);
     const hasDark = /prefers-color-scheme:\s*dark|data-theme=["']?dark|light-dark\(/.test(text);
     const paintsRoot = /(^|[\s,}])(html|:root)(\[[^\]]*\])?\s*\{[^}]*\bbackground(-color)?\s*:/m.test(text);
     const paintsBody = /(^|[\s,}])body\s*\{[^}]*\bbackground(-color)?\s*:/m.test(text);
-    if (!off("root-background") && /\.(html|css|scss)$/.test(f) && hasDark && paintsBody && !paintsRoot)
-      findings.push({ file: f, line: 1, rule: "root-background", severity: "warn", message: "dark theme paints body but not html; overscroll flashes white. Put the ground colour on html", text: "file" });
-    if (!off("timeline-supports") && /animation-timeline\s*:/.test(text) && !/@supports[^{]*animation-timeline/.test(text))
-      findings.push({ file: f, line: lines.findIndex((l) => /animation-timeline\s*:/.test(l)) + 1, rule: "timeline-supports", severity: "warn", message: "scroll-driven animation-timeline without @supports; browsers without it must get the static state", text: "file" });
-    if (!off("hidden-guard") && /\.(html|svelte|vue|astro)$/.test(f) && usesHidden && setsDisplay && !guarded)
-      findings.push({ file: f, line: 1, rule: "hidden-guard", severity: "error", message: "hidden attribute used with display rules but no global [hidden] { display: none !important }; hidden states will show", text: "file" });
+    if (!off("root-background", "warn") && /\.(html|css|scss)$/.test(f) && hasDark && paintsBody && !paintsRoot)
+      findings.push({ file: f, line: 1, rule: "root-background", severity: level("root-background", "warn"), message: "dark theme paints body but not html; overscroll flashes white. Put the ground colour on html", text: "file" });
+    if (!off("timeline-supports", "warn") && /animation-timeline\s*:/.test(text) && !/@supports[^{]*animation-timeline/.test(text))
+      findings.push({ file: f, line: lines.findIndex((l) => /animation-timeline\s*:/.test(l)) + 1, rule: "timeline-supports", severity: level("timeline-supports", "warn"), message: "scroll-driven animation-timeline without @supports; browsers without it must get the static state", text: "file" });
+    if (!off("hidden-guard", "error") && /\.(html|svelte|vue|astro)$/.test(f) && usesHidden && setsDisplay && !guarded)
+      findings.push({ file: f, line: 1, rule: "hidden-guard", severity: level("hidden-guard", "error"), message: "hidden attribute used with display rules but no global [hidden] { display: none !important }; hidden states will show", text: "file" });
   }
   return findings;
 }
@@ -267,7 +275,9 @@ function tally(findings) {
 }
 function newOnly(findings, base) {
   if (!base) return findings.filter((x) => x.severity === "error");
-  const left = JSON.parse(JSON.stringify(base.files || {}));
+  // copy only the counters of the files being checked (a hook checks one file against a baseline of thousands)
+  const left = {};
+  for (const f of new Set(findings.map((x) => x.file))) if (base.files?.[f]) left[f] = { ...base.files[f] };
   return findings.filter((x) => {
     if (x.severity === "error") return true;
     const k = key(x), b = left[x.file];
@@ -357,7 +367,9 @@ if (cmd === "status") {
   const density = files.length ? open.length / files.length : 0;
   const stage = !kit.length && !tokens.length && !existsSync(join(ROOT, "DESIGN.md")) && files.length < 5 ? "scratch"
     : !kit.length || density > 0.5 || LEGACY.length ? "messy" : "kit";
-  const have = ["DESIGN.md", "PRODUCT.md", "RATCHET.md", ".wwjd.json", ".wwjd-baseline.json"].map((f) => existsSync(join(ROOT, f)) ? `${f}${/\.md$/.test(f) ? " " + kb(f) : ""}` : `${f}: none`);
+  const have = ["DESIGN.md", "PRODUCT.md", "RATCHET.md", ".wwjd.json", ".wwjd-baseline.json"].map((f) => f === ".wwjd.json" && PROJECT_CFG
+    ? (dirname(PROJECT_CFG) === ROOT ? f : rel(PROJECT_CFG))
+    : existsSync(join(ROOT, f)) ? `${f}${/\.md$/.test(f) ? " " + kb(f) : ""}` : `${f}: none`);
   const log = decisionLog();
   const golden = [].concat(cfg.golden || []);
   const picks = golden.length ? [] : goldenPicks(files, findings, kit);

@@ -1,6 +1,6 @@
-// wwjd while it works: a status-line entry with the dials that are off default, and a band above the prompt
-// that lists the checks Strictness still wants before handover (gone once they are done). Both come from
-// skills/ux/scripts/gate.mjs status, the same state the gate hooks enforce. Quiet until wwjd is in use this session.
+// wwjd while it works: a status-line entry with the dials that are off default, and the gate state the sidebar shows
+// as the checks Strictness still wants before handover. Both come from skills/ux/scripts/gate.mjs status, the same
+// state the gate hooks enforce. Quiet until wwjd is in use this session.
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, PluginOptions, Register } from 'claude-code'
 
@@ -10,7 +10,10 @@ import type { Gate } from '../types'
 const gate = atom({ plugin: 'wwjd', key: 'gate' } as const, null)
 const isActive = atom({ plugin: 'wwjd', key: 'isActive' } as const, false)
 
-const WATCHED = new Set(['Skill', 'Write', 'Edit', 'MultiEdit', 'Bash', 'Agent', 'Task'])
+// What can change the gate's state: UI edits, the critic, and the Bash runs of render.mjs and grade.mjs.
+const WATCHED = new Set(['Write', 'Edit', 'MultiEdit', 'Agent', 'Task'])
+const changesGate = (e: { tool: string; command?: unknown }) =>
+  WATCHED.has(e.tool) || (e.tool === 'Bash' && /\b(render|grade)\.mjs\b/.test(String(e.command ?? '')))
 
 // The dials as the scripts see them: the plugin options, then the nearest .wwjd.json.
 async function dials($: EngineInterface, options: PluginOptions): Promise<Record<string, number>> {
@@ -46,34 +49,16 @@ async function refresh($: EngineInterface, options: PluginOptions) {
 }
 
 export const register: Register = (on, options) => {
+  // Nothing runs until a wwjd skill is used this session; after that, only calls that can change the gate refresh it.
   on('tool.call', async ($, e, next) => {
     const result = await next(e)
-    if (!WATCHED.has(e.tool)) return result
     const skill = e.tool === 'Skill' ? String((e as { skill?: unknown }).skill ?? '') : ''
-    if (/^wwjd(:|$)/.test(skill)) await update($, isActive, () => true)
-    const wasActive = await read($, isActive)
-    if (wasActive || e.tool !== 'Skill') {
+    if (/^wwjd(:|$)/.test(skill)) {
+      await update($, isActive, () => true)
       await refresh($, options)
-      const g = await read($, gate)
-      if (!wasActive && g?.hasEdits) await update($, isActive, () => true)
+    } else if ((await read($, isActive)) && changesGate(e as { tool: string; command?: unknown })) {
+      await refresh($, options)
     }
-    if (!(await read($, isActive))) $.ui.status(undefined)
     return result
   }).catch(($, e, next) => next(e))
-
-  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    const g = await read($, gate)
-    if (e.props.hasSurvey || !(await read($, isActive)) || !g?.hasEdits) return next(e)
-    const sheetDue = g.sheet.needed && !g.sheet.file
-    const due = g.checks.filter(c => !c.done)
-    if (!sheetDue && !due.length) return next(e)
-    const { Box, Text } = $.ui.resolve(e)
-    const items = [...(sheetDue ? ['Grade sheet'] : []), ...due.map(c => c.label)]
-    return (
-      <Box flexDirection="row" gap={1}>
-        <Text dimColor>wwjd · Strictness {g.strictness} wants</Text>
-        <Text color="warning">{items.join(' · ')}</Text>
-      </Box>
-    )
-  })
 }

@@ -1,6 +1,6 @@
 # Editorial: articles, essays, blogs, reports, newsletters
 
-Profile: `data-profile="reading"` (`.breakout`, `.flow`). Colour: lives in the frame and the figures, not the text.
+Profile: `data-profile="reading"` (`.breakout`, `.flow`), primary widths 1440 and 390 alike. Colour: lives in the frame and the figures, not the text.
 
 Success: the reader reads to the end. Typography is the interface. Layouts: `article`, `blog-index`.
 

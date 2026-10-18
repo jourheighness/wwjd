@@ -1,6 +1,6 @@
 # Axes
 
-Ten axes. Light and dark are always both generated, so mode is not an axis. **Bold** = baseline (the kit's default tokens.css, formerly starter.css). ★ = loud: at most one per variant.
+Ten axes. Light and dark are always both generated, so mode is not an axis. **bold** preset = baseline (the kit's default tokens.css). ★ = loud; how many per look follows the Look dial (1–3: one, 4: two, 5: two plus a signature idea).
 
 | Axis | Presets | Changes |
 |---|---|---|
@@ -60,7 +60,7 @@ Ten axes. Light and dark are always both generated, so mode is not an axis. **Bo
 
 ## Variants
 - Distance = the sum of the weights of the axes that differ. Shape, elevation and motion weigh .5; every other axis weighs 1.
-- Each variant moves 2–3 open axes. Pairwise distance ≥2, ≤4 from the anchor, at most one ★.
+- Each variant moves 2–3 open axes. Pairwise distance ≥2, ≤4 from the anchor, at most one ★ step from the anchor (look.mjs).
 - Latin square: pairs from the top 4 open axes, least shared axes first, never the same move twice. Triples only when the pairs run out.
 - Rejected variants (clash, ban, floor) are dropped and the next candidate is tried. Never repaired by hand.
 

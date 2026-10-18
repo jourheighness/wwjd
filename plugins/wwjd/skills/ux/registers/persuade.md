@@ -1,6 +1,6 @@
 # Persuade: landing, pricing, campaign, waitlist
 
-Profile: `data-profile="marketing"`. Colour: identity; a committed ground and fields of colour are fine, the accent still marks the action.
+Profile: `data-profile="marketing"`, primary width 390. Colour: identity; a committed ground and fields of colour are fine, the accent still marks the action.
 
 Success: the visitor decides and acts. A persuade page argues one claim and earns one action. Layouts: `landing`, `pricing`.
 
@@ -27,7 +27,7 @@ Success: the visitor decides and acts. A persuade page argues one claim and earn
 
 ## Type
 - **Headlines ≤2 lines at every width** (~32–50 characters). Fix in order: cut words, widen the measure, shrink the size.
-- Display ≥3× body; the project's faces, at most display + text.
+- The project's faces, at most display + text; display size per `rules/visual.md` Type.
 
 ## Imagery
 - **Real raster first:** the subject's own, then generated, then open collections, then honest stock. One crop ratio, one grade.
@@ -47,6 +47,4 @@ Motion: `wwjd:motion` skill. Never scroll hijack.
 - **Meta designed with the page:** a specific `<title>`, description, OG image, favicon, 404.
 
 ## Tells to avoid
-- A centred headline over 3 icon cards; an eyebrow kicker above the H1; a gradient word in the headline.
-- Bento by default; a fake logo strip, "Trusted by 10,000+ teams"; a stat banner of round numbers.
-- Fade-up on everything; a FAQ accordion standing in for the argument; a link-farm footer.
+`references/bans.md` (rows marked M, drift lanes).

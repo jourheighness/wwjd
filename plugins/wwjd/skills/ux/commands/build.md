@@ -10,7 +10,7 @@ One command for every build. The spec (an approved variant, mockup, Figma frame 
 ## Before coding
 1. **Inventory the spec:** regions, components, strings, spacing, states, interactions. Figma: read the whole frame, re-fetch each session.
 2. **Map every part to a kit component.** Missing → new kit component or variant plus a story with its states.
-3. **Budget each surface:** count its candidate facts and actions against `references/budgets.md`. Over budget: grade them now (grade gate: answer the `grade.mjs` sheet; light: in your head) and build what stays. An approved spec over budget is flagged, never silently cut.
+3. **Budget each surface:** name its job, then count its candidate facts and actions against `references/budgets.md`. Over budget: grade first (`budgets.md` Grade gate) and build what stays. An approved spec over budget is flagged, never silently cut.
 4. **Grep the decision log** for the surface's names, so nothing decided is lost.
 
 ## While coding
@@ -21,10 +21,10 @@ One command for every build. The spec (an approved variant, mockup, Figma frame 
 - **Seed realistic data:** first use, one, many, longest text, empty.
 - **The intended flow ships whole:** every step, state and transition, behind a small named adapter (stub, fixture or optimistic) marked `// TODO(api): …` where the backend can't yet. Never the worse pattern to fit the API.
 
-## Verify (tiers: SKILL.md loop)
+## Verify (which checks: the Strictness dial, `references/dials.md`; hooks enforce them)
 - **Auto:** the hook's `wwjd.mjs check`. Fix each finding or justify it with `wwjd-ignore: <reason>`.
-- **Each handover:** `render.mjs shoot <url> --one`, read it yourself; with a spec, compare the same state and list every difference: fixed, or flagged. A difference caused by real data (longer text, missing values) is the user's decision, never a silent redesign.
-- **Milestone:** `render.mjs shoot` (primary + other width × light/dark), `render.mjs fit` for anything that resizes, `render.mjs runtime`, empty and longest-text states.
+- **Shots:** read every one yourself; with a spec, compare the same state and list every difference: fixed, or flagged. A difference caused by real data (longer text, missing values) is the user's decision, never a silent redesign.
+- **Every state the change introduces** (focus, hover, editing, open popover) is shot zoomed in both themes before any "checked" claim; a check that could not run is reported as not run, never as passed.
 - **Live:** confirm the change is where the user will look (preview, workshop, deploy). Hand over the link and the `TODO(api)` list with what the backend must provide; ask "build now or later?".
 
 ## Delegating

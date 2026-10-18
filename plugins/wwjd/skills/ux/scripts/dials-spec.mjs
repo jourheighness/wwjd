@@ -4,11 +4,11 @@
 
 export const DIALS = [
   { key: "creativity", name: "Look", ends: ["plain", "expressive"], default: 3, stops: [
-    ["Plain", "Neutrals and one accent hue (the brand's, else the kit's), used for the one primary thing; no tinted chips or fills; status and priority in text or a neutral mark; the system face; flat, a 1px border at most; the plainest hero that fits."],
+    ["Plain", "Neutrals and one accent hue (the brand's, else one picked for the subject; never the kit default), used for the one primary thing; no tinted chips or fills; status and priority in text or a neutral mark; the system face; flat, a 1px border at most; the plainest hero that fits."],
     ["Restrained", "Plain plus one quiet custom touch (a tinted neutral, a refined face or one semantic colour); nothing loud."],
     ["Balanced", "One loud axis; a display face on marketing, editorial and consumer screens."],
     ["Bold", "Two loud axes, a display face on every screen, one signature moment per page."],
-    ["Expressive", "Art-directed: one distinct visual idea per page, an unusual layout, a far-end hero."],
+    ["Expressive", "Art-directed: two loud axes plus one distinct visual idea per page, an unusual layout, a far-end hero."],
   ] },
   { key: "budget", name: "Content", ends: ["lean", "rich"], default: 3, stops: [
     ["Minimal", "Every surface shows 2 fewer facts (min 1); cut before moving."],
@@ -19,17 +19,17 @@ export const DIALS = [
   ] },
   { key: "density", name: "Spacing", ends: ["roomy", "compact"], default: 3, stops: [
     ["Roomy", "data-density=\"comfortable\": tall rows, generous gaps, fewer things per screen."],
-    ["Airy", "A step roomier than the product type."],
+    ["Airy", "One step roomier than the product type."],
     ["By product", "The product type decides: consumer roomy, work tools compact."],
-    ["Snug", "A step denser than the product type."],
+    ["Snug", "One step denser than the product type."],
     ["Compact", "data-density=\"compact\": 32px rows, tight gaps, more per screen."],
   ] },
   { key: "motion", name: "Motion", ends: ["still", "lively"], default: 3, stops: [
     ["Still", "data-motion=\"instant\": state changes only, nothing moves."],
-    ["Crisp", "data-motion=\"crisp\": short, quick transitions, no flourish."],
+    ["Crisp", "One step calmer than the product's motion theme (instant, crisp, smooth, springy); no flourish."],
     ["By product", "The product type's motion theme."],
-    ["Smooth", "data-motion=\"smooth\": softer, slightly longer transitions."],
-    ["Lively", "data-motion=\"springy\": springy motion and one delight moment per flow."],
+    ["Smooth", "One step livelier than the product's motion theme; softer, slightly longer transitions."],
+    ["Lively", "data-motion=\"springy\" and one delight moment per flow; Operate, Monitor, Flow and Transact cap at smooth."],
   ] },
   { key: "voice", name: "Copy", ends: ["terse", "warm"], default: 3, stops: [
     ["Terse", "Labels and values only; sentences only in errors."],
@@ -43,7 +43,7 @@ export const DIALS = [
     ["Light", "Over-budget surfaces graded in your head; after: lint and one desktop screenshot."],
     ["Standard", "A written grade sheet per over-budget surface before it is built; after: lint and screenshots at desktop and phone width."],
     ["Careful", "Grade sheets; after: adds dark mode, the key states and render.mjs runtime checks."],
-    ["Strict", "Grade sheets; after: adds the critic agent, and 2–3 variants before building."],
+    ["Strict", "Grade sheets; after: adds the critic agent, and explore's variants before building."],
   ] },
 ];
 

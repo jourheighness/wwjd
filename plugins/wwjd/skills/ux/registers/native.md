@@ -1,6 +1,6 @@
 # Native and mobile overlay
 
-Profile: `data-profile="consumer"` (touch heights). Colour: the platform's own colour roles and materials.
+Profile: `data-profile="consumer"` (touch heights), primary width 390. Colour: the platform's own colour roles and materials.
 
 On top of the register whenever the surface is mobile web or a native iOS/Android app. Platform conventions win over web ones.
 

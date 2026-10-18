@@ -1,5 +1,7 @@
 # Hero patterns
 
+Contents: Phone rule · patterns 1–19 (Tool-as-hero … Finder) · Picker · Information grading · Bans.
+
 Examples loaded live 2026-10-16 (headless Chromium, 1440×900 + 390×844). Godly now redirects to recent.design; Saaspo/Lapa Ninja bot-walled, skipped.
 **D** = 1440, **P** = 390 (composed on its own), **Act** = where the one action lives.
 

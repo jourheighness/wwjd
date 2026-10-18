@@ -1,6 +1,7 @@
 ---
 name: motion
-description: Tasteful UI motion the wwjd way: micro-interactions, transitions, motion themes per product type, and when not to animate. Use for any animation, motion, transition, micro-interaction, hover or press effect, scroll effect, page or view transition, loading, skeleton or "thinking" state, landing hero motion, or "make it feel alive", "smoother", "snappier". Pairs with wwjd:ux; its floor wins.
+description: 'Use for any UI animation, transition, micro-interaction, hover or press effect, scroll effect, page or view transition, loading, skeleton or "thinking" state: motion themes per product type and when not to animate (wwjd). Pairs with wwjd:ux; its floor wins. Not for video, canvas games or data-chart animation.'
+when_to_use: '"animate this", "make it feel alive", "smoother", "snappier", "add a transition", "loading state", "hover effect".'
 ---
 
 # wwjd:motion
@@ -11,7 +12,7 @@ Motion explains a change, or it goes. Refines wwjd:ux's motion rules; never loos
 1. **How often is it seen?** 100+ a day (palette, shortcuts, context menu): none. Tens a day (hover, list nav, tabs): minimal or none. Occasional (dialog, drawer, toast): standard. Rare (onboarding, first success): may delight.
 2. **Who triggered it?** Keyboard or repeated input: no animation. System change: slower, calmer, and only if the person needs to notice it.
 3. **What does it explain?** Origin, change, cause and effect, or work in progress. "Looks nice" is not on the list.
-4. **Would anyone miss it?** If not, cut it.
+4. **Cut unless it shows origin, change, cause or progress.**
 5. **Is the person waiting?** Answer within 100ms (press state, optimistic update). Past 400ms show a skeleton; past 1s show progress.
 
 ## 2. Pick one theme per product
@@ -21,9 +22,9 @@ Motion explains a change, or it goes. Refines wwjd:ux's motion rules; never loos
 | `crisp` | 120 / 160 / 220ms | ease-out from .97 (baseline, = kit/tokens.css) | Operate, Converse, Flow, checkout |
 | `smooth` | 180 / 240 / 320ms | drawer curve, more travel | consumer apps, commerce browse, Editorial chrome |
 | `springy` | 120 / 180 / 320ms + 420ms spring | M3 Expressive spatial spring, ≈1.2% overshoot on transform only | Persuade, Showcase, Native, playful consumer |
-- **Read the Motion dial** (`wwjd.mjs dials`; wwjd:ux `references/dials.md`): 1 Still = `instant`, 2 = `crisp`, 3 = this table, 4 = `smooth`, 5 Lively = `springy`. A theme DESIGN.md records wins.
+- **Read the Motion dial** (`wwjd.mjs dials`; wwjd:ux `references/dials.md`): 1 Still = `instant`; 2 one step calmer than this table's theme; 3 this table; 4 one step livelier; 5 Lively = `springy`, capped at `smooth` in Operate, Monitor, Flow and Transact. Steps run instant, crisp, smooth, springy. A theme DESIGN.md records wins.
 - Set once: `<html data-motion="…">` with `motion.css` after the kit's `base.css`; record `motion:` in DESIGN.md.
-- `springy` never in Operate, Flow or Transact. One theme per surface.
+- `springy` never in Operate, Monitor, Flow or Transact. One theme per surface.
 - Per product type and signature moments: `references/themes.md`.
 
 ## 3. Rules
@@ -38,14 +39,10 @@ Motion explains a change, or it goes. Refines wwjd:ux's motion rules; never loos
 - **Reduced motion:** transforms drop; fades stay ≤120ms. Autoplay over 5s needs pause. Loops stop off-screen.
 - **Performance:** `transform` and `opacity` only (height via `grid-template-rows` or `<details>`); never `transition: all`; `will-change` only while moving; test at 4× CPU throttle.
 
-## 4. Moments catalogue (`references/moments.md`)
-Press · toggle · hover · tooltip · popover/menu · dialog · drawer/sheet · toast · tabs indicator · accordion/height · list insert/remove · reorder · drag · optimistic update · skeleton→content · progress · copy-to-clipboard · number change · success · error · page/route transition · shared element · streaming text · AI thinking · landing hero · scroll reveal · product demo.
+## 4. Moments and files
+Every moment (press to product demo) with when, spec and never: `references/moments.md`. Recipes: `motion.css`. Also `references/`: `themes.md`, `landing.md`, `platform.md`, `bans.md`, `sources.md`.
 
-## 5. Files
-- `motion.css`: theme tokens, `linear()` springs, overlay, list, tabs, height, view-transition and scroll-reveal recipes.
-- `references/`: `moments.md` (when, spec, never) · `themes.md` (product type → theme) · `landing.md` · `platform.md` (support, libraries) · `bans.md` (tells, lint ideas) · `sources.md`.
-
-## 6. Verify
+## 5. Verify
 1. **Slow-mo:** DevTools Animations at 10%, screenshot mid-transition. Right origin, no jump at the end.
 2. **Interrupt:** double-click open, Escape mid-entry. It reverses, never restarts or locks.
 3. **Keyboard path:** shortcuts and arrow keys change state with no motion.

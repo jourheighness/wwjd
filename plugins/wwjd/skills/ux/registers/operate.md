@@ -1,6 +1,8 @@
 # Operate: product apps, editors, admin, settings
 
-Profile: `data-profile="app"`. Colour: attention only; the accent marks the primary, the selection and real state, under ~5% of the view.
+Contents: The bar · Pick the pattern · Before building a screen · Detail container · Shell and header · Lists and tables · Reads as a product · Settings · Screen budgets · Behaviour · Never → instead.
+
+Profile: `data-profile="app"`, primary width 1440. Colour: attention only; the accent marks the primary, the selection and real state, under ~5% of the view.
 
 Success: the person completes the task and gets back to work. A calm product with one job per view; never a raw HTML page or everything at once.
 
@@ -30,7 +32,7 @@ Success: the person completes the task and gets back to work. A calm product wit
 
 ## Before building a screen
 1. **Job:** the one decision it serves ("what do I do next, and for whom").
-2. **Fields:** every attribute marked list column (≤6), detail-only, or optional under Display; each gets a form from the value table.
+2. **Fields:** every attribute marked list column (count: `references/budgets.md`, canonical for every number here), detail-only, or optional under Display; each gets a form from the value table.
 3. **Grouping and sort:** by the person's next decision, not the data model. One default sort.
 4. **Kit:** map every part (shell, header, view tabs, filter chips, table, avatar, status, progress, menu, panel, skeleton, empty); missing parts become kit variants first.
 5. **States:** loading, true empty, filtered empty, one item, 200+, longest title, no permission.
@@ -60,7 +62,7 @@ Success: the person completes the task and gets back to work. A calm product wit
   6. **Rows:** one height from the density token (2-line rows only at 48+); one shared grid template, so avatars, dates and bars line up across rows and groups.
   7. **Bulk bar:** on selection, floating at the bottom, never moving the layout: "N selected", ≤4 actions, ⋯, ✕. **Select-all across pages is explicit:** "All 50 on this page selected · Select all 1,284".
   8. **Footer:** pagination past ~50 rows, or virtualisation when measured slow. **Never infinite scroll on a goal list:** "Load more" or pages, position restored on Back.
-- **Columns:** the first is the readable identifier, never an auto ID. 4–6 visible at 1440; the rest via Display or detail. Resizable and hideable, with reset; column priority sets the drop order (`rules/layout.md`).
+- **Columns:** the first is the readable identifier, never an auto ID. Visible count per `budgets.md` (`table`, `grid`, `admin-table`); the rest via Display or detail. Resizable and hideable, with reset; column priority sets the drop order (`rules/layout.md`).
 - **Values become forms:**
 
   | Value | Render |
@@ -75,7 +77,7 @@ Success: the person completes the task and gets back to work. A calm product wit
   | Codes, phone numbers | Start-aligned |
 
   Never repeat the column name in the cell ("Qualified", not "Lead: Qualified"). One line per item; markers at the end, reasons in tooltips.
-- **Row actions:** ≤1 pulled out (often the completing status circle); the rest in ⋯, mirrored by a right-click menu. Inline edit only for low-stakes single fields, through the detail view's popover pickers.
+- **Row actions:** ≤1 pulled out (often the completing status circle); the rest in ⋯, mirrored by a right-click menu. Inline edit only for low-stakes single fields, through the detail view's popover pickers; a `grid` edits every editable cell in place, by keyboard.
 - **States:** loading = skeleton rows at real height inside the pane, never "No results" while loading. True empty = toolbar, filters and headers hidden; one line plus a 1–2-word action ("New task"). Filtered empty = toolbar kept, filters echoed, "Clear filters".
 
 ## Reads as a product
@@ -86,10 +88,12 @@ Success: the person completes the task and gets back to work. A calm product wit
 - **Icons:** 14–16px, one stroke, sparing, never on coloured backgrounds. Red only on overdue or needs-you.
 
 ## Settings
-- 5–9 categories in a sub-nav. Sections of rows: label + one-line hint at the start, control at the end; ≤7 fields per group.
+An expose surface (`budgets.md` Expose by job): never graded as a drawer.
+- 5–9 categories in a sub-nav. A settings screen = the category's sections, all expanded; ≥5 sections: a sticky anchor index. Sections of rows: label + one-line hint at the start, control at the end; ≤10 settings per section, then split.
+- **Every setting in a section is visible.** Only rare settings (a last "Advanced" section) and the danger zone (last, visible) sit apart. No setting in a tooltip, hover or popover.
 - Toggles and selects save instantly (`rules/actions.md` Toggles); text fields save per section.
-- Members is a table. Billing and deletion go through review sheets. Advanced collapsed at the end; the danger zone kept apart, last.
-- Settings search once there are more than ~8 sections. Reset to default per setting or section.
+- Members is a table. Billing and deletion go through review sheets.
+- Settings search at ≥8 sections or ≥40 settings. Reset to default per setting or section.
 - Preferences persist per person: never reset on reload or another device.
 - **Rich, not loud:** row = glyph tile + label + value or hint at the start, control at the end. A noun with identity carries its glyph wherever it labels something, column headers included (`rules/visual.md` Crafted calm). Always-on = lock glyph + reason, never a faded control.
 - **Dependent settings show the parent's state, never its control:** when a channel is off, its column header reads "Off" and its cells dim with saved values kept, same row height; the switch lives only on the channel row (`rules/states.md` One home per state).
@@ -98,11 +102,11 @@ Success: the person completes the task and gets back to work. A calm product wit
 ## Screen budgets
 | Screen | First screen | One layer down |
 |---|---|---|
-| List | Title, view tabs, Filter + chips, Display, 1 primary ("New …"), ≤1 secondary; 4–6 columns | Import, export, column config; row actions in ⋯; detail in the panel |
-| Detail | Title, status, ≤2 actions + ⋯; main = body and activity; side = ≤7 key properties | "More fields"; parallel sets as tabs (≤5); history behind an activity filter |
-| Settings | Sub-nav; one section's fields + its preview | Advanced, danger zone |
+| List | Title, view tabs, Filter + chips, Display, 1 primary ("New …"), ≤1 secondary; columns per `budgets.md` | Import, export, column config; row actions in ⋯; detail in the panel |
+| Detail | Title, status, ≤2 actions + ⋯; main = body and activity; side = key properties (`drawer` row) | The full record as `inspector` or `edit-form` rows (all fields, in sections); parallel sets as tabs (≤5); history behind an activity filter |
+| Settings | Sub-nav; the category's sections, all expanded, anchor index; previews | Rare "Advanced" section last; danger zone last, visible |
 
-- ≤5 table toolbar actions. Export appears once rows exist, bulk on selection, "+" in a group on hover.
+- Table toolbar: the `budgets.md` Toolbar row. Export appears once rows exist, bulk on selection, "+" in a group on hover.
 
 ## Behaviour
 - **Disclosure never moves the layout,** except trees and rows the person expands, or an inline form that replaces its row. Popover, menu or drawer, never a push-down fold-out.

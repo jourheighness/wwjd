@@ -5,7 +5,8 @@ export type Gate = {
   strictness: number
   hasEdits: boolean
   lastFile: string | null
-  sheet: { needed: boolean; file: string | null }
+  /** due: the pre gate refused a new UI file this session and no sheet was written since. */
+  sheet: { needed: boolean; file: string | null; due: boolean }
   checks: { key: string; label: string; done: boolean; how: string }[]
 }
 

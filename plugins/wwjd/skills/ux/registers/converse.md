@@ -1,13 +1,13 @@
 # Converse: chat, assistants, agent panels, copilots
 
-Profile: `data-profile="app"`. Colour: neutral; the content leads.
+Profile: `data-profile="app"`, primary width 390 if consumer, else 1440. Colour: neutral; the content leads.
 
 Success: the person gets work done through dialogue and trusts what came back. This file is the chat surface; agent work, approvals, trust, disclosure, memory and AI language live in `references/ai.md`.
 
 ## States (design every one)
 | State | Behaviour |
 |---|---|
-| Empty | 3–4 specific starters; no welcome essay |
+| Empty | 3–4 specific starters (this register overrides the `budgets.md` `empty` row); no welcome essay |
 | Submitted | Acknowledged within 100ms |
 | Streaming | Stop replaces Send |
 | Ready | Actions available |

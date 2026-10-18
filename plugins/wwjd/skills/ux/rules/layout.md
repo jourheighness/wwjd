@@ -4,12 +4,12 @@ Classes: `kit/base.css`; page shells: `kit/layouts.css`; layout ids: `references
 
 ## Edges
 - **2–3 text edges per page** (six means placed one at a time); logical properties, so RTL holds.
-- **`.bleed`** puts a container's surface and padding in the gutter (never ad-hoc negative margins); edge to edge when the page margin is narrower than the padding. **`.hang-fill`** hangs fills, leading icons and bullets the same way (pseudo-element, no layout).
+- **`.bleed`** puts a container's surface and padding in the gutter (never ad-hoc negative margins); edge to edge when the page margin is narrower than the padding. **`.hang-fill`** hangs fills, leading icons and bullets the same way (pseudo-element, no layout). A hover or edit fill extends evenly on every side via the kit hang class, never negative margins.
 - **`.breakout`:** text at `content` (the measure); tables, charts and media at `feature` or `full`.
 - **`.subcards`:** sibling cards share rows through subgrid; titles, meta and actions align, actions pinned to the bottom.
 - **Centre only** a table, figure or quote in a reading column, a canvas empty state, the hero moment, an icon in its button. A centred settings page or a step centred mid-flow is the defect.
 - **Optical:** checkbox or icon aligns to the first text line; play and arrow glyphs nudge ~2px toward their direction; `text-box: trim-both cap alphabetic` in buttons where supported; nested radii concentric (outer = inner + padding).
-- **Absent optional meta is omitted,** not "—" (table cells differ: `rules/states.md`). **DOM order = reading order;** no `order` or placement that changes meaning.
+- **Size for the longest real string.** **Absent optional meta is omitted,** not "—" (table cells differ: `rules/states.md`). **DOM order = reading order;** no `order` or placement that changes meaning.
 
 ## Spacing
 - **4px scale, `gap` between siblings,** chosen by relationship: `--space-inside` < `--space-between` < `--space-group` < `--space-section`; `--pad-box` inside boxes. `data-profile` and density set them.

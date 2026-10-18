@@ -1,6 +1,6 @@
 # Reference: docs, API reference, changelog, help centre
 
-Profile: `data-profile="docs"`. Colour: attention only; no signal, no colour.
+Profile: `data-profile="docs"`, primary widths 1440 and 390 alike. Colour: attention only; no signal, no colour.
 
 Success: the reader finds the answer and leaves. Use a mature docs framework (Starlight, Fumadocs, Nextra, Docusaurus) before hand-rolling. Layouts: `docs`, `changelog`.
 

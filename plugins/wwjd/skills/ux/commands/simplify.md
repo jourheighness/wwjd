@@ -10,7 +10,7 @@ For "too busy", "simplify", "clean up", "I got overloaded". Deleting alone is ha
 - **Unneeded controls:** toggles, filters, sort and search the task doesn't need; short lists need none.
 - **Machinery receipts:** steps run, files read, "AI is thinking…" once the result shows.
 
-- **Over budget:** check each surface against `references/budgets.md`; drop the "nothing" items, move the rest one step away by kind. Grade each over-budget surface first (`budgets.md` Grade gate).
+- **Over budget:** each surface against `references/budgets.md`, graded first (`budgets.md` Grade gate). Budget surfaces drop the "nothing" items and move the rest one step away; expose surfaces (settings, review, compare, edit) only organise.
 
 ## 2. Reduce
 - **Status:** many statuses boil down to the one or two that need a person; the rest stays calm.
@@ -21,15 +21,15 @@ For "too busy", "simplify", "clean up", "I got overloaded". Deleting alone is ha
 
 ## 3. Reorder by attention
 - **What needs the person leads;** what's fine goes quiet or lower. Group by the real logic, about 7 ungrouped items at most per section.
-- **Re-rank the actions per region:** pick the one primary (the next step), one secondary; the rest move to ⋯, a hover toolbar or the detail view. Twin equal buttons mean no primary was chosen yet.
+- **Re-rank the actions per region** (`rules/actions.md` Hierarchy): one primary (the next step), one secondary, the rest one step away.
 - **Frequency decides visibility:** daily = visible, rare = ⋯. No entry point gets more space than its use earns.
 - **Primary first or last,** never mid-set; actions sit in one place per pattern, same in every instance.
 - **The fact that settles the decision gets its own moment;** unequal facts never sit at equal weight.
 
 ## Not this
-- **Keep** legal, consent, pricing and safety text.
+- **Keep** what the Floor keeps (SKILL.md Honesty).
 - **Thin is not clean:** Persuade and Editorial keep their full content; fewer elements, stronger hierarchy.
 - **Freed space** closes up or lets what remains grow; never ornament.
 - **Who loses the control?** Power users, keyboard and assistive-tech users, automation (selectors, deep links, extensions). If the habit wouldn't come back when re-added, the removal is one-way: say so.
 
-**Done when** nothing left can go without breaking the task, and a squint shows only the primary and the needs-you signals.
+**Done when** every surface is within its `budgets.md` row and each region has one primary; the squint test (`references/bans.md`) passes.

@@ -1,5 +1,7 @@
 # Before and after
 
+Contents: 1 Explaining text · 2 Numbers · 3 Five actions · 4 Labels · 5 Hover fill · 6 Card bleed · 7 Empty state · 8 Landing hero · 9 Agent work · 10 Rebuild from a spec.
+
 Short, concrete pairs. When a rule is unclear, match the example.
 
 ## 1. Explaining text goes

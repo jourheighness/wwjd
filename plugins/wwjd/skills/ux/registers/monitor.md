@@ -1,6 +1,6 @@
 # Monitor: dashboards, analytics, metrics, ops views
 
-Profile: `data-profile="app"`. Colour: attention only; status colour only on what isn't OK, accent under ~5% of the view.
+Profile: `data-profile="app"`, primary width 1440. Colour: attention only; status colour only on what isn't OK, accent under ~5% of the view.
 
 Success: in 5 seconds the person knows whether anything needs them, and where to click. The prompt's nouns are an inventory to triage, not a list of widgets.
 

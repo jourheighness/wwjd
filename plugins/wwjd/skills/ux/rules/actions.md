@@ -13,7 +13,7 @@ The how behind SKILL.md's Actions rules. A region is a card, row, toolbar, dialo
 - **Placement:** primary first or last, never mid-set; header actions at the end in a fixed order; one place per pattern.
 - **Frequency decides visibility:** daily = visible, rare = ⋯.
 - **Destructive** sits apart from Save or confirm, by space and style. Dialog button order follows the platform, same in every dialog.
-- **Choice sets of 2–4:** segmented radios under their label, never a dropdown; every label fits one line at the narrowest size, else cut options or use a menu. ~3 visible per group; merge overlapping options before cutting.
+- **Choice sets of 2–4:** segmented radios under their label, never a dropdown; every label fits one line at the narrowest size, else cut options, then a menu for actions, a select for values (this file is canonical; `registers/flow.md` follows it). ~3 visible per group; merge overlapping options before cutting.
 - **Precise values:** number input with stepper, or slider plus input; never a slider alone.
 
 ## Affordance
@@ -24,6 +24,7 @@ The how behind SKILL.md's Actions rules. A region is a card, row, toolbar, dialo
 - **Actions never look like states:** an action icon never borrows a state's mark (an empty ring reads as "unread"); use the verb's glyph (check, envelope) with a label.
 - **Icons** do exactly what they show; one library, one stroke; no emoji icons.
 - **Toggles:** icon, label and tooltip flip with state ("+ Zoom in" → "− Zoom out"), `aria-pressed` or updated name, pressed = filled container; out of sync is a defect. A settings toggle applies at once; needing Save makes it a checkbox; one save model per page (instant + undo). Label the setting positively ("Notifications"), never bare On/Off.
+- **In-place edit:** an editable value shows an affordance on hover and focus (pencil + fill), always on touch, in a fixed slot so nothing shifts. Enter saves, Esc reverts, blur saves; one click on another value commits this one and opens that one.
 - **Disabled = "not yet":** reason in a tooltip (`aria-disabled`, focusable) or inline. Hide what can never apply. Read-only looks different from disabled.
 - **State before the click:** unavailable, extra cost, needs sign-in, leaves the page, irreversible: a fade, mark or word on the option itself.
 - **State marks differ from labels:** a mark on the item (faded swatch, strike, small badge), the word in tooltip and name ("Ash, sold out"). Never a second line under one peer; peers keep one baseline.
@@ -57,5 +58,6 @@ The how behind SKILL.md's Actions rules. A region is a card, row, toolbar, dialo
 
 ## Defaults and undo
 - **Enter** does the obvious thing; **Esc** steps back one level, never destroys work.
+- **Single-field edits of the person's own data** save silently (announced `role=status`); undo is Esc while open and Cmd/Ctrl+Z after. A visible Undo only for deletes, bulk changes and anything others see.
 - **No API undo:** an undo adapter in front (`// TODO(api): …`), hide at once, undo through it, commit on expiry or when the person moves on; flag the API at handover.
 - **The review step** is a sheet with real choices: "Send to 12 suppliers" / "Save draft".

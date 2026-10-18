@@ -156,7 +156,9 @@ function build(look, x) {
   for (const m of M) { clamp('text', [...S3, 'fill', 'fill-strong'], 4.5, m); clamp('text-2', [...S3, 'fill'], 4.5, m); clamp('text-3', S3, 4.5, m); clamp('border-control', S3, 3, m); }
 
   // Accent: solid S (white or dark text on it), hover, text; dark keeps S near the same L (never inverted)
-  const ac = (l, d, v = 'a') => ({ l, d, v }), C0 = x.brandLch ? x.brandLch[1] : .19;
+  // A near-neutral brand has C ≈ 0, so C − .02 would go negative: CSS clamps that to 0 while the math would flip the hue.
+  // Clamp derived chroma at 0 so what is solved and audited is what renders.
+  const pc = v => Math.max(0, v), ac = (l, d, v = 'a') => ({ l: [l[0], pc(l[1]), l[2]], d: [d[0], pc(d[1]), d[2]], v }), C0 = x.brandLch ? x.brandLch[1] : .19;
   let on, onD;
   if (x.accent == 'mono') {
     const tl = R.text.l, td = R.text.d;
@@ -168,9 +170,9 @@ function build(look, x) {
     if (L > wl(C)) { if (L >= .70) dk = true; else if (.70 - L < L - (wl(C) - .01)) { L = .70; dk = true; } else { notes.push(`accent L ${f(L)}→${f(wl(C) - .01)} so white text passes`); L = wl(C) - .01; } }
     on = onD = dk ? [.2, .03, a] : WHITE;
     if (dk) L = Math.max(L, solveL(on, C, a, 4.5, 1) + .005);
-    const Ld = dk ? L : Math.min(L + .02, wl(C - .02) - .01), Ct = Math.min(.13, C * .63), sgn = dk ? 1 : -1;
+    const Ld = dk ? L : Math.min(L + .02, wl(pc(C - .02)) - .01), Ct = Math.min(.13, C * .63), sgn = dk ? 1 : -1;
     R.accent = ac([L, C, a], [Ld, C - .02, a]); R['accent-hover'] = ac([L + .04 * sgn, C - .01, a], [Ld + .04 * sgn, C - .02, a]);
-    R['accent-text'] = ac([Math.min(L - .02, ...S3.map(s => solveL(R[s].l, C - .01, a, 4.5, -1) - .01)), C - .01, a],
+    R['accent-text'] = ac([Math.min(L - .02, ...S3.map(s => solveL(R[s].l, pc(C - .01), a, 4.5, -1) - .01)), C - .01, a],
       [Math.max(.76, ...S3.map(s => solveL(R[s].d, Ct, a, 4.5, 1) + .02)), Ct, a]);
     if (x.accent == 'dual') { const a2 = look.brand2 ? fromHex(look.brand2)[2] : (a + 60) % 360, C2 = C * .6;
       R['accent-2'] = ac([Math.min(...S3.map(s => solveL(R[s].l, C2, a2, 4.5, -1))) - .01, C2, a2], [Math.max(.74, ...S3.map(s => solveL(R[s].d, C2 * .8, a2, 4.5, 1) + .02)), C2 * .8, a2], null); }
@@ -321,6 +323,22 @@ function designMd(look, x, B, au) {
   return fm.join('\n') + '\n\n' + body.join('\n') + '\n';
 }
 
+// Regenerating keeps every "## " section this script does not write (a "## Decisions" log the sidebar appends to,
+// handwritten sections), each after the generated section it followed before, else at the end.
+function keepSections(prev, next) {
+  const split = t => { const body = t.replace(/^---\n[\s\S]*?\n---\n/, ''), parts = body.split(/^(?=## )/m);
+    return { head: parts[0].startsWith('## ') ? '' : parts.shift(), secs: parts.map(p => ({ h: p.split('\n')[0].trim(), text: p.trimEnd() + '\n' })) }; };
+  const old = split(prev).secs, mine = split(next), ours = new Set(mine.secs.map(x => x.h));
+  const extra = old.filter(x => !ours.has(x.h));
+  if (!extra.length) return next;
+  const after = new Map(); let anchor = null;
+  for (const x of old) { if (ours.has(x.h)) { anchor = x.h; continue; } if (!after.has(anchor)) after.set(anchor, []); after.get(anchor).push(x); }
+  const fm = (next.match(/^---\n[\s\S]*?\n---\n/) || [''])[0], out = [...(after.get(null) || [])];
+  const body = [];
+  for (const x of mine.secs) { body.push(x); body.push(...(after.get(x.h) || [])); }
+  return fm + mine.head + [...out, ...body].map(x => x.text).join('\n');
+}
+
 // ── Variants: identity lock, 2–3 open axes moved, pairwise distance ≥ 2, ≤ 1 loud step ──
 const dist = (p, q) => AXES.reduce((s, k) => s + (p[k] != q[k] ? W[k] : 0), 0);
 function alts(k, v) {
@@ -430,7 +448,7 @@ const ramp = m => { const S = B.R.accent[m][0], T = B.R['accent-text'][m][0], C 
   return Ls.map((L, i) => fit([L, C * [.02, .05, .12, .2, .28, .36, .45, .6, 1, 1, .85, .5][i], B.R.accent[m][2]]).map(q => +q.toFixed(4))); };
 const resolved = Object.fromEntries(Object.entries(B.R).map(([k, r]) => [k, { light: fit(r.l).map(q => +q.toFixed(4)), dark: fit(r.d).map(q => +q.toFixed(4)), hex: [hex(r.l), hex(r.d)] }]));
 fs.writeFileSync(tokens, css(look, x, B));
-fs.writeFileSync(dm, designMd(look, x, B, au));
+fs.writeFileSync(dm, keepSections(fs.existsSync(dm) ? fs.readFileSync(dm, 'utf8') : '', designMd(look, x, B, au)));
 fs.writeFileSync(path.join(wdir, 'look.json'), JSON.stringify({ ...look, axes: Object.fromEntries(AXES.map(k => [k, x[k]])),
   resolved, ramp: { light: ramp('l'), dark: ramp('d') }, audit: { pairs: au.pairs, minText: au.minT, minEdge: au.minE, apca: au.warns, solved: B.notes } }, null, 2) + '\n');
 console.log(`  wrote ${tokens}, ${dm}, ${path.join(wdir, 'look.json')}`);

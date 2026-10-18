@@ -7,6 +7,7 @@ The how behind SKILL.md's Visual rules. Choosing palette and faces is the `wwjd:
 - **The accent is the person's own next step,** never an upsell, paid add-on or retention surface. Error red is never the brand or CTA red.
 - **Near-misses are errors:** within ΔE2000 < 6 of a token, or spacing/radius 1–2px off the scale: snap to the token (lint `hex-in-ui`, `raw-palette`, `arbitrary-value`).
 - **Pair colour with a shape** (dot, diamond, triangle) or a word; colour sits on the glyph, text stays ink (`.status[data-tone]`).
+- **Chips and tags** reach 3:1 non-text contrast against every surface they sit on (panel, hover fill, popover), both themes.
 - **Status:** calm stays quiet; only act and attend states are loud. Tints soft (in doubt, halve them); ≤3 signal colours per card or row.
 - **Neutrals:** one gray family, never warm and cool mixed. No gray text on a coloured ground (use a darker shade of that hue). Overlay colours defined, not alpha, except focus rings and `--hover`/`--press`.
 - **Never an untouched stock indigo or violet** (lint `default-accent`).
@@ -32,7 +33,7 @@ Calm is fewer elements, each designed; never a bare wireframe (Owner, 2026-10-16
 ## Contrast and focus
 - 7:1 preferred for long reading. **Contrast matrix:** every text token on every surface it is declared on, ≥ AA, as a workshop story or CI check. `--text-3` on surfaces, not `--fill`.
 - **Brand colour** gets an AA text variant (`--accent-text`); light brands (yellow, orange, mint) take a darker shade on text-bearing buttons.
-- **Focus ring:** one shared `:focus-visible` ring, 2px with offset, instant, never animated (lint `focus-removed`).
+- **Focus ring:** one shared `:focus-visible` ring, 2px with offset, instant, never animated (lint `focus-removed`). One ring per field: when a wrapper draws it, the inner input opts out of the global outline.
 
 ## Type
 - **Sizes from `data-profile`** (`kit/base.css`); nothing read under 12px; touch inputs ≥16px.

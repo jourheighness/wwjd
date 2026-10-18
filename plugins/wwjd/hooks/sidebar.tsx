@@ -12,14 +12,27 @@ const view = atom({ plugin: 'wwjd', key: 'view' } as const, 'log')
 const editing = atom({ plugin: 'wwjd', key: 'editing' } as const, '')
 const draft = atom({ plugin: 'wwjd', key: 'draft' } as const, '')
 const noteScope = atom({ plugin: 'wwjd', key: 'noteScope' } as const, 'project')
+const gate = atom({ plugin: 'wwjd', key: 'gate' } as const, null)
 const logVersion = atom({ plugin: 'wwjd', key: 'logVersion' } as const, 0)
 
-export const TOOL = 'mcp__wwjd__log'
+const TOOL = 'mcp__wwjd__log'
 const SHOWN = 60
 
-const logFile = async ($: EngineInterface) => `${await $.session.root()}/.wwjd/decisions.jsonl`
+// Same root as skills/ux/scripts/paths.mjs artifactRoot(): the nearest ancestor of cwd with .wwjd.json or .wwjd/
+// (never the home folder), else the session's root; so the gate and the sidebar read one log.
+async function artifactRoot($: EngineInterface): Promise<string> {
+  const home = await $.env.get('HOME')
+  for (let dir = await $.session.cwd(); dir && dir !== home; ) {
+    if ((await $.fs.exists(`${dir}/.wwjd.json`)) || (await $.fs.exists(`${dir}/.wwjd`))) return dir
+    const up = dir.replace(/\/[^/]+$/, '')
+    if (!up || up === dir) break
+    dir = up
+  }
+  return $.session.root()
+}
+const logFile = async ($: EngineInterface) => `${await artifactRoot($)}/.wwjd/decisions.jsonl`
 
-export async function readLog($: EngineInterface): Promise<Entry[]> {
+async function readLog($: EngineInterface): Promise<Entry[]> {
   try {
     return (await $.fs.read(await logFile($))).split('\n').filter(Boolean).flatMap(line => {
       try { return [JSON.parse(line) as Entry] } catch { return [] }
@@ -30,6 +43,23 @@ export async function readLog($: EngineInterface): Promise<Entry[]> {
 }
 const writeLog = async ($: EngineInterface, entries: Entry[]) =>
   $.fs.write(await logFile($), entries.map(x => JSON.stringify(x)).join('\n') + '\n')
+
+// Every read-modify-write of the log runs one at a time: parallel `log` calls would otherwise read the same
+// entries and the last write would drop the others.
+let queue: Promise<unknown> = Promise.resolve()
+function serial<T>(fn: () => Promise<T>): Promise<T> {
+  const run = queue.then(fn)
+  queue = run.catch(() => undefined)
+  return run
+}
+// Ids: the time plus a counter, so two entries never share one (also across sessions writing the same log).
+let seq = 0
+const newId = (now: number, taken: Set<string>) => {
+  let id = ''
+  do id = `d${now.toString(36)}${(seq++).toString(36)}`
+  while (taken.has(id))
+  return id
+}
 
 const today = async ($: EngineInterface) => new Date(await $.clock.now()).toISOString().slice(0, 10)
 
@@ -48,17 +78,21 @@ async function correct($: EngineInterface, id: string) {
   const note = (await read($, draft)).trim()
   if (!note) return
   const where = await read($, noteScope)
-  const entries = await readLog($)
-  const entry = entries.find(x => x.id === id)
-  if (!entry) return
   const { file, head } = await target($, where)
   const day = await today($)
-  const line = `- ${day} · ${entry.surface}: ${note} (was: ${entry.text})\n`
-  let text = (await $.fs.exists(file)) ? await $.fs.read(file) : head
-  if (where === 'project' && file.endsWith('DESIGN.md') && !/^## Decisions$/m.test(text)) text = `${text.trimEnd()}\n\n## Decisions\n`
-  await $.fs.write(file, `${text.trimEnd()}\n${line}`)
-  entry.correction = { note, scope: where, file, at: day }
-  await writeLog($, entries)
+  const entry = await serial(async () => {
+    const entries = await readLog($)
+    const entry = entries.find(x => x.id === id)
+    if (!entry || entry.correction) return null
+    const line = `- ${day} · ${entry.surface}: ${note} (was: ${entry.text})\n`
+    let text = (await $.fs.exists(file)) ? await $.fs.read(file) : head
+    if (where === 'project' && file.endsWith('DESIGN.md') && !/^## Decisions$/m.test(text)) text = `${text.trimEnd()}\n\n## Decisions\n`
+    await $.fs.write(file, `${text.trimEnd()}\n${line}`)
+    entry.correction = { note, scope: where, file, at: day }
+    await writeLog($, entries)
+    return entry
+  })
+  if (!entry) return
   await update($, editing, () => '')
   await update($, draft, () => '')
   await update($, logVersion, n => (n ?? 0) + 1)
@@ -87,6 +121,13 @@ export const register: Register = (on, options) => {
         },
       },
     })
+    // Opened once, it comes back every session until the person closes it.
+    if ((await $.store.get('isPinned')) === true) await $.ui.open({ id: PANE, title: 'wwjd' }).catch(() => undefined)
+    return next(e)
+  })
+
+  on('ui.close', { id: PANE }, async ($, e, next) => {
+    if (e.origin.kind === 'person') await $.store.set('isPinned', false)
     return next(e)
   })
 
@@ -95,16 +136,23 @@ export const register: Register = (on, options) => {
     if (typeof x.surface !== 'string' || typeof x.text !== 'string' || (x.kind !== 'assumption' && x.kind !== 'choice')) {
       return { deny: 'Needs surface, kind (assumption or choice) and text.' }
     }
-    const entries = await readLog($)
-    const at = new Date(await $.clock.now()).toISOString()
-    const id = `d${entries.length + 1}`
-    entries.push({ id, at, surface: x.surface.trim(), kind: x.kind, text: x.text.trim(), ...(typeof x.why === 'string' && x.why.trim() ? { why: x.why.trim() } : {}) })
-    await writeLog($, entries)
+    const entry = { surface: x.surface.trim(), kind: x.kind as Entry['kind'], text: x.text.trim(), ...(typeof x.why === 'string' && x.why.trim() ? { why: x.why.trim() } : {}) }
+    const now = await $.clock.now()
+    const id = await serial(async () => {
+      const entries = await readLog($)
+      const id = newId(now, new Set(entries.map(y => y.id)))
+      entries.push({ id, at: new Date(now).toISOString(), ...entry })
+      await writeLog($, entries)
+      return id
+    })
     await update($, logVersion, n => (n ?? 0) + 1)
+    // The log is the sidebar's reason to exist: it opens on the first entry (an open pane is left as it is).
+    await $.ui.open({ id: PANE, title: 'wwjd' }).catch(() => undefined)
     return { result: { logged: id } }
   })
 
   on('command.run', { command: 'wwjd' }, async $ => {
+    await $.store.set('isPinned', true)
     await loadProjectDials($)
     await $.ui.open({ id: PANE, title: 'wwjd', focus: true, closeOnEscape: true })
     return { text: 'wwjd sidebar open.' }
@@ -131,6 +179,9 @@ export const register: Register = (on, options) => {
     }
 
     await read($, logVersion)
+    // What Strictness still wants after the last UI edit, from the same gate state the hooks enforce.
+    const g = await read($, gate)
+    const due = g?.hasEdits ? [...(g.sheet.due ? ['Grade sheet'] : []), ...g.checks.filter(c => !c.done).map(c => c.label)] : []
     const entries = (await readLog($)).slice(-SHOWN)
     const open = await read($, editing)
     const where = await read($, noteScope)
@@ -179,6 +230,7 @@ export const register: Register = (on, options) => {
     return (
       <Box flexDirection="column" padding="md" gap="md">
         {header('Decisions', <Button key="to-settings" plain dimColor label="Settings" onPress={() => update($, view, () => 'settings')} />)}
+        {due.length ? <Text color="warning" wrap="wrap">Before handover: {due.join(' · ')}</Text> : null}
         {groups.length
           ? groups.map(([surface, xs]) => (
             <Box key={`surface:${surface}`} flexDirection="column" gap="xs">

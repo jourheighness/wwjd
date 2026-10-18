@@ -1,5 +1,7 @@
 # Product types
 
+Contents: Across all types · 1 Admin · 2 CRM · 3 Projects · 4 Calendar · 5 E-commerce admin · 6 AI workspace · 7 Settings · 8 KPI reporting · 9 Billing · 10 Helpdesk · 11 Team chat · 12 CMS · 13 Docs/wiki · 14 Accounting · 15 Forms · 16 LMS · 17 HR · 18 Marketplace · 19 Analytics · 20 Issues · 21 Ops monitoring · 22 Banking · 23 Files · 24 Healthcare · 25 Field service · 26 Email · 27 Canvas.
+
 Grep `### <n>. <type>` and read only that block. Keys: **Obj** core objects · **Jobs** what people come to do · **First** the first screen · **Struct** structure and register · **Sig** signature patterns of the category's best · **Do** / **Don't** (never this → instead) · **#** numbers that matter | vanity numbers. Picking the type and its layout from the prompt: `registers/operate.md`.
 
 ## Across all types

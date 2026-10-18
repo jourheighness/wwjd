@@ -10,7 +10,8 @@ The owner's words, used literally. A drawer is not a rail.
 | Kit | The project's shared components and tokens |
 | Workshop | Where components show in isolation with their states (Storybook, Ladle) |
 | Spec | The approved design being built: mockup, Figma frame, comparison page, recorded decision |
-| Decision log | Where the project records dated design decisions (`docs/decisions/`, DESIGN.md named rules) |
+| Decision log | `docs/decisions/` if it exists, else a "Decisions" section in DESIGN.md; every rule dated, the person's words quoted (`commands/start.md`) |
+| Taste file | `~/.config/wwjd/taste.md`: your rules for every project; below the project's DESIGN.md and decision log |
 | User profile | `$WWJD_PROFILE` or `~/.config/wwjd/profile.md`: workflow and locale only. Not `data-profile` (the type/rhythm preset in `kit/base.css`) |
 | Contrast matrix | Every text token against every background it's declared on, each AA |
 | Scrim | A neutral shade between an image and the text on it |
@@ -24,7 +25,9 @@ The owner's words, used literally. A drawer is not a rail.
 | Needs-you signal | A mark that something needs you (often a dot, not a count); findable at a glance |
 | Fact grade | Decides (changes what the person does next) / delights (true, specific, builds trust or joy; never copy about the interface) / nothing (cut). Home: `budgets.md` |
 | Budget | A surface's min–max of facts and actions (`budgets.md`) |
-| Grade gate | A written `grade.mjs` sheet per over-budget surface before it is built (Strictness 3 and up, `budgets.md`) |
+| Job | What the person does on a surface: glance, decide, configure, review, compare, bulk edit, audit, inspect, flow, persuade. It picks the surface's kind |
+| Exposure surface | A surface whose job is configure, review, compare, bulk edit, audit or inspect: shows everything the job needs, organised, never hidden (`budgets.md` Expose by job) |
+| Grade gate | A written `grade.mjs` sheet per over-budget surface before it is built, one line for the rest (Strictness 3 and up, `budgets.md`) |
 | Stretched target | A row's or card's title link whose `::after` covers the whole container; one target, one behaviour |
 | Hover toolbar | A row's shortcuts, shown on hover, keyboard focus inside or an open menu; each also in ⋯ or the detail view |
 | Christmas tree | Colour on everything, so nothing stands out |

@@ -1,6 +1,6 @@
 # Flow: signup, onboarding, auth, wizards, long forms, checkout forms
 
-Profile: `data-profile="consumer"`. Colour: neutral; the accent marks only the primary action.
+Profile: `data-profile="consumer"`, primary width 390. Colour: neutral; the accent marks only the primary action.
 
 Success: the person finishes the sequence without thinking about the form. Layouts: `wizard`, `auth-card`, `fullscreen-flow`, `empty-first-run`.
 
@@ -13,7 +13,7 @@ Success: the person finishes the sequence without thinking about the form. Layou
 ## Shape
 - **One column, one task per step.** Web labels sit above fields; native follows the platform.
 - **Stacked fields share one width,** the column's full width, lined up on both edges. Only short fixed-format fields (postcode, CVC, expiry, one-time code, year) go narrower, together on their own row.
-- **Choice sets:** >4 options or labels that won't fit one line: cut or merge first ("Just me / 2–50 / 51–500 / 500+"), else a select. Never a multi-row grid of option buttons.
+- **Choice sets:** >4 options or labels that won't fit one line: cut or merge first ("Just me / 2–50 / 51–500 / 500+"), else a select (`rules/actions.md` Choice sets). Never a multi-row grid of option buttons.
 - **Narrow auth form** may be the page's one centred column; text inside stays start-aligned.
 - **Progress:** named steps, done ones marked. The stepper is one row that never wraps on desktop (collapses to "Step name · 2 of 4" only when it can't fit). Every step is the same element with the same box in every state; a revisitable done step is a button styled like the others, never an underlined link. Names, not "Step 3 of 5"; "Question 3 of 7" is fine in long public-service forms.
 - **Back keeps the data.** Long flows save and resume.

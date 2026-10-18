@@ -7,7 +7,7 @@ Review like an experienced designer: in one glance, by cutting. No scores. The o
 2. **Duplication:** two controls for one job, the same information twice.
 3. **Edges and spacing:** stepped margins, cramped parts, clipped outlines, misaligned starts.
 4. **Movement:** jumps, re-sorts, unwanted animation.
-5. **Glance test:** does the view answer its question in ~3 seconds at its primary width with real data?
+5. **Glance test:** does the view answer its question in 5 seconds at its primary width with real data?
 6. **Foreign parts:** anything that doesn't feel like the product, or looks broken though it works.
 7. **Signals:** too faint to notice, or a list with no priority.
 8. **Workaround features:** a "classic view" toggle, "Recently visited" promoted to main nav, a mobile skin for a desktop problem, a half-finished migration. Each names a failing area.
@@ -16,7 +16,7 @@ Review like an experienced designer: in one glance, by cutting. No scores. The o
 1. **Context:** the entry reads (SKILL.md), the register, the spec if any.
 2. **Render:** `render.mjs shoot` at both widths × light/dark; populated, empty, worst case (`rules/states.md`). `wwjd.mjs check` on the files.
 3. **What works, first,** in a few lines (calibration, not padding). Each deviation from the rules is intentional (applied consistently: note it), accidental (a finding) or unclear (ask).
-4. **Budgets and grades:** every surface against `references/budgets.md`; each fact decides, delights or nothing (grade gate: a `grade.mjs` sheet per over-budget surface). Over budget is a finding, with where the overflow goes.
+4. **Budgets and grades:** every surface against `references/budgets.md`, its job named first (`budgets.md` Expose by job, Grade gate). Over budget is a finding, with where the overflow goes; on an expose surface, a hidden item the job needs is the finding.
 5. **UX laws pass** (below).
 6. **Findings, ranked** by severity (**blocks** the task · **major**, incl. any floor failure · **minor**). Each one: the element, where (`file:line` or screen), the rule it breaks, one concrete fix, stated as a count where possible ("Remind me later" ×4; 8 widgets at equal weight). Merge instances into their pattern; cross-screen patterns rank first.
 7. **Fault in the kit?** Say so: the fix goes to the component and its story, not each call site.
@@ -30,7 +30,7 @@ Review like an experienced designer: in one glance, by cutting. No scores. The o
 
 ## UX laws pass
 1. Obvious where to look first; nothing to remember that could be shown; a stranger gets it in 5 seconds.
-2. Squint: only the primary and the needs-you signals survive the blur.
+2. Squint test (`references/bans.md` Quick tests).
 3. ≤ ~7 ungrouped items per section; groups match the real logic.
 4. Same function looks the same; different function looks different.
 5. Options are distinct (five clear beat three vague); the frequent choice is the default.
@@ -48,5 +48,5 @@ Review like an experienced designer: in one glance, by cutting. No scores. The o
 17. Path count: every decision from landing to result, compared with the category's best.
 
 ## On request only
-- **Cold review:** the `wwjd-critic` agent, in the background after handover.
+- **Cold review:** the `wwjd-critic` agent, in the background after handover (required at Strictness 5, `references/dials.md`).
 - **Expert lenses** (UI, UX, interaction, reviewed separately, then merged) and **personas** (a role and a goal, no prior knowledge: first-time admin, busy specialist, keyboard-only user) clicking through and reporting where they hesitated. Heavy in rebuilds, light in polish; never a gate the user didn't ask for.

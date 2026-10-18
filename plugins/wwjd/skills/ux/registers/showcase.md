@@ -1,6 +1,6 @@
 # Showcase: portfolio, case study, gallery, agency
 
-Profile: `data-profile="marketing"`. Colour: identity, framing the work and never competing with it; a neutral ground when the work is colourful.
+Profile: `data-profile="marketing"`, primary widths 1440 and 390 alike. Colour: identity, framing the work and never competing with it; a neutral ground when the work is colourful.
 
 Success: the visitor experiences the work; the interface recedes. Layouts: `case-study`, `feed`.
 

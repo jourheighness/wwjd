@@ -28,11 +28,24 @@ async function projectFile($: EngineInterface): Promise<string> {
     d = up
   }
 }
-export async function readProject($: EngineInterface): Promise<Record<string, unknown>> {
+// A missing file is an empty project; one that can't be read or isn't a JSON object is an error, never {}, so a
+// pick can't overwrite what is in it.
+type Project = { file: string; json: Record<string, unknown>; error?: undefined } | { file: string; json?: undefined; error: string }
+async function readProject($: EngineInterface): Promise<Project> {
+  const file = await projectFile($)
+  if (!(await $.fs.exists(file))) return { file, json: {} }
+  let text: string
   try {
-    return JSON.parse(await $.fs.read(await projectFile($)))
-  } catch {
-    return {}
+    text = await $.fs.read(file)
+  } catch (err) {
+    return { file, error: `can't read it (${err instanceof Error ? err.message : String(err)})` }
+  }
+  try {
+    const json = JSON.parse(text) as unknown
+    if (json && typeof json === 'object' && !Array.isArray(json)) return { file, json: json as Record<string, unknown> }
+    return { file, error: 'it is not a JSON object' }
+  } catch (err) {
+    return { file, error: `it is not valid JSON (${err instanceof Error ? err.message : String(err)})` }
   }
 }
 
@@ -51,8 +64,11 @@ async function pick($: EngineInterface, key: string, stop: number) {
     if (deny) $.ui.toast(`Not saved: ${deny}`)
     return
   }
-  const file = await projectFile($)
-  const json = await readProject($)
+  const { file, json, error } = await readProject($)
+  if (error !== undefined) {
+    $.ui.toast(`Not saved: ${file.split('/').slice(-2).join('/')}: ${error}. Fix it, then pick again.`)
+    return
+  }
   const dials = { ...((json.dials as Record<string, string | number>) || {}) }
   if (stop < 0) delete dials[key]
   else dials[key] = valueOf(dial, stop)
@@ -73,7 +89,7 @@ export const register: Register = on => {
 
 /** The project's dials into state, before the sidebar opens. */
 export async function loadProjectDials($: EngineInterface) {
-  const json = await readProject($)
+  const { json = {} } = await readProject($)
   await update($, project, () => (json.dials && typeof json.dials === 'object' ? (json.dials as Record<string, string | number>) : {}))
 }
 

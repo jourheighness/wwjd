@@ -1,12 +1,13 @@
 // node --test skills/ux/scripts/gate.test.mjs: the Strictness gate (gate.mjs) as the hooks call it.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync, utimesSync, appendFileSync } from "node:fs";
+import { execFileSync, spawn } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync, utimesSync, appendFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const GATE = join(import.meta.dirname, "gate.mjs");
+const GATE = join(dirname(fileURLToPath(import.meta.url)), "gate.mjs");
 
 function project(strictness) {
   const root = mkdtempSync(join(tmpdir(), "wwjd-gate-"));
@@ -16,14 +17,19 @@ function project(strictness) {
   const transcript = join(root, "transcript.jsonl");
   writeFileSync(transcript, "");
   const sid = "s-" + Math.random().toString(36).slice(2);
-  const run = (mode, input) => {
-    const out = execFileSync("node", [GATE, mode], {
-      input: JSON.stringify({ session_id: sid, transcript_path: transcript, cwd: root, ...input }),
-      env: { ...process.env, TMPDIR: state, WWJD_DIALS: "", CLAUDE_PLUGIN_OPTION_STRICTNESS: "" },
-      encoding: "utf8",
-    }).trim();
+  const env = { ...process.env, TMPDIR: state, WWJD_DIALS: "", CLAUDE_PLUGIN_OPTION_STRICTNESS: "", WWJD_PREVIEW: "" };
+  const stdin = (input) => JSON.stringify({ session_id: sid, transcript_path: transcript, cwd: root, ...input });
+  const run = (mode, input, extra = {}) => {
+    const out = execFileSync("node", [GATE, mode], { input: stdin(input), env: { ...env, ...extra }, encoding: "utf8" }).trim();
     return out ? JSON.parse(out) : null;
   };
+  // Started together, as parallel hooks are.
+  const runAsync = (mode, input) => new Promise((ok, fail) => {
+    const c = spawn("node", [GATE, mode], { env });
+    c.on("error", fail).on("close", ok);
+    c.stdin.end(stdin(input));
+  });
+  const ledger = () => JSON.parse(readFileSync(join(state, "wwjd-gate", `${sid}.json`), "utf8"));
   const file = (rel, text = "x", age = 0) => {
     const p = join(root, rel);
     mkdirSync(join(p, ".."), { recursive: true });
@@ -33,7 +39,7 @@ function project(strictness) {
     return p;
   };
   const edit = (rel) => run("post", { tool_name: "Write", tool_input: { file_path: join(root, rel) } });
-  return { root, run, file, edit, transcript };
+  return { root, state, run, runAsync, ledger, file, edit, transcript };
 }
 
 const write = (p) => ({ tool_name: "Write", tool_input: { file_path: p, content: "<div></div>" } });
@@ -80,6 +86,7 @@ test("stop: Strictness 1 never blocks; 2 wants a shot newer than the last UI edi
 test("stop: Strictness 3 wants two widths; an UNAVAILABLE marker from render.mjs passes", () => {
   const p = project(3);
   p.edit("card.html");
+  p.file(".wwjd/decisions.jsonl", JSON.stringify({ id: "d1", at: new Date(Date.now() + 5000).toISOString(), surface: "Card", kind: "choice", text: "x" }));
   p.file(".wwjd/shots/card-390-light.png", "png", 5);
   assert.equal(p.run("stop", { stop_hook_active: false }).decision, "block");
   p.file(".wwjd/shots/card-1440-light.png", "png", 5);
@@ -87,6 +94,7 @@ test("stop: Strictness 3 wants two widths; an UNAVAILABLE marker from render.mjs
 
   const q = project(3);
   q.edit("card.html");
+  q.file(".wwjd/decisions.jsonl", JSON.stringify({ id: "d1", at: new Date(Date.now() + 5000).toISOString(), surface: "Card", kind: "choice", text: "x" }));
   q.file(".wwjd/shots/UNAVAILABLE", "render needs Playwright", 5);
   assert.equal(q.run("stop", { stop_hook_active: false }), null);
 });
@@ -138,14 +146,101 @@ test("status reports the dial, the sheet and each check", () => {
   const p = project(3);
   let s = p.run("status", {});
   assert.equal(s.strictness, 3);
-  assert.deepEqual(s.sheet, { needed: true, file: null });
+  assert.deepEqual(s.sheet, { needed: true, file: null, due: false });
   assert.equal(s.hasEdits, false);
   p.file(".wwjd/grade/task-card.md", "within budget");
   p.edit("card.html");
   s = p.run("status", {});
   assert.equal(s.sheet.file, "task-card.md");
-  assert.deepEqual(s.checks.map((c) => [c.key, c.done]), [["shots", false]]);
+  assert.deepEqual(s.checks.map((c) => [c.key, c.done]), [["shots", false], ["log", false]]);
   p.file(".wwjd/shots/card-390-light.png", "png", 5);
   p.file(".wwjd/shots/card-1440-light.png", "png", 5);
   assert.equal(p.run("status", {}).checks[0].done, true);
+});
+
+test("stop: edits after a block don't reset the count; a new user turn does", () => {
+  const p = project(2);
+  p.edit("card.html");
+  assert.equal(p.run("stop", { stop_hook_active: false }).decision, "block");
+  p.edit("card.html");
+  assert.equal(p.run("stop", { stop_hook_active: true }).decision, "block");
+  p.edit("card.html");
+  assert.equal(p.run("stop", { stop_hook_active: true }), null);
+  p.edit("card.html");
+  assert.equal(p.run("stop", { stop_hook_active: false }).decision, "block");
+});
+
+test("ledger: parallel hooks merge their fields instead of overwriting each other", async () => {
+  const p = project(5);
+  p.edit("card.html");
+  const calls = [];
+  for (let i = 0; i < 6; i++) {
+    calls.push(p.runAsync("post", { tool_name: "Agent", tool_input: { subagent_type: "wwjd:wwjd-critic" } }));
+    calls.push(p.runAsync("post", { tool_name: "Edit", tool_input: { file_path: join(p.root, `c${i}.css`) } }));
+  }
+  await Promise.all(calls);
+  const l = p.ledger();
+  assert.ok(l.critic > 0, "the critic note survives the edits");
+  assert.match(l.lastFile, /c\d\.css$/);
+  assert.equal(readdirSync(join(p.state, "wwjd-gate")).filter((f) => /\.(tmp|lock)$/.test(f)).length, 0);
+});
+
+test("tests, fixtures and stories are not UI work", () => {
+  const p = project(3);
+  for (const f of ["src/card.test.tsx", "src/card.spec.tsx", "src/card.stories.tsx", "src/__tests__/card.tsx", "fixtures/page.html"]) {
+    assert.equal(p.run("pre", write(join(p.root, f))), null, f);
+    p.edit(f);
+  }
+  assert.equal(p.run("status", {}).hasEdits, false);
+  assert.equal(p.run("stop", { stop_hook_active: false }), null);
+});
+
+test("artifacts live at the nearest folder with .wwjd.json, as render.mjs writes them", () => {
+  const p = project(2);
+  const app = join(p.root, "apps", "web");
+  mkdirSync(app, { recursive: true });
+  writeFileSync(join(app, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 } }));
+  const inApp = (mode, input) => p.run(mode, { cwd: app, ...input });
+  inApp("post", { tool_name: "Write", tool_input: { file_path: join(app, "card.html") } });
+  p.file(".wwjd/shots/card-390-light.png", "png", 5); // the git root: not this project's
+  assert.equal(inApp("stop", { stop_hook_active: false }).decision, "block");
+  p.file("apps/web/.wwjd/shots/card-390-light.png", "png", 5);
+  assert.equal(inApp("stop", { stop_hook_active: false }), null);
+});
+
+test("shot commands point at an edited page, else the preview URL, never a source file", () => {
+  const p = project(2);
+  p.edit("card.html");
+  assert.match(p.run("stop", { stop_hook_active: false }).reason, /shoot \S*card\.html/);
+  p.edit("src/Card.tsx");
+  const how = (extra) => p.run("status", {}, extra).checks[0].how;
+  assert.match(how({}), /shoot <your running page URL>/);
+  assert.match(how({ WWJD_PREVIEW: "http://localhost:5173/board" }), /shoot http:\/\/localhost:5173\/board/);
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, preview: "http://localhost:3000" }));
+  assert.match(how({}), /shoot http:\/\/localhost:3000/);
+});
+
+test("status: the sheet is due only after the pre gate refused a new file", () => {
+  const p = project(3);
+  p.file("old.html");
+  p.edit("old.html");
+  assert.equal(p.run("status", {}).sheet.due, false);
+  p.run("pre", write(join(p.root, "new.html")));
+  assert.equal(p.run("status", {}).sheet.due, true);
+  p.file(".wwjd/grade/new.md", "within budget: title + 3");
+  assert.equal(p.run("status", {}).sheet.due, false);
+});
+
+test("stop: from Strictness 2 asks once per run of edits for logged decisions", () => {
+  const p = project(2);
+  p.edit("card.html");
+  p.file(".wwjd/shots/UNAVAILABLE", "no renderer", 5);
+  const r = p.run("stop", { stop_hook_active: false });
+  assert.match(r.reason, /mcp__wwjd__log/);
+  assert.equal(p.run("stop", { stop_hook_active: false }), null); // asked once: a turn with nothing to log may end
+  p.edit("card.html");
+  p.file(".wwjd/shots/UNAVAILABLE", "no renderer", 5);
+  p.file(".wwjd/decisions.jsonl", JSON.stringify({ id: "d1", at: new Date(Date.now() + 5000).toISOString(), surface: "Card", kind: "choice", text: "x" }));
+  assert.equal(p.run("stop", { stop_hook_active: false }), null);
+  assert.equal(project(1).run("stop", { stop_hook_active: false }), null);
 });

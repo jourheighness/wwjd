@@ -1,6 +1,6 @@
 # Copy: labels, numbers, time, voice, messages
 
-The how behind SKILL.md's copy rules. Product UI copy is labels, values and one-line states. Persuade and Editorial need full content: draft it in the register's voice and flag anything unconfirmed.
+Product UI copy is labels, values and one-line states. Persuade and Editorial need full content: draft it in the register's voice and flag anything unconfirmed.
 
 ## Labels
 - **Verb + target:** "Send invite to Anna", "Delete 5 items". The verb carries through: "Publish" → "Published". Never OK, Submit, Yes/No, Click here, Learn more, Get started (lint `banned-label`).
@@ -29,4 +29,4 @@ The how behind SKILL.md's copy rules. Product UI copy is labels, values and one-
 - **Empty:** one line plus one action; seeded examples may teach the first few times, then step aside.
 - **Success** is silent when the effect is visible, still announced (`role=status`). Visible only for effects the person can't see: a quiet "Saved"/"Saving…" near the title for autosave (never a toast), add-to-cart confirmation, a toast for something elsewhere. Error toasts never auto-dismiss.
 - **AI** says in one sentence what it did and where.
-- **Never cut:** legal, consent, pricing, safety and accessibility text (alt, `aria-label`, error announcements). Alt stands alone ("Revenue up 40% in Q4", not "Chart").
+- **Never cut** accessibility text (alt, `aria-label`, error announcements); legal, consent, pricing and safety: SKILL.md Floor. Alt stands alone ("Revenue up 40% in Q4", not "Chart").

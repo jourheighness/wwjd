@@ -17,7 +17,7 @@ For `messy` repos and "debt", "clean up the codebase", "why does this look incon
 ## 2. Ratchet
 - `wwjd.mjs check --baseline` writes `.wwjd-baseline.json`; commit it. From then on the hook and `check --new` report only new findings, and re-running `--baseline` only lowers counts.
 - **Golden files:** confirm 1–3 of the suggested picks with the owner once; write them to `.wwjd.json` `golden`. Old patterns nobody should copy go to `legacy` globs.
-- **RATCHET.md:** one Backlog line per area, tagged `[design]` (or `[eng]`), stating the suspicion, not the target. Gotchas and Tells as found. Never Config or Scheduler.
+- **RATCHET.md:** one Backlog line per area; what wwjd may write: `commands/start.md` §4.
 
 ## 3. Fix order
 Honesty and floor first, then the kit components with the most call sites, then rebuild candidates, then the long tail as each screen is touched (inside the scope of the task at hand).

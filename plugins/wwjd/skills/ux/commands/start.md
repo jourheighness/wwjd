@@ -15,7 +15,7 @@ For `scratch`, or UI without baseline files. Each step is skippable; showing wor
 - No `wwjd:look`, or the user skips it: `kit/tokens.css` as is (the baseline preset) and a short DESIGN.md that says so.
 
 ## 3. Kit skeleton
-- **CSS:** copy `kit/tokens.css`, `kit/base.css`, `kit/layouts.css` into the project's styles, in that order; set `<html data-profile>` from the SKILL.md register table.
+- **CSS:** copy `kit/tokens.css`, `kit/base.css`, `kit/layouts.css` into the project's styles, in that order; set `<html data-profile>` from the register file's Profile line.
 - **Components:** no kit yet → Base UI primitives (or the stack's equivalent, `references/baseline.md`) wrapped as the project's own components, styled with base.css classes. What the first screen needs goes in the kit, never inline on the page.
 - **Workshop:** Storybook or Ladle, with a tokens story and a contrast matrix (every text token on every surface it sits on, AA).
 - **`.wwjd.json`** (committed, repo-relative only): `register`, `locale`, `kitDirs`, `golden`, `legacy`, `storybook`, `tags`, `rules`. Never preview URLs or hosts: those come from `WWJD_PREVIEW` or an untracked `AGENTS.local.md`.
