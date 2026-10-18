@@ -59,12 +59,13 @@ Example, coffee delivered by drone: arrival time decides; "68 °C in your hands"
    - a comparison → a table or page of its own; a preference → settings.
 6. **Swap, never grow.** To bring a cut item back, name the shown item it replaces. The budget is fixed.
 7. **Say where it went** in the handover, one line per moved group ("SKU, weight → product page specs").
-8. **Log cuts** (`.wwjd/cuts.jsonl`; `grade.mjs` writes it when `.wwjd/` exists). Something cut again and again (subtitles, "Learn more", helper text under every field) becomes a ban in `bans.md` or DESIGN.md, so it stops being proposed.
+8. **Keep the sheets:** the answered `.wwjd/grade/*.md` sheets are the record of what was cut. Something cut again and again (subtitles, "Learn more", helper text under every field) becomes a ban in `bans.md` or DESIGN.md, so it stops being proposed.
 
-## Decider (experimental, off by default)
-`scripts/grade.mjs` asks a fast decision model the questions above when the `decider` dial is `assist` or `strict` and a key is set (OpenRouter, `decider_key` or `OPENROUTER_API_KEY`, model `WWJD_DECIDER`, default `typesafe/jev-1.14`). `wwjd.mjs status` prints `decider: on` or `off`.
-- **When:** `on`, and a surface has more candidate facts than its budget: once, before building or simplifying it. Never per edit, never for a surface within budget.
-- **Off:** answer the same questions yourself (`grade.mjs spec.json --offline` prints them). Never wait for it, never ask for a key.
+## Grade gate
+The `grade` dial: `gate` (default) or `light`; `wwjd.mjs status` prints which.
+- **When:** a surface has more candidate facts than its budget: once, before building or simplifying it. Never per edit, never for a surface within budget.
+- **gate:** write the spec, run `grade.mjs` and answer its sheet in `.wwjd/grade/<surface>.md` before the surface's markup. The sheet is the gate: no sheet, no build.
+- **light:** the same questions in your head; the handover still says what moved and where.
 - **Spec in a minute,** from the inventory you already have, at `.wwjd/grade/<surface>.json`:
 ```json
 { "goal": "find the order a customer is asking about", "surface": "order row in the support inbox",
@@ -74,4 +75,4 @@ Example, coffee delivered by drone: arrival time decides; "68 °C in your hands"
   "states": { "refund_requested": "the customer asked for a refund" } }
 ```
   `regions`, `actions` and `states` are optional; `keep` lists what never counts (identifier, legal, price, consent).
-- **Run** `node <skill>/scripts/grade.mjs .wwjd/grade/<surface>.json`. Apply `show` and `drop`; place moved items by their destination; decide every `?` yourself. Cuts are logged to `.wwjd/cuts.jsonl`. An error or timeout: carry on offline.
+- **Run** `node <skill>/scripts/grade.mjs .wwjd/grade/<surface>.json`; it prints the budget, the items and the rules. Answer one line per item in `.wwjd/grade/<surface>.md`, then build only the `show` items and place the rest where their line says.

@@ -10,7 +10,7 @@ For "too busy", "simplify", "clean up", "I got overloaded". Deleting alone is ha
 - **Unneeded controls:** toggles, filters, sort and search the task doesn't need; short lists need none.
 - **Machinery receipts:** steps run, files read, "AI is thinking…" once the result shows.
 
-- **Over budget:** check each surface against `references/budgets.md`; drop the "nothing" items, move the rest one step away by kind. `decider: on` in status: run `grade.mjs` once per over-budget surface first (budgets.md Decider); off: answer its questions yourself.
+- **Over budget:** check each surface against `references/budgets.md`; drop the "nothing" items, move the rest one step away by kind. Grade each over-budget surface first (`budgets.md` Grade gate).
 
 ## 2. Reduce
 - **Status:** many statuses boil down to the one or two that need a person; the rest stays calm.

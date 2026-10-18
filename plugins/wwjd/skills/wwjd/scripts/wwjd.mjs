@@ -3,7 +3,7 @@
 //
 // Usage: node wwjd.mjs <command> [paths...] [options]
 //   status                     stage (scratch | kit | messy), baseline files, kit, Storybook, golden and legacy files,
-//                              dials, decider on/off (decider assist|strict + a key: grade.mjs grades over-budget surfaces)
+//                              dials, and the grade gate (gate: grade.mjs sheet per over-budget surface; light: in your head)
 //   dials                      the effective dials, one line: plugin options (/plugin configure wwjd@wwjd), then
 //                              "dials" in .wwjd.json override per project; meanings in references/dials.md
 //   check [paths]              lint UI files (default: files changed against HEAD plus untracked)
@@ -324,7 +324,7 @@ const kb = (f) => { try { return Math.round(statSync(join(ROOT, f)).size / 1024)
 const fmt = (x) => `${x.file}:${x.line}  ${x.severity === "error" ? "ERROR" : "warn "} ${x.rule}: ${x.message}`;
 
 // ── dials: plugin options (WWJD_DIALS, set by hooks/session.sh) < project .wwjd.json "dials" ──
-const DIAL_DEFAULTS = { creativity: 3, budget: 3, density: 3, motion: "auto", voice: 3, rigor: 3, decider: "off" };
+const DIAL_DEFAULTS = { creativity: 3, budget: 3, density: 3, motion: "auto", voice: 3, rigor: 3, grade: "gate" };
 const DIAL_SAYS = {
   creativity: ["close to the kit: brand hue only, no display face, the plainest fitting hero", "one quiet custom axis", "", "two loud axes, a display face in every register, a less common hero, one signature moment", "art-directed: one distinct visual idea per page, an unusual layout, motion one step livelier"],
   budget: ["every budget −2 (min 1); throw away before moving", "every budget −1", "", "every budget +1", "every budget +2; overflow rules still apply"],
@@ -338,17 +338,16 @@ function dials() {
   for (const [k, v] of Object.entries(cfg.dials || {})) if (k in d) { d[k] = String(v); from[k] = ".wwjd.json"; }
   for (const k of ["creativity", "budget", "density", "voice", "rigor"]) d[k] = Math.min(5, Math.max(1, Math.round(Number(d[k]) || 3)));
   if (!["auto", "instant", "crisp", "smooth", "springy"].includes(d.motion)) d.motion = "auto";
-  if (!["off", "assist", "strict"].includes(d.decider)) d.decider = "off";
+  if (!["gate", "light"].includes(d.grade)) d.grade = "gate";
   return { d, from };
 }
 function dialLine() {
   const { d } = dials();
   const off = Object.keys(DIAL_SAYS).filter((k) => d[k] !== 3).map((k) => `${k} ${d[k]} (${DIAL_SAYS[k][d[k] - 1]})`);
   if (d.motion !== "auto") off.push(`motion ${d.motion} (data-motion="${d.motion}")`);
-  if (d.decider !== "off") off.push(`decider ${d.decider}`);
+  if (d.grade !== "gate") off.push("grade light (grade in your head; the handover lists the cuts)");
   return off.length ? `dials: ${off.join(" · ")}; the rest default. DESIGN.md and the Floor still win.` : "dials: all default";
 }
-const deciderKey = () => process.env.WWJD_DECIDER_KEY || process.env.OPENROUTER_API_KEY;
 
 if (cmd === "dials") {
   if (opt.json) console.log(JSON.stringify(dials(), null, 2)); else console.log(dialLine());
@@ -378,9 +377,8 @@ if (cmd === "status") {
   const profile = process.env.WWJD_PROFILE ? "$WWJD_PROFILE" : existsSync(join(userCfg, "profile.md")) ? "~/.config/wwjd/profile.md" : null;
   if (profile) read.push(`profile ${profile} (workflow, locale only)`);
   const dd = dials().d;
-  const decider = deciderKey() && dd.decider !== "off" ? `${process.env.WWJD_DECIDER || "typesafe/jev-1.14"}, ${dd.decider}` : null;
   if (opt.json) {
-    console.log(JSON.stringify({ stage, uiFiles: files.length, findings: findings.length, open: open.length, density: +density.toFixed(2), kit, tokens, files: have, decisionLog: log, profile, storybook: storybook(), golden, goldenSuggested: picks, legacy: cfg.legacy || [], register: cfg.register || null, decider, dials: dd, read }, null, 2));
+    console.log(JSON.stringify({ stage, uiFiles: files.length, findings: findings.length, open: open.length, density: +density.toFixed(2), kit, tokens, files: have, decisionLog: log, profile, storybook: storybook(), golden, goldenSuggested: picks, legacy: cfg.legacy || [], register: cfg.register || null, dials: dd, read }, null, 2));
   } else {
     console.log(`stage: ${stage}  (${files.length} UI files, ${open.length} ${base ? "new " : ""}findings, ${density.toFixed(2)}/file)`);
     console.log(`files: ${have.join(" · ")}`);
@@ -390,7 +388,7 @@ if (cmd === "status") {
     console.log(`register: ${cfg.register || "unset (name it per surface)"}`);
     console.log(`golden: ${golden.join(", ") || (picks.length ? `none set; suggested ${picks.join(", ")} (confirm, then add "golden" to .wwjd.json)` : "none")}`);
     console.log(`legacy: ${[].concat(cfg.legacy || []).join(", ") || "none"}  (never imitate)`);
-    console.log(decider ? `decider: on (${decider}); grade.mjs once per over-budget surface, before building it` : "decider: off; still grade once per over-budget surface, before building it: `grade.mjs spec.json --offline` prints the questions, you answer them");
+    console.log(dd.grade === "gate" ? "grade gate: before building an over-budget surface, write .wwjd/grade/<surface>.json, run grade.mjs on it and answer its sheet" : "grade light: grade over-budget surfaces in your head; the handover lists what moved and where");
     console.log(dialLine());
     console.log(`read: ${read.join("; ")}`);
   }

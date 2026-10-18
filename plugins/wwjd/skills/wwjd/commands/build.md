@@ -10,7 +10,7 @@ One command for every build. The spec (an approved variant, mockup, Figma frame 
 ## Before coding
 1. **Inventory the spec:** regions, components, strings, spacing, states, interactions. Figma: read the whole frame, re-fetch each session.
 2. **Map every part to a kit component.** Missing → new kit component or variant plus a story with its states.
-3. **Budget each surface:** count its candidate facts and actions against `references/budgets.md`. Over budget: grade them (`decider: on`: run `grade.mjs` once now; off: grade yourself) and build what stays. An approved spec over budget is flagged, never silently cut.
+3. **Budget each surface:** count its candidate facts and actions against `references/budgets.md`. Over budget: grade them now (grade gate: answer the `grade.mjs` sheet; light: in your head) and build what stays. An approved spec over budget is flagged, never silently cut.
 4. **Grep the decision log** for the surface's names, so nothing decided is lost.
 
 ## While coding

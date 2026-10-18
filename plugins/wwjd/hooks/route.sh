@@ -48,7 +48,7 @@ if printf '%s' "$input" | jq -e --arg s "$strong${extra:+|$extra}" --arg w "$wea
         (if ($p | test($b + "(" + $m + ")" + $e; "i")) then "wwjd-animation for motion" else empty end) ]
     | if length > 0 then " Also load " + join(" and ") + "." else "" end' 2>/dev/null)
   # Effective dials (plugin options reach hooks as CLAUDE_PLUGIN_OPTION_*; .wwjd.json overrides per project).
-  dl=""; for k in creativity budget density motion voice rigor decider; do
+  dl=""; for k in creativity budget density motion voice rigor grade; do
     v=$(printenv "CLAUDE_PLUGIN_OPTION_$(printf '%s' "$k" | tr '[:lower:]' '[:upper:]')"); [[ "$v" =~ ^[a-z0-9]+$ ]] && dl="$dl $k=$v"; done
   dline=$(WWJD_DIALS="${dl# }" node "${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/skills/wwjd/scripts/wwjd.mjs" dials 2>/dev/null)
   case "$dline" in ""|"dials: all default") dline="" ;; *) dline=" $dline" ;; esac
