@@ -4,8 +4,8 @@
 
 export const DIALS = [
   { key: "creativity", name: "Look", ends: ["plain", "expressive"], default: 3, stops: [
-    ["Plain", "Close to the kit: brand hue only, the system face, the plainest hero that fits."],
-    ["Restrained", "One quiet custom touch (a tinted neutral or a refined face); nothing loud."],
+    ["Plain", "Neutrals and one accent hue (the brand's, else the kit's), used for the one primary thing; no tinted chips or fills; status and priority in text or a neutral mark; the system face; flat, a 1px border at most; the plainest hero that fits."],
+    ["Restrained", "Plain plus one quiet custom touch (a tinted neutral, a refined face or one semantic colour); nothing loud."],
     ["Balanced", "One loud axis; a display face on marketing, editorial and consumer screens."],
     ["Bold", "Two loud axes, a display face on every screen, one signature moment per page."],
     ["Expressive", "Art-directed: one distinct visual idea per page, an unusual layout, a far-end hero."],
@@ -35,8 +35,8 @@ export const DIALS = [
     ["Terse", "Labels and values only; sentences only in errors."],
     ["Brief", "Plain and shorter than usual."],
     ["Plain", "Plain language in the product's own words."],
-    ["Friendly", "One human line in empty and success states."],
-    ["Warm", "A light personality in empty, success and onboarding; never in errors, money or safety."],
+    ["Friendly", "Plain, plus spoken dates and counts (\"Due Thursday\", \"3 left\") and one human line in empty and success states."],
+    ["Warm", "A human voice wherever there are words: spoken dates, counts and states (\"Due Thursday\", \"3 to go\", \"Almost there\"), one friendly line in empty, success and onboarding; never in errors, money or safety."],
   ] },
   { key: "strictness", name: "Strictness", ends: ["fast", "strict"], default: 3, stops: [
     ["Fast", "Over-budget surfaces graded in your head; after: lint only."],

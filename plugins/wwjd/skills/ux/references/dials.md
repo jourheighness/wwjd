@@ -5,8 +5,8 @@ Six dials tune how wwjd designs, never what is correct. Each runs between two na
 **Precedence:** Floor > DESIGN.md and the decision log > your taste file > dials > wwjd defaults. A dial never breaks contrast, targets, states or the budgets' overflow rules; a DESIGN.md that owns the look outranks Look.
 
 ## Look: plain ↔ expressive (`creativity`)
-- **1 Plain:** Close to the kit: brand hue only, the system face, the plainest hero that fits.
-- **2 Restrained:** One quiet custom touch (a tinted neutral or a refined face); nothing loud.
+- **1 Plain:** Neutrals and one accent hue (the brand's, else the kit's), used for the one primary thing; no tinted chips or fills; status and priority in text or a neutral mark; the system face; flat, a 1px border at most; the plainest hero that fits.
+- **2 Restrained:** Plain plus one quiet custom touch (a tinted neutral, a refined face or one semantic colour); nothing loud.
 - **3 Balanced (default):** One loud axis; a display face on marketing, editorial and consumer screens.
 - **4 Bold:** Two loud axes, a display face on every screen, one signature moment per page.
 - **5 Expressive:** Art-directed: one distinct visual idea per page, an unusual layout, a far-end hero.
@@ -40,8 +40,8 @@ Six dials tune how wwjd designs, never what is correct. Each runs between two na
 - **1 Terse:** Labels and values only; sentences only in errors.
 - **2 Brief:** Plain and shorter than usual.
 - **3 Plain (default):** Plain language in the product's own words.
-- **4 Friendly:** One human line in empty and success states.
-- **5 Warm:** A light personality in empty, success and onboarding; never in errors, money or safety.
+- **4 Friendly:** Plain, plus spoken dates and counts ("Due Thursday", "3 left") and one human line in empty and success states.
+- **5 Warm:** A human voice wherever there are words: spoken dates, counts and states ("Due Thursday", "3 to go", "Almost there"), one friendly line in empty, success and onboarding; never in errors, money or safety.
 - Nudge words: warmer, friendlier / terser, drier.
 
 ## Strictness: fast ↔ strict (`strictness`)
