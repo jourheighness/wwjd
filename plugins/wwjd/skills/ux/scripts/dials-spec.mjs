@@ -38,28 +38,22 @@ export const DIALS = [
     ["Friendly", "One human line in empty and success states."],
     ["Warm", "A light personality in empty, success and onboarding; never in errors, money or safety."],
   ] },
-  { key: "rigor", name: "Checking", ends: ["quick", "thorough"], default: 3, stops: [
-    ["Quick", "Lint only."],
-    ["Light", "Lint and one desktop screenshot."],
-    ["Standard", "Lint and screenshots at desktop and phone width."],
-    ["Careful", "Adds dark mode, the key states and render.mjs runtime checks."],
-    ["Thorough", "Adds the critic agent and 2–3 variants before building."],
-  ] },
-  { key: "grade", name: "Grading", ends: [], default: "gate", values: ["gate", "light"], stops: [
-    ["Written", "A grade sheet for each over-budget surface before it is built."],
-    ["In your head", "Over-budget surfaces graded without a sheet; the handover lists what moved."],
+  { key: "strictness", name: "Strictness", ends: ["fast", "strict"], default: 3, stops: [
+    ["Fast", "Over-budget surfaces graded in your head; after: lint only."],
+    ["Light", "Over-budget surfaces graded in your head; after: lint and one desktop screenshot."],
+    ["Standard", "A written grade sheet per over-budget surface before it is built; after: lint and screenshots at desktop and phone width."],
+    ["Careful", "Grade sheets; after: adds dark mode, the key states and render.mjs runtime checks."],
+    ["Strict", "Grade sheets; after: adds the critic agent, and 2–3 variants before building."],
   ] },
 ];
 
-// Older motion values (theme names) map onto the stops.
-const MOTION_NAMES = { instant: 1, crisp: 2, auto: 3, smooth: 4, springy: 5 };
-
 /** The stored value as a stop index (0-based), or the default's. */
 export function stopOf(dial, value) {
-  if (dial.values) { const i = dial.values.indexOf(String(value)); return i < 0 ? dial.values.indexOf(dial.default) : i; }
-  const n = dial.key === "motion" && String(value) in MOTION_NAMES ? MOTION_NAMES[value] : Math.round(Number(value));
+  const n = Math.round(Number(value));
   return (n >= 1 && n <= 5 ? n : dial.default) - 1;
 }
+/** Whether over-budget surfaces get a written grade sheet before they are built (Strictness 3 and up). */
+export const isGated = (strictness) => Number(strictness) >= 3;
 /** The value stored for a stop index. */
-export const valueOf = (dial, stop) => (dial.values ? dial.values[stop] : stop + 1);
+export const valueOf = (_dial, stop) => stop + 1;
 export const isDefault = (dial, stop) => stop === stopOf(dial, dial.default);

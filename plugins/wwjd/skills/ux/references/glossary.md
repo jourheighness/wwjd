@@ -24,7 +24,7 @@ The owner's words, used literally. A drawer is not a rail.
 | Needs-you signal | A mark that something needs you (often a dot, not a count); findable at a glance |
 | Fact grade | Decides (changes what the person does next) / delights (true, specific, builds trust or joy; never copy about the interface) / nothing (cut). Home: `budgets.md` |
 | Budget | A surface's min–max of facts and actions (`budgets.md`) |
-| Grade gate | A written `grade.mjs` sheet per over-budget surface before it is built (`grade` dial, `budgets.md`) |
+| Grade gate | A written `grade.mjs` sheet per over-budget surface before it is built (Strictness 3 and up, `budgets.md`) |
 | Stretched target | A row's or card's title link whose `::after` covers the whole container; one target, one behaviour |
 | Hover toolbar | A row's shortcuts, shown on hover, keyboard focus inside or an open menu; each also in ⋯ or the detail view |
 | Christmas tree | Colour on everything, so nothing stands out |

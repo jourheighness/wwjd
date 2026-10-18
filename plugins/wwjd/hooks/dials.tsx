@@ -17,8 +17,6 @@ const focused = atom({ plugin: 'wwjd', key: 'focused' } as const, '')
 
 const dialOf = (key: string) => DIALS.find(d => d.key === key) as Dial | undefined
 const mine = (options: PluginOptions, dial: Dial) => stopOf(dial, options[dial.key] ?? dial.default)
-// What the plugin option takes: motion and grade are strings, the rest numbers.
-const stored = (dial: Dial, stop: number) => (dial.key === 'motion' ? String(valueOf(dial, stop)) : valueOf(dial, stop))
 
 // The project's .wwjd.json: the nearest one up from the working directory, else a new one there.
 async function projectFile($: EngineInterface): Promise<string> {
@@ -49,7 +47,7 @@ async function pick($: EngineInterface, key: string, stop: number) {
   const dial = dialOf(key)
   if (!dial) return
   if ((await read($, scope)) === 'person') {
-    const { deny } = await $.config.set({ key: `wwjd.${key}`, value: stored(dial, stop) })
+    const { deny } = await $.config.set({ key: `wwjd.${key}`, value: valueOf(dial, stop) })
     if (deny) $.ui.toast(`Not saved: ${deny}`)
     return
   }
@@ -66,7 +64,7 @@ async function pick($: EngineInterface, key: string, stop: number) {
 
 export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
-    await $.command.register({ name: 'wwjd-dials', description: 'Set how wwjd designs: look, content, spacing, motion, copy, checking, grading' })
+    await $.command.register({ name: 'wwjd-dials', description: 'Set how wwjd designs: look, content, spacing, motion, copy, strictness' })
     await exportDials($, options)
     return next(e)
   })

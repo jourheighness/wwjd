@@ -31,7 +31,7 @@ docs/research/            archived research (faux-pas catalogue, layouts, look);
 ```
 
 ## How it runs
-1. **Entry, once per session:** `wwjd.mjs status` prints the stage (`scratch`, `kit`, `messy`), the baseline files, the kit, Storybook, golden and legacy files, the dials and the grade gate. The agent reads what it lists.
+1. **Entry, once per session:** `wwjd.mjs status` prints the stage (`scratch`, `kit`, `messy`), the baseline files, the kit, Storybook, golden and legacy files, the dials and whether over-budget surfaces get a grade sheet. The agent reads what it lists.
 2. **Route:** six verbs. `start` sets up a baseline, `build` builds or rebuilds, `simplify` removes and reorders, `review` returns a verdict and ranked findings, `explore` shows ~5 structure variants, `audit` maps the debt.
 3. **Loop:** show the work at once, react, adjust. A hook lints each edited UI file silently; one screenshot per handover; the full matrix only at milestones; the critic only when asked.
 
@@ -48,8 +48,8 @@ Before designing, building or reviewing any interface, read the `ux` skill (wwjd
 ```
 
 ## Dials
-Seven sliders tune how wwjd designs, never the floor: **Look** (plain ↔ expressive), **Content** (lean ↔ rich), **Spacing** (roomy ↔ compact), **Motion** (still ↔ lively), **Copy** (terse ↔ warm), **Checking** (quick ↔ thorough) and **Grading** (written sheet or in your head). Every stop is listed in `plugins/wwjd/skills/ux/references/dials.md`.
-- **`/wwjd-dials`:** a pane with one slider per dial, for you or for this project (writes `.wwjd.json`). The line under the sliders says what the focused stop does.
+Six dials tune how wwjd designs, never the floor: **Look** (plain ↔ expressive), **Content** (lean ↔ rich), **Spacing** (roomy ↔ compact), **Motion** (still ↔ lively), **Copy** (terse ↔ warm) and **Strictness** (fast ↔ strict: how hard the agent is on its own work). Every stop is listed in `plugins/wwjd/skills/ux/references/dials.md`.
+- **`/wwjd-dials`:** a pane with one row of stops per dial, for you or for this project (writes `.wwjd.json`). The line below says what the focused stop does.
 - **Also:** `/plugin configure wwjd@wwjd`, the wwjd rows in `/config`, or `"dials": { "creativity": 4 }` in `.wwjd.json`.
 - **Per request:** words like "bolder", "leaner", "airier", "calmer" or "thorough" move one dial one stop; the prompt hook names the nudge.
 

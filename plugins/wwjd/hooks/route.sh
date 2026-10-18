@@ -21,8 +21,8 @@ nud 'livelier|more (motion|animation)|more alive' 'motion +1'
 nud 'calmer|less (motion|animation)|no animations?' 'motion -1'
 nud 'warmer|friendlier|more human' 'voice +1'
 nud 'terser|drier|less chatty|less wordy' 'voice -1'
-nud 'quick|quickly|rough|just ship' 'rigor -1'
-nud 'thorough|carefully|polish(ed)?|pixel.perfect' 'rigor +1'
+nud 'quick|quickly|rough|just ship' 'strictness -1'
+nud 'thorough|carefully|polish(ed)?|pixel.perfect' 'strictness +1'
 nudge_text=""; [ -n "$nudge" ] && nudge_text=" Dial nudge for this request only:${nudge%;} (references/dials.md)."
 if [ "$seen" = 1 ]; then
   [ -n "$nudge_text" ] && jq -cn --arg c "wwjd:${nudge_text}" '{hookSpecificOutput: {hookEventName: "UserPromptSubmit", additionalContext: $c}}'
@@ -50,7 +50,7 @@ if printf '%s' "$input" | jq -e --arg s "$strong${extra:+|$extra}" --arg w "$wea
         (if ($p | test($b + "(" + $m + ")" + $e; "i")) then "wwjd:motion for motion" else empty end) ]
     | if length > 0 then " Also load " + join(" and ") + "." else "" end' 2>/dev/null)
   # Effective dials (plugin options reach hooks as CLAUDE_PLUGIN_OPTION_*; .wwjd.json overrides per project).
-  dl=""; for k in creativity budget density motion voice rigor grade; do
+  dl=""; for k in creativity budget density motion voice strictness; do
     v=$(printenv "CLAUDE_PLUGIN_OPTION_$(printf '%s' "$k" | tr '[:lower:]' '[:upper:]')"); [[ "$v" =~ ^[a-z0-9]+$ ]] && dl="$dl $k=$v"; done
   dline=$(WWJD_DIALS="${dl# }" node "${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/skills/ux/scripts/wwjd.mjs" dials 2>/dev/null)
   case "$dline" in ""|"dials: all default") dline="" ;; *) dline=" $dline" ;; esac

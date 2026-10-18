@@ -1,6 +1,6 @@
 # Dials
 
-Seven dials tune how wwjd designs, never what is correct. Each runs between two named ends; the middle stop is wwjd as written (the product type decides). Set them in the `/wwjd-dials` pane (sliders, for you or for this project), with `/plugin configure wwjd@wwjd` or `/config`, or per project in `.wwjd.json` `"dials"`. Nudge one request with words; the prompt hook names the nudge. `wwjd.mjs dials` prints the non-default dials with what each does. Source of truth: `scripts/dials-spec.mjs`.
+Six dials tune how wwjd designs, never what is correct. Each runs between two named ends; the middle stop is wwjd as written (the product type decides). Set them in the `/wwjd-dials` pane (one segmented row per dial, for you or for this project), with `/plugin configure wwjd@wwjd` or `/config`, or per project in `.wwjd.json` `"dials"`. Nudge one request with words; the prompt hook names the nudge. `wwjd.mjs dials` prints the non-default dials with what each does. Source of truth: `scripts/dials-spec.mjs`.
 
 **Precedence:** Floor > DESIGN.md and the decision log > dials > wwjd defaults. A dial never breaks contrast, targets, states or the budgets' overflow rules; a DESIGN.md that owns the look outranks Look.
 
@@ -44,19 +44,15 @@ Seven dials tune how wwjd designs, never what is correct. Each runs between two 
 - **5 Warm:** A light personality in empty, success and onboarding; never in errors, money or safety.
 - Nudge words: warmer, friendlier / terser, drier.
 
-## Checking: quick ↔ thorough (`rigor`)
-- **1 Quick:** Lint only.
-- **2 Light:** Lint and one desktop screenshot.
-- **3 Standard (default):** Lint and screenshots at desktop and phone width.
-- **4 Careful:** Adds dark mode, the key states and render.mjs runtime checks.
-- **5 Thorough:** Adds the critic agent and 2–3 variants before building.
+## Strictness: fast ↔ strict (`strictness`)
+How hard the agent is on its own work: grading before it builds, checks after.
+- **1 Fast:** Over-budget surfaces graded in your head; after: lint only.
+- **2 Light:** Over-budget surfaces graded in your head; after: lint and one desktop screenshot.
+- **3 Standard (default):** A written grade sheet per over-budget surface before it is built; after: lint and screenshots at desktop and phone width.
+- **4 Careful:** Grade sheets; after: adds dark mode, the key states and render.mjs runtime checks.
+- **5 Strict:** Grade sheets; after: adds the critic agent, and 2–3 variants before building.
 - Nudge words: thorough, polish / quick, rough.
-
-## Grading (`grade`)
-- **`gate` Written (default):** A grade sheet for each over-budget surface before it is built.
-- **`light` In your head:** Over-budget surfaces graded without a sheet; the handover lists what moved.
 
 ## Using them
 - **A nudge moves one dial one stop for that request only,** and the handover names it ("Look 4, Bold, for this page").
-- **Grading is never off,** only how it is written down: `gate` makes it a file before the build, `light` keeps it in your head.
-- **Older motion values** (`auto`, `instant`, `crisp`, `smooth`, `springy`) still read as stops 3, 1, 2, 4, 5.
+- **Grading is never off,** only how it is written down: Strictness 3 and up makes it a file before the build, 1–2 keep it in your head.

@@ -1,6 +1,6 @@
 {
   "name": "wwjd",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "What Would Johannes Do: opinionated UI/UX rules and workflow. Three skills (wwjd:ux for structure, behaviour and copy; wwjd:look for the look; wwjd:motion for motion), a cold critic agent on request, a prompt hook that routes UI work, and an auto-lint hook after UI edits.",
   "author": {
     "name": "Johannes Carlsten"
@@ -32,17 +32,12 @@
       "max": 5
     },
     "motion": {
-      "type": "string",
+      "type": "number",
       "title": "Motion: still ↔ lively",
       "description": "1 Still … 3 By product (default) … 5 Lively. /wwjd-dials shows every stop.",
-      "options": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5"
-      ],
-      "default": "3"
+      "default": 3,
+      "min": 1,
+      "max": 5
     },
     "voice": {
       "type": "number",
@@ -52,23 +47,13 @@
       "min": 1,
       "max": 5
     },
-    "rigor": {
+    "strictness": {
       "type": "number",
-      "title": "Checking: quick ↔ thorough",
-      "description": "1 Quick … 3 Standard (default) … 5 Thorough. /wwjd-dials shows every stop.",
+      "title": "Strictness: fast ↔ strict",
+      "description": "1 Fast … 3 Standard (default) … 5 Strict. /wwjd-dials shows every stop.",
       "default": 3,
       "min": 1,
       "max": 5
-    },
-    "grade": {
-      "type": "string",
-      "title": "Grading",
-      "description": "Written (default): A grade sheet for each over-budget surface before it is built. · In your head: Over-budget surfaces graded without a sheet; the handover lists what moved.",
-      "options": [
-        "gate",
-        "light"
-      ],
-      "default": "gate"
     }
   },
   "types": "./types/index.d.ts"

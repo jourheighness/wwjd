@@ -3,7 +3,7 @@
 # Plugin options reach hooks only, so they go through CLAUDE_ENV_FILE. Silent: nothing enters the context.
 [ -n "$CLAUDE_ENV_FILE" ] || exit 0
 dials=""
-for k in creativity budget density motion voice rigor grade; do
+for k in creativity budget density motion voice strictness; do
   v=$(printenv "CLAUDE_PLUGIN_OPTION_$(printf '%s' "$k" | tr '[:lower:]' '[:upper:]')")
   [[ "$v" =~ ^[a-z0-9]+$ ]] && dials="$dials $k=$v"
 done

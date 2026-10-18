@@ -3,7 +3,7 @@
 //
 // Usage: node wwjd.mjs <command> [paths...] [options]
 //   status                     stage (scratch | kit | messy), baseline files, kit, Storybook, golden and legacy files,
-//                              dials, and the grade gate (gate: grade.mjs sheet per over-budget surface; light: in your head)
+//                              dials, and whether over-budget surfaces get a grade.mjs sheet (Strictness 3+)
 //   dials                      the effective dials, one line: plugin options (/plugin configure wwjd@wwjd), then
 //                              "dials" in .wwjd.json override per project; meanings in references/dials.md
 //   check [paths]              lint UI files (default: files changed against HEAD plus untracked)
@@ -25,7 +25,7 @@ import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync, statSync, readdirSync, existsSync } from "node:fs";
 import { join, extname, resolve, relative, dirname, basename, sep } from "node:path";
 import { homedir } from "node:os";
-import { DIALS, stopOf, valueOf, isDefault } from "./dials-spec.mjs";
+import { DIALS, stopOf, valueOf, isDefault, isGated } from "./dials-spec.mjs";
 
 const [major, minor] = process.versions.node.split(".").map(Number);
 if (major < 20 || (major === 20 && minor < 10)) { console.error("wwjd needs Node 20.10 or newer"); process.exit(2); }
@@ -337,7 +337,7 @@ function dialLine() {
   const { d } = dials();
   const off = DIALS.filter((dial) => !isDefault(dial, stopOf(dial, d[dial.key]))).map((dial) => {
     const i = stopOf(dial, d[dial.key]); const [name, does] = dial.stops[i];
-    return `${dial.name} (${dial.key}) ${dial.values ? name : `${i + 1}/5 ${name}`}: ${does}`;
+    return `${dial.name} (${dial.key}) ${i + 1}/5 ${name}: ${does}`;
   });
   return off.length ? `dials: ${off.join(" · ")} The rest default; DESIGN.md and the Floor still win.` : "dials: all default";
 }
@@ -381,7 +381,7 @@ if (cmd === "status") {
     console.log(`register: ${cfg.register || "unset (name it per surface)"}`);
     console.log(`golden: ${golden.join(", ") || (picks.length ? `none set; suggested ${picks.join(", ")} (confirm, then add "golden" to .wwjd.json)` : "none")}`);
     console.log(`legacy: ${[].concat(cfg.legacy || []).join(", ") || "none"}  (never imitate)`);
-    console.log(dd.grade === "gate" ? "grade gate: before building an over-budget surface, write .wwjd/grade/<surface>.json, run grade.mjs on it and answer its sheet" : "grade light: grade over-budget surfaces in your head; the handover lists what moved and where");
+    console.log(isGated(dd.strictness) ? "grade gate: before building an over-budget surface, write .wwjd/grade/<surface>.json, run grade.mjs on it and answer its sheet" : "grade light: grade over-budget surfaces in your head; the handover lists what moved and where");
     console.log(dialLine());
     console.log(`read: ${read.join("; ")}`);
   }
