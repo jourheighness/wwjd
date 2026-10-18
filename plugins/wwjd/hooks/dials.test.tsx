@@ -52,3 +52,16 @@ test('person picks go to the plugin options', async ($, on) => {
   await ui.press({ key: 'motion:1' })
   expect(sets).toEqual([['wwjd.budget', 2], ['wwjd.motion', '2']])
 })
+
+test('the detail line names the focused stop and what it does', async ($, on) => {
+  on('session.cwd', () => ({ value: '/p' }))
+  on('fs.exists', () => ({ value: false }))
+  on('fs.read', () => { throw new Error('missing') })
+  on('config.set', (_$, e) => ({ value: e.value }))
+  on('ui.open', () => opened)
+  await $.command.run({ command: 'wwjd-dials' } as never)
+  const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })
+  await ui.press({ key: 'density:4' })
+  expect(await ui.find({ type: 'Text', text: 'Spacing · Compact' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /32px rows/ })).toBeDefined()
+})

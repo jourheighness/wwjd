@@ -1,6 +1,7 @@
-// The wwjd dials pane (/wwjd-dials): one slider per dial, for you (the plugin options) or for this project
-// (.wwjd.json "dials"). Stops are buttons, so Tab, arrows, Enter and the mouse all work. The dials, their ends and
-// what each stop does come from skills/ux/scripts/dials-spec.mjs. Scripts read WWJD_DIALS, then .wwjd.json.
+// The wwjd dials pane (/wwjd-dials): one row per dial, for you (the plugin options) or for this project
+// (.wwjd.json "dials"). Each dial is a segmented control of its named stops: native buttons on the desktop, [ ] on
+// the terminal, so Tab, Enter and the pointer all work. The stops and what each does come from
+// skills/ux/scripts/dials-spec.mjs. Scripts read WWJD_DIALS, then .wwjd.json.
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, PluginOptions, Register } from 'claude-code'
 
@@ -9,7 +10,6 @@ import type { Scope } from '../types'
 
 type Dial = (typeof DIALS)[number]
 const PANE = 'wwjd-dials'
-const HINT = 'Tab or arrows move, Enter sets, a click works too. Esc closes.'
 
 const scope = atom({ plugin: 'wwjd', key: 'scope' } as const, 'person')
 const project = atom({ plugin: 'wwjd', key: 'project' } as const, {})
@@ -78,7 +78,7 @@ export const register: Register = (on, options) => {
     return { text: 'Dials open. DESIGN.md and the floor still win over any dial.' }
   })
 
-  // The detail line follows the focus ring, so a stop explains itself before it is picked.
+  // The detail line follows the focus ring and the last pick, so a stop explains itself before it is set.
   on('ui.focus', { requestId: PANE }, async ($, e, next) => {
     await update($, focused, () => e.element ?? '').catch(() => undefined)
     return next(e)
@@ -88,76 +88,77 @@ export const register: Register = (on, options) => {
     const { Box, Text, Button } = $.ui.resolve(e)
     const where = await read($, scope)
     const proj = (await read($, project)) as Record<string, string | number>
-    const [fKey, fStop] = (await read($, focused)).split(':')
-    const width = Math.max('Applies to'.length, ...DIALS.map(d => d.name.length)) + 2
-    const endWidth = Math.max(...DIALS.flatMap(d => d.ends.map(x => x.length)))
+    const [fKey = '', fWhat = ''] = (await read($, focused)).split(':')
+    const labelW = Math.max('Applies to'.length, ...DIALS.map(d => d.name.length)) + 3
 
-    const track = (id: string, stops: string[], at: number, isDim: boolean, set: (i: number) => void) =>
-      stops.map((label, i) => (
-        <Button key={`${id}:${i}`} plain dimColor={isDim && i !== at} label={label} onPress={() => set(i)} autoFocus={id === 'scope' && i === at ? true : undefined} />
-      ))
+    // Where each dial stands in the scope being edited; a project dial with no value of its own shows yours.
+    const state = (dial: Dial) => {
+      const isOwn = where === 'project' && proj[dial.key] !== undefined
+      const at = isOwn ? stopOf(dial, proj[dial.key]) : mine(options, dial)
+      return { at, isOwn, isInherited: where === 'project' && !isOwn }
+    }
+    const set = async (key: string, i: number) => {
+      await pick($, key, i)
+      await update($, focused, () => `${key}:${i}`)
+    }
 
-    const scopeRow = (
-      <Box flexDirection="row">
-        <Text>{'Applies to'.padEnd(width + endWidth + 1)}</Text>
-        {track('scope', [where === 'person' ? '● you, every project' : '○ you, every project', where === 'project' ? '   ● this project' : '   ○ this project'], where === 'person' ? 0 : 1, false, i =>
-          update($, scope, () => (i === 0 ? 'person' : 'project') as Scope),
-        )}
+    // One row of the grid: a fixed label column, then the control.
+    const row = (id: string, label: string, control: JSX.Element, isStrong = false) => (
+      <Box key={`row-${id}`} flexDirection="row" alignItems="center">
+        <Box width={labelW} flexShrink={0}>
+          <Text bold={isStrong}>{label}</Text>
+        </Box>
+        {control}
+      </Box>
+    )
+    const segment = (id: string, labels: string[], at: number, isInherited: boolean, onSet: (i: number) => void) => (
+      <Box flexDirection="row" flexWrap="wrap" gap="xs">
+        {labels.map((label, i) => (
+          <Button
+            key={`${id}:${i}`}
+            label={label}
+            variant={i === at && !isInherited ? 'primary' : undefined}
+            dimColor={i !== at}
+            onPress={() => onSet(i)}
+            autoFocus={id === 'scope' && i === at ? true : undefined}
+          />
+        ))}
       </Box>
     )
 
-    const rows = DIALS.map(dial => {
-      const yours = mine(options, dial)
-      const isOwn = where === 'project' && proj[dial.key] !== undefined
-      const at = where === 'person' ? yours : isOwn ? stopOf(dial, proj[dial.key]) : yours
-      const isInherited = where === 'project' && !isOwn
-      const set = (i: number) => pick($, dial.key, i)
-      const name = dial.stops[at]?.[0] ?? ''
-      if (dial.values) {
-        return (
-          <Box key={`row-${dial.key}`} flexDirection="row">
-            <Text>{dial.name.padEnd(width + endWidth + 1)}</Text>
-            {track(dial.key, dial.stops.map(([n], i) => `${i ? '   ' : ''}${i === at ? '●' : '○'} ${n}`), at, isInherited, set)}
-            {isOwn && <Button key={`${dial.key}:reset`} plain dimColor label="   use mine" onPress={() => pick($, dial.key, -1)} />}
-          </Box>
-        )
-      }
-      return (
-        <Box key={`row-${dial.key}`} flexDirection="row">
-          <Text>{dial.name.padEnd(width)}</Text>
-          <Text dimColor>{(dial.ends[0] ?? '').padStart(endWidth)} </Text>
-          {dial.stops.map(([, ], i) => [
-            i > 0 ? <Text dimColor>──</Text> : null,
-            <Button key={`${dial.key}:${i}`} plain dimColor={isInherited && i !== at} label={i === at ? '●' : '○'} onPress={() => set(i)} />,
-          ])}
-          <Text dimColor> {(dial.ends[1] ?? '').padEnd(endWidth)}  </Text>
-          <Text dimColor={isInherited} bold={!isInherited && !isDefault(dial, at)}>{isInherited ? `${name} (yours)` : name}</Text>
-          {isOwn && <Button key={`${dial.key}:reset`} plain dimColor label="  use mine" onPress={() => pick($, dial.key, -1)} />}
+    const dialRows = DIALS.map(dial => {
+      const { at, isOwn, isInherited } = state(dial)
+      const control = (
+        <Box flexDirection="row" alignItems="center" gap="md">
+          {segment(dial.key, dial.stops.map(([n]) => n), at, isInherited, i => set(dial.key, i))}
+          {isOwn && <Button key={`${dial.key}:reset`} plain dimColor label="Use mine" onPress={() => pick($, dial.key, -1)} />}
         </Box>
       )
+      return row(dial.key, dial.name, control, !isInherited && !isDefault(dial, at))
     })
 
-    const fDial = dialOf(fKey ?? '')
-    const fStep = fDial?.stops[Number(fStop)]
-    const detail =
+    // The detail: the focused or last-set stop; a focus off the stops shows the dial as it stands.
+    const fDial = dialOf(fKey)
+    const fStop = fDial ? (/^\d+$/.test(fWhat) && fDial.stops[Number(fWhat)] ? Number(fWhat) : state(fDial).at) : -1
+    const [title, does] =
       fKey === 'scope'
-        ? Number(fStop) === 0
-          ? 'You: saved to your wwjd plugin options, for every project. A project .wwjd.json overrides them.'
-          : 'This project: saved to .wwjd.json "dials". Commit it to share. "use mine" hands a dial back to yours.'
-        : fDial && fStep
-          ? `${fDial.name} · ${fStep[0]}${isDefault(fDial, Number(fStop)) ? ' (default)' : ''}: ${fStep[1]}`
-          : fDial && fStop === 'reset'
-            ? `${fDial.name}: drop this project's value and use yours.`
-            : HINT
+        ? fWhat === '1'
+          ? ['This project', 'Saved to .wwjd.json "dials"; commit it to share. A dial left unset uses yours.']
+          : ['You, every project', 'Saved to your wwjd plugin options. A project .wwjd.json overrides them.']
+        : fDial && fWhat === 'reset'
+          ? [`${fDial.name} · Use mine`, "Drop this project's value and use yours."]
+          : fDial
+            ? [`${fDial.name} · ${fDial.stops[fStop]?.[0]}${isDefault(fDial, fStop) ? ' (default)' : ''}`, fDial.stops[fStop]?.[1] ?? '']
+            : ['', '']
 
     return (
-      <Box flexDirection="column">
-        {scopeRow}
-        <Text> </Text>
-        {rows}
-        <Text> </Text>
-        <Text wrap="wrap">{detail}</Text>
-        {detail !== HINT && <Text dimColor>{HINT}</Text>}
+      <Box flexDirection="column" padding="md" gap="md">
+        {row('scope', 'Applies to', segment('scope', ['You, every project', 'This project'], where === 'person' ? 0 : 1, false, i => update($, scope, () => (i === 0 ? 'person' : 'project') as Scope)))}
+        <Box flexDirection="column" gap="sm">{dialRows}</Box>
+        <Box flexDirection="column" minHeight={3}>
+          <Text bold>{title}</Text>
+          <Text wrap="wrap" dimColor>{does}</Text>
+        </Box>
       </Box>
     )
   })
