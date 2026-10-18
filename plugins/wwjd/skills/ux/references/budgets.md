@@ -62,7 +62,7 @@ Example, coffee delivered by drone: arrival time decides; "68 °C in your hands"
 8. **Keep the sheets:** the answered `.wwjd/grade/*.md` sheets are the record of what was cut. Something cut again and again (subtitles, "Learn more", helper text under every field) becomes a ban in `bans.md` or DESIGN.md, so it stops being proposed.
 
 ## Grade gate
-Set by the Strictness dial: 3 and up writes a sheet (gate), 1–2 grade in your head (light); `wwjd.mjs status` prints which.
+Set by the Strictness dial: 3 and up writes a sheet (gate), 1–2 grade in your head (light); `wwjd.mjs status` prints which. With the gate, a hook refuses a new UI file until a `.wwjd/grade/*.md` from this session exists; a surface within budget gets one line there ("within budget: title + 3").
 - **When:** a surface has more candidate facts than its budget: once, before building or simplifying it. Never per edit, never for a surface within budget.
 - **gate:** write the spec, run `grade.mjs` and answer its sheet in `.wwjd/grade/<surface>.md` before the surface's markup. The sheet is the gate: no sheet, no build.
 - **light:** the same questions in your head; the handover still says what moved and where.

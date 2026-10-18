@@ -19,7 +19,7 @@
 // PW_EXE=<path to a Chromium binary> uses an existing build instead of the bundled one.
 // Read every PNG yourself: a report about a screenshot is not a look.
 import { createRequire } from "node:module";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -45,10 +45,16 @@ for (const from of [import.meta.url, pathToFileURL(join(process.cwd(), "package.
   }
   if (chromium) break;
 }
-if (!chromium) { console.error("render needs Playwright: npm i -D playwright (and npx playwright install chromium, or set PW_EXE)"); process.exit(2); }
+// Can't render: say so, and leave .wwjd/shots/UNAVAILABLE so the Strictness gate (gate.mjs) knows it was tried.
+function unavailable(why) {
+  console.error(why);
+  try { mkdirSync(".wwjd/shots", { recursive: true }); writeFileSync(".wwjd/shots/UNAVAILABLE", why + "\n"); } catch { /* read-only */ }
+  process.exit(2);
+}
+if (!chromium) unavailable("render needs Playwright: npm i -D playwright (and npx playwright install chromium, or set PW_EXE)");
 let browser;
 try { browser = await chromium.launch({ headless: true, executablePath: process.env.PW_EXE || undefined }); }
-catch (e) { console.error("render: no Chromium. Run npx playwright install chromium, or set PW_EXE.\n" + e.message.split("\n")[0]); process.exit(2); }
+catch (e) { unavailable("render: no Chromium. Run npx playwright install chromium, or set PW_EXE.\n" + e.message.split("\n")[0]); }
 const H = (w) => (w < 800 ? 844 : 900);
 const findings = [];
 const add = (width, rule, severity, what) => findings.push({ width, rule, severity, what });
@@ -278,6 +284,8 @@ if (cmd === "runtime") {
 function finish(label) {
   const errors = findings.filter((f) => f.severity === "error").length;
   if (json) console.log(JSON.stringify({ url: target, errors, findings }, null, 2));
+  // The runtime report: what the Strictness gate (gate.mjs) reads at 4 and up.
+  if (cmd === "runtime") { try { mkdirSync(".wwjd", { recursive: true }); writeFileSync(".wwjd/runtime.json", JSON.stringify({ url: target, errors, findings }, null, 2)); } catch { /* read-only */ } }
   else { for (const f of findings) console.log(`${String(f.width).padStart(4)}px  ${f.severity === "error" ? "ERROR" : "warn "} ${f.rule}: ${f.what}`); console.log(`\nrender ${label}: ${errors} errors, ${findings.length - errors} warnings`); }
   browser.close().then(() => process.exit(errors ? 1 : 0));
 }

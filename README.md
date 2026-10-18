@@ -25,7 +25,8 @@ plugins/wwjd/
   skills/look/            the look
   skills/motion/          motion
   agents/wwjd-critic.md   cold review, on request only
-  hooks/                  route.sh (points UI prompts at wwjd:ux, plus look or motion) · check.sh (lints each edited UI file)
+  hooks/                  route.sh (points UI prompts at wwjd:ux, plus look or motion) · check.sh (lints each edited UI file) ·
+                          gate.mjs via hooks.json (Strictness: grade sheet before a new UI file, checks before the turn ends)
   evals/                  trigger and quality evals for `claude plugin eval`
 docs/research/            archived research (faux-pas catalogue, layouts, look); not shipped in the skill
 ```
