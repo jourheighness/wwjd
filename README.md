@@ -87,7 +87,7 @@ node plugins/wwjd/skills/ux/scripts/render.mjs fit <url> [--selector css]
 node plugins/wwjd/skills/ux/scripts/render.mjs runtime <url>
 node plugins/wwjd/skills/ux/scripts/grade.mjs spec.json [--surface row]   # prints the grade sheet for one surface
 ```
-`wwjd.mjs` needs Node 20.10+ and nothing else. `render.mjs` needs Playwright in the project (`npm i -D playwright`), or `PW_EXE` pointing at an existing Chromium; without either, `shoot` uses an installed Chrome (viewport shots), and `fit` and `runtime` say they can't run.
+`wwjd.mjs` needs Node 20.10+ and nothing else. `render.mjs` needs Playwright: in the project (`npm i -D playwright`), or once for every project with `node plugins/wwjd/skills/ux/scripts/render.mjs setup` (playwright-core into `~/.cache/wwjd`); it also finds a global or npx-cached install. The browser is `PW_EXE`, else Playwright's Chromium, else an installed Chrome. Without Playwright, `shoot` drives an installed Chrome directly, and `fit` and `runtime` say they can't run.
 
 ## Evals
 ```bash

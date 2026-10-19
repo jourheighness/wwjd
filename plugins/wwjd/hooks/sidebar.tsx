@@ -148,7 +148,8 @@ export const register: Register = (on, options) => {
     await update($, logVersion, n => (n ?? 0) + 1)
     // The log is the sidebar's reason to exist: it opens on the first entry (an open pane is left as it is).
     await $.ui.open({ id: PANE, title: 'wwjd' }).catch(() => undefined)
-    return { result: { logged: id } }
+    // An MCP tool answers with text (or content blocks); an object fails the host's output schema.
+    return { result: `Logged ${id}.` }
   })
 
   on('command.run', { command: 'wwjd' }, async $ => {

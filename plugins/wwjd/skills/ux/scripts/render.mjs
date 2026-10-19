@@ -17,21 +17,34 @@
 //     reduced-motion (transform animations left under reduce), broken-image, spacing-drift (radii, max-widths, button styles),
 //     target-hole (text above a stretched card link: a text cursor, the hover drops)
 //   --json    machine output. Exit 1 on errors.
-// Playwright: resolved from this project (npm i -D playwright) or this script's folder.
-// PW_EXE=<path to a Chromium binary> uses an existing build instead of the bundled one.
-// No Playwright: shoot falls back to an installed Chrome or Chromium (PW_EXE, CHROME_PATH, the usual places), headless,
-// one viewport per shot (no full page); fit and runtime still need Playwright. No shot at all → exit 2 and
+//   setup    one-time: npm-installs playwright-core into ~/.cache/wwjd (XDG_CACHE_HOME), for every project.
+// Playwright (playwright or playwright-core), first found: WWJD_PLAYWRIGHT=<module folder>, this script's folder,
+// this project (npm i -D playwright), the setup cache, the global npm root, the npx cache.
+// Browser: PW_EXE=<path to a Chromium binary> when set, else Playwright's own Chromium, else an installed Chrome.
+// No Playwright: shoot drives an installed Chrome or Chromium (PW_EXE, CHROME_PATH, the usual places) directly, same
+// shots; fit and runtime still need Playwright. No shot at all → exit 2 and
 // .wwjd/shots/UNAVAILABLE; some shots failed → exit 1.
 // Read every PNG yourself: a report about a screenshot is not a look.
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { createRequire } from "node:module";
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { artifactRoot, nearestConfig } from "./paths.mjs";
 
 const args = process.argv.slice(2);
 const cmd = args[0];
+// The setup cache: outside every project, so no node_modules lands in a repo.
+const CACHE = join(process.env.XDG_CACHE_HOME || join(homedir(), ".cache"), "wwjd");
+if (cmd === "setup") {
+  mkdirSync(CACHE, { recursive: true });
+  if (!existsSync(join(CACHE, "package.json"))) writeFileSync(join(CACHE, "package.json"), '{ "private": true }\n');
+  try { execFileSync("npm", ["install", "--no-audit", "--no-fund", "--prefix", CACHE, "playwright-core"], { stdio: "inherit" }); }
+  catch (e) { console.error(`render setup: npm install failed (${e.message.split("\n")[0]})`); process.exit(2); }
+  console.log(`Playwright in ${CACHE}. Browser: Playwright's Chromium (npx playwright install chromium), PW_EXE, or an installed Chrome.`);
+  process.exit(0);
+}
 if (!cmd || cmd === "-h" || cmd === "--help" || !["shoot", "fit", "runtime"].includes(cmd)) {
   const head = [];
   for (const l of readFileSync(new URL(import.meta.url), "utf8").split("\n").slice(1)) { if (!l.startsWith("//")) break; head.push(l.replace(/^\/\/ ?/, "")); }
@@ -64,10 +77,24 @@ const plan = (() => {
   return { out, shots, fullPage: !flag("--one") || flag("--full") };
 })();
 
+// Where Playwright may be installed, as folders module resolution starts from; later ones are only looked up
+// when the earlier ones have none (npm root -g spawns npm).
+function* playwrightBases() {
+  if (process.env.WWJD_PLAYWRIGHT) yield resolve(process.env.WWJD_PLAYWRIGHT, "..", "..");
+  yield new URL(".", import.meta.url).pathname;
+  yield process.cwd();
+  yield CACHE;
+  try { yield resolve(execFileSync("npm", ["root", "-g"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 5000 }).trim(), ".."); } catch { /* no npm */ }
+  const npx = join(homedir(), ".npm", "_npx");
+  try {
+    yield* readdirSync(npx).map((d) => join(npx, d)).filter((d) => existsSync(join(d, "node_modules", "playwright-core")))
+      .sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs);
+  } catch { /* no npx cache */ }
+}
 let chromium;
-for (const from of [import.meta.url, pathToFileURL(join(process.cwd(), "package.json")).href]) {
+for (const base of playwrightBases()) {
   for (const mod of ["playwright", "playwright-core"]) {
-    try { const m = await import(pathToFileURL(createRequire(from).resolve(mod)).href); chromium = m.chromium || m.default?.chromium; if (chromium) break; } catch { /* next */ }
+    try { const m = await import(pathToFileURL(createRequire(join(base, "package.json")).resolve(mod)).href); chromium = m.chromium || m.default?.chromium; if (chromium) break; } catch { /* next */ }
   }
   if (chromium) break;
 }
@@ -77,7 +104,7 @@ function unavailable(why) {
   try { mkdirSync(SHOTS, { recursive: true }); writeFileSync(join(SHOTS, "UNAVAILABLE"), why + "\n"); } catch { /* read-only */ }
   process.exit(2);
 }
-// Shots without Playwright: a system Chrome's own headless screenshot, the same file names as below.
+// An installed Chrome: Playwright's fallback browser, and the shooter when there is no Playwright.
 function systemChrome() {
   const named = [process.env.PW_EXE, process.env.CHROME_PATH].filter(Boolean);
   const mac = ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/Applications/Chromium.app/Contents/MacOS/Chromium",
@@ -88,30 +115,82 @@ function systemChrome() {
   }
   return null;
 }
+// Chrome's own --screenshot can't do this: headless windows are at least 500px wide, so a 390 shot lays out at 500
+// and crops the right edge. Drive the DevTools protocol over a pipe instead (no port, no WebSocket): the viewport
+// is set exactly, as Playwright sets it.
+async function chromeShots(exe, shots, fullPage) {
+  const profile = mkdtempSync(join(tmpdir(), "wwjd-chrome-"));
+  const proc = spawn(exe, ["--headless=new", "--remote-debugging-pipe", `--user-data-dir=${profile}`, "--disable-gpu", "--hide-scrollbars",
+    "--no-first-run", "--no-default-browser-check", "about:blank"], { stdio: ["ignore", "ignore", "ignore", "pipe", "pipe"] });
+  let seq = 0, buf = "";
+  const waiting = new Map(), listeners = new Set();
+  proc.stdio[4].on("data", (chunk) => {
+    buf += chunk.toString("utf8");
+    for (let i; (i = buf.indexOf("\0")) >= 0; ) {
+      const msg = JSON.parse(buf.slice(0, i)); buf = buf.slice(i + 1);
+      if (msg.id && waiting.has(msg.id)) { const { ok, ko } = waiting.get(msg.id); waiting.delete(msg.id); msg.error ? ko(new Error(msg.error.message)) : ok(msg.result); }
+      else for (const fn of listeners) fn(msg);
+    }
+  });
+  const exited = new Promise((_, ko) => proc.on("exit", () => ko(new Error("Chrome exited"))));
+  exited.catch(() => { /* raced below */ });
+  const send = (method, params = {}, sessionId) => Promise.race([exited, new Promise((ok, ko) => {
+    const id = ++seq; waiting.set(id, { ok, ko });
+    proc.stdio[3].write(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }) + "\0");
+  })]);
+  const event = (sessionId, method, ms) => new Promise((ok) => {
+    const fn = (m) => { if (m.sessionId === sessionId && m.method === method) done(true); };
+    const timer = setTimeout(() => done(false), ms);
+    const done = (v) => { clearTimeout(timer); listeners.delete(fn); ok(v); };
+    listeners.add(fn);
+  });
+  let failed = 0;
+  try {
+    for (const { w, scheme, file } of shots) {
+      try {
+        const { targetId } = await send("Target.createTarget", { url: "about:blank" });
+        const { sessionId: s } = await send("Target.attachToTarget", { targetId, flatten: true });
+        await send("Page.enable", {}, s);
+        await send("Emulation.setDeviceMetricsOverride", { width: w, height: H(w), deviceScaleFactor: 1, mobile: false }, s);
+        await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: scheme }] }, s);
+        const loaded = event(s, "Page.loadEventFired", 30000);
+        await send("Page.navigate", { url }, s);
+        if (!(await loaded)) console.error(`render: ${url} did not finish loading at ${w}px; shooting what rendered`);
+        await new Promise((ok) => setTimeout(ok, 500));
+        const { result: { value: [sw, sh] } } = await send("Runtime.evaluate", { expression: "[document.documentElement.scrollWidth - innerWidth, document.documentElement.scrollHeight]", returnByValue: true }, s);
+        const height = fullPage ? Math.max(H(w), sh) : H(w);
+        const { data } = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: fullPage, clip: { x: 0, y: 0, width: w, height, scale: 1 } }, s);
+        writeFileSync(file, Buffer.from(data, "base64"));
+        console.log(file + "  (system Chrome)" + (sw > 1 ? `  (scrolls sideways by ${sw}px)` : ""));
+        await send("Target.closeTarget", { targetId });
+      } catch (e) { failed++; console.error(`render: Chrome could not shoot ${w}px ${scheme}: ${e.message.split("\n")[0]}`); }
+    }
+    await send("Browser.close").catch(() => undefined);
+  } finally {
+    proc.kill();
+    try { rmSync(profile, { recursive: true, force: true }); } catch { /* left in tmp */ }
+  }
+  return failed;
+}
 if (!chromium && cmd === "shoot") {
   const exe = systemChrome();
   if (exe) {
     mkdirSync(plan.out, { recursive: true });
-    let failed = 0;
-    for (const { w, scheme, file } of plan.shots) {
-      const before = (() => { try { return statSync(file).mtimeMs; } catch { return 0; } })();
-      try {
-        execFileSync(exe, ["--headless=new", "--disable-gpu", "--hide-scrollbars", "--no-first-run", "--no-default-browser-check",
-          `--window-size=${w},${H(w)}`, `--blink-settings=preferredColorScheme=${scheme === "dark" ? 0 : 1}`,
-          "--virtual-time-budget=1500", `--screenshot=${file}`, url], { stdio: "ignore", timeout: 30000 });
-        // Chrome can exit 0 without writing: only a fresh file counts
-        if (!((() => { try { return statSync(file).mtimeMs; } catch { return 0; } })() > before)) throw new Error("no screenshot written");
-        console.log(file + "  (system Chrome, viewport only)");
-      } catch (e) { failed++; console.error(`render: Chrome could not shoot ${w}px ${scheme}: ${e.message.split("\n")[0]}`); }
-    }
+    const failed = await chromeShots(exe, plan.shots, plan.fullPage);
     if (failed === plan.shots.length) unavailable(`render: system Chrome (${exe}) took no shot of ${target}`);
     process.exit(failed ? 1 : 0);
   }
 }
-if (!chromium) unavailable("render needs Playwright: npm i -D playwright (and npx playwright install chromium, or set PW_EXE)");
+if (!chromium) unavailable(`render needs Playwright: run node ${new URL(import.meta.url).pathname} setup once (or npm i -D playwright here)`);
+// Playwright's own Chromium; when its build is missing (a playwright-core newer than the cached browsers), a Chrome
+// on this machine.
 let browser;
 try { browser = await chromium.launch({ headless: true, executablePath: process.env.PW_EXE || undefined }); }
-catch (e) { unavailable("render: no Chromium. Run npx playwright install chromium, or set PW_EXE.\n" + e.message.split("\n")[0]); }
+catch (e) {
+  const exe = !process.env.PW_EXE && systemChrome();
+  try { if (!exe) throw e; browser = await chromium.launch({ headless: true, executablePath: exe }); }
+  catch { unavailable(`render: Playwright found no Chromium (${e.message.split("\n")[0]}); run npx playwright install chromium, or set PW_EXE`); }
+}
 const findings = [];
 const add = (width, rule, severity, what) => findings.push({ width, rule, severity, what });
 
@@ -154,7 +233,10 @@ if (cmd === "fit") {
       const name = (el) => (el.getAttribute("data-identifier") || el.textContent || "").trim().slice(0, 40);
       for (const el of root.querySelectorAll("[data-identifier], h1, h2, h3, h4, h5, h6")) {
         if (!el.offsetParent && el.tagName !== "BODY") continue;
-        if (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1) out.push(["identifier-clipped", "error", name(el)]);
+        // Vertically, a box that doesn't clip only loses text when a whole line spills; glyph ink past a tight
+        // line-height (scrollHeight a px or two over) is not a clip.
+        const cs = getComputedStyle(el), spill = cs.overflowY === "visible" && cs.webkitLineClamp === "none" ? lineH(el) / 2 : 1;
+        if (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + spill) out.push(["identifier-clipped", "error", name(el)]);
         else if (el.getBoundingClientRect().height / lineH(el) > 3.5) out.push(["identifier-long", "warn", name(el)]);
       }
       // A wrapping flex row that left one child alone on a line, or a row holding one small item: a lone item.

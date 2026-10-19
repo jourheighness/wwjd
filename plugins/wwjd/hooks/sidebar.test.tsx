@@ -26,7 +26,9 @@ test('the agent logs through the tool; the sidebar groups entries by surface', a
   const files: Record<string, string> = {}
   disk(on as never, files)
   on('ui.open', () => ({ value: { isPlaced: true } }) as never)
-  await $.tool.call({ tool: 'mcp__wwjd__log', surface: 'Task card', kind: 'choice', text: 'Dropped the comment count', why: 'over the card budget' } as never)
+  const first = await $.tool.call({ tool: 'mcp__wwjd__log', surface: 'Task card', kind: 'choice', text: 'Dropped the comment count', why: 'over the card budget' } as never)
+  // The host validates an MCP tool's result as text or content blocks; an object fails every call.
+  expect(typeof (first as { result?: unknown }).result).toBe('string')
   await $.tool.call({ tool: 'mcp__wwjd__log', surface: 'Task card', kind: 'assumption', text: 'A work tool, so compact spacing' } as never)
   expect(files['/p/.wwjd/decisions.jsonl']?.trim().split('\n')).toHaveLength(2)
   const refused = await $.tool.call({ tool: 'mcp__wwjd__log', surface: 'Card', kind: 'maybe', text: 'x' } as never)
