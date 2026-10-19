@@ -10,7 +10,8 @@ export type Gate = {
   checks: { key: string; label: string; done: boolean; how: string }[]
 }
 
-/** One line of .wwjd/decisions.jsonl: a design assumption or choice the agent logged, and its correction if any. */
+/** One line of .wwjd/decisions.jsonl: a design assumption or choice the agent logged, and how the person settled it:
+ *  kept as it is, or changed (the correction). Settled entries leave the open list for Handled. */
 export type Entry = {
   id: string
   at: string
@@ -19,6 +20,7 @@ export type Entry = {
   text: string
   why?: string
   correction?: { note: string; scope: Scope; file: string; at: string }
+  kept?: { at: string }
 }
 
 declare module 'claude-code' {
@@ -34,6 +36,7 @@ declare module 'claude-code' {
       draft: string
       noteScope: Scope
       logVersion: number
+      showHandled: boolean
     }
   }
 }

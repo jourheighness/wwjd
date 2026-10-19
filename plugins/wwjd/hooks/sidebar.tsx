@@ -1,5 +1,6 @@
-// The wwjd sidebar (/wwjd): the design decisions and assumptions the agent logged, grouped by surface, each one
-// correctable with a note for you (~/.config/wwjd/taste.md) or for this project (its decision log); the dials sit
+// The wwjd sidebar (/wwjd): the design decisions and assumptions the agent logged, grouped by surface. Each open one
+// is kept as it is or changed with a note for you (~/.config/wwjd/taste.md) or for this project (its decision log);
+// either way it leaves the open list for Handled, with a toast saying what happened. The dials sit
 // behind Settings (dials.tsx). The agent logs through the `log` tool registered here (mcp__wwjd__log); entries
 // live in .wwjd/decisions.jsonl at the project root.
 import { atom, read, update } from 'claude-code'
@@ -14,6 +15,7 @@ const draft = atom({ plugin: 'wwjd', key: 'draft' } as const, '')
 const noteScope = atom({ plugin: 'wwjd', key: 'noteScope' } as const, 'project')
 const gate = atom({ plugin: 'wwjd', key: 'gate' } as const, null)
 const logVersion = atom({ plugin: 'wwjd', key: 'logVersion' } as const, 0)
+const showHandled = atom({ plugin: 'wwjd', key: 'showHandled' } as const, false)
 
 const TOOL = 'mcp__wwjd__log'
 const SHOWN = 60
@@ -99,13 +101,33 @@ async function correct($: EngineInterface, id: string) {
   await $.session.append({ message: { type: 'user', content: [{ type: 'text', text:
     `Design correction from the wwjd sidebar (${where === 'person' ? 'yours, every project' : 'this project'}; saved to ${file}): ` +
     `${entry.surface}: "${note}". It replaces "${entry.text}". Apply it to the work in progress.` }] } })
-  $.ui.toast(`Saved to ${file.split('/').slice(-2).join('/')}`)
+  $.ui.toast(`Changed · ${entry.surface} · saved to ${file.split('/').slice(-2).join('/')}`)
+}
+
+const settled = (x: Entry) => Boolean(x.correction || x.kept)
+
+// Keep: the decision stands. It leaves the open list; Reopen in Handled brings it back. The host's toast holds text
+// only, so the way back lives in Handled rather than an Undo in the toast.
+async function setKept($: EngineInterface, id: string, isKept: boolean) {
+  const day = await today($)
+  const entry = await serial(async () => {
+    const entries = await readLog($)
+    const entry = entries.find(x => x.id === id)
+    if (!entry || entry.correction || Boolean(entry.kept) === isKept) return null
+    if (isKept) entry.kept = { at: day }
+    else delete entry.kept
+    await writeLog($, entries)
+    return entry
+  })
+  if (!entry) return
+  await update($, logVersion, n => (n ?? 0) + 1)
+  $.ui.toast(isKept ? `Kept · ${entry.surface}` : `Reopened · ${entry.surface}`)
 }
 
 export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     await exportDials($, options)
-    await $.command.register({ name: 'wwjd', description: 'Design decisions and assumptions, correctable; dials under Settings' })
+    await $.command.register({ name: 'wwjd', description: 'Design decisions and assumptions to keep or change; dials under Settings' })
     await $.tool.register({
       name: 'log',
       description: 'Log one design assumption or choice the person did not ask for (wwjd). One call per item, as it is made.',
@@ -180,10 +202,13 @@ export const register: Register = (on, options) => {
     }
 
     await read($, logVersion)
+    const isHandledShown = await read($, showHandled)
     // What Strictness still wants after the last UI edit, from the same gate state the hooks enforce.
     const g = await read($, gate)
     const due = g?.hasEdits ? [...(g.sheet.due ? ['Grade sheet'] : []), ...g.checks.filter(c => !c.done).map(c => c.label)] : []
-    const entries = (await readLog($)).slice(-SHOWN)
+    const all = await readLog($)
+    const entries = all.filter(x => !settled(x)).slice(-SHOWN)
+    const handled = all.filter(settled).slice(-SHOWN).reverse()
     const open = await read($, editing)
     const where = await read($, noteScope)
     const note = await read($, draft)
@@ -211,20 +236,38 @@ export const register: Register = (on, options) => {
       </Box>
     )
 
+    const mark = (x: Entry) =>
+      <Text color={x.kind === 'assumption' ? 'warning' : undefined} dimColor={x.kind === 'choice'}>{x.kind === 'assumption' ? '?' : '·'}</Text>
+
     const row = (x: Entry) => (
       <Box key={`entry:${x.id}`} flexDirection="column">
         <Box flexDirection="row" gap={1}>
-          <Text color={x.kind === 'assumption' ? 'warning' : undefined} dimColor={x.kind === 'choice'}>{x.kind === 'assumption' ? '?' : '·'}</Text>
+          {mark(x)}
           <Box flexDirection="column" flexGrow={1} flexShrink={1}>
-            <Text wrap="wrap" strikethrough={Boolean(x.correction)} dimColor={Boolean(x.correction)}>{x.text}</Text>
-            {x.why && !x.correction ? <Text wrap="wrap" dimColor>{x.why}</Text> : null}
-            {x.correction ? <Text wrap="wrap">{x.correction.note} <Text dimColor>· {x.correction.scope === 'person' ? 'yours' : 'project'}</Text></Text> : null}
+            <Text wrap="wrap">{x.text}</Text>
+            {x.why ? <Text wrap="wrap" dimColor>{x.why}</Text> : null}
           </Box>
-          {!x.correction && open !== x.id
-            ? <Button key={`correct:${x.id}`} plain dimColor label="Correct" onPress={() => update($, draft, () => '').then(() => update($, editing, () => x.id))} />
-            : null}
+          {open !== x.id ? (
+            <Box flexDirection="row" gap="xs">
+              <Button key={`keep:${x.id}`} plain dimColor label="Keep" onPress={() => setKept($, x.id, true)} />
+              <Button key={`change:${x.id}`} plain dimColor label="Change" onPress={() => update($, draft, () => '').then(() => update($, editing, () => x.id))} />
+            </Box>
+          ) : null}
         </Box>
         {open === x.id ? editor(x) : null}
+      </Box>
+    )
+
+    const handledRow = (x: Entry) => (
+      <Box key={`handled:${x.id}`} flexDirection="row" gap={1}>
+        {mark(x)}
+        <Box flexDirection="column" flexGrow={1} flexShrink={1}>
+          <Text wrap="wrap" dimColor><Text dimColor>{x.surface} · </Text>{x.text}</Text>
+          {x.correction
+            ? <Text wrap="wrap">→ {x.correction.note} <Text dimColor>· {x.correction.scope === 'person' ? 'yours' : 'project'}</Text></Text>
+            : <Text dimColor>Kept</Text>}
+        </Box>
+        {x.kept ? <Button key={`reopen:${x.id}`} plain dimColor label="Reopen" onPress={() => setKept($, x.id, false)} /> : null}
       </Box>
     )
 
@@ -239,7 +282,14 @@ export const register: Register = (on, options) => {
               {xs.map(row)}
             </Box>
           ))
-          : <Text dimColor>No decisions logged in this project yet.</Text>}
+          : <Text dimColor>{handled.length ? 'Nothing open.' : 'No decisions logged in this project yet.'}</Text>}
+        {handled.length ? (
+          <Box flexDirection="column" gap="xs">
+            <Button key="handled" plain dimColor label={`${isHandledShown ? '▾' : '▸'} Handled · ${handled.length}`}
+              onPress={() => update($, showHandled, v => !v)} />
+            {isHandledShown ? handled.map(handledRow) : null}
+          </Box>
+        ) : null}
       </Box>
     )
   })
