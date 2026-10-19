@@ -62,7 +62,7 @@ Success: the person completes the task and gets back to work. A calm product wit
   6. **Rows:** one height from the density token (2-line rows only at 48+); one shared grid template, so avatars, dates and bars line up across rows and groups.
   7. **Bulk bar:** on selection, floating at the bottom, never moving the layout: "N selected", ≤4 actions, ⋯, ✕. **Select-all across pages is explicit:** "All 50 on this page selected · Select all 1,284".
   8. **Footer:** pagination past ~50 rows, or virtualisation when measured slow. **Never infinite scroll on a goal list:** "Load more" or pages, position restored on Back.
-- **Columns:** the first is the readable identifier, never an auto ID. Visible count per `budgets.md` (`table`, `grid`, `admin-table`); the rest via Display or detail. Resizable and hideable, with reset; column priority sets the drop order (`rules/layout.md`).
+- **Columns:** the first is the readable identifier, never an auto ID. Visible count per `budgets.md` (`table`, `grid`, `admin-table`); the rest via Display or detail. Resizable and hideable, with reset; column priority sets the drop order. Wider than the pane: pinned identifier, scroll cues (`rules/layout.md` Wide tables).
 - **Values become forms:**
 
   | Value | Render |

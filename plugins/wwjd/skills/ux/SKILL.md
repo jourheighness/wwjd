@@ -11,7 +11,7 @@ If a rule would hurt this case, say so, propose the exception, apply once agreed
 - Settings graded as a `drawer`: name the job first; configure and review are expose surfaces.
 - Essentials in tooltips (Floor: never).
 - Static mocks for an interaction concept: make them clickable.
-- Inline Undo after one visible own edit (Floor: Reversibility).
+- Inline Undo in a row or field: undo lives in the toast. A settings toggle gets neither; it just applies.
 - "Checked" with no shot of focus, hover, both themes.
 - One home read as deleting the setting: it keeps its row.
 
@@ -38,7 +38,7 @@ Floor > project DESIGN.md + decision log > taste file (yours) > dials > wwjd (mo
 - **Access:** AA contrast; visible focus ring >=3:1; zoom never disabled; targets >=24px web, 44pt iOS, 48dp Android; colour never alone; links in running text underlined; reduced motion respected; nothing clips at 200% zoom or text-spacing overrides; tooltips work on focus and tap, never hold essentials; explained disabled controls are `aria-disabled`, focusable; every drag has a non-drag path; scrollable regions focusable and labelled.
 - **Stability:** nothing shifts, jumps, re-sorts or reflows unless the person caused it.
 - **Honesty:** no fake urgency or scarcity, pre-ticked add-ons, confirmshaming, hidden costs, invented proof, people or numbers. Legal, consent, pricing, safety text and legal links stay. Leaving takes no more steps than joining.
-- **Reversibility:** money, legal commitments, account deletion, anything sent to others: a review step. All else undoable: undo lasts until the next action, announced (`role=status`), keyboard-reachable; no API undo: hide now, commit on expiry. A visible single-field edit of the person's own data saves silently (announced); undo: Esc, then Cmd/Ctrl+Z; visible Undo only for deletes, bulk changes and what others see.
+- **Reversibility:** money, legal commitments, account deletion, anything sent to others: a review step. All else undoable: undo lasts until the next action, announced (`role=status`), keyboard-reachable; no API undo: hide now, commit on expiry. **Undo is a toast:** in a work tool every discrete edit, delete or bulk change gets one Undo toast (what changed, Undo), the next replacing it, never covering the work; never an inline Undo in the row or field. A setting or preference just applies, silent and announced (`role=status`). Continuous typing autosaves with a quiet status, no toast.
 - **Data:** judge UI only with realistic data.
 
 ## 3. Rules (how: `rules/*.md`)
@@ -48,7 +48,7 @@ Floor > project DESIGN.md + decision log > taste file (yours) > dials > wwjd (mo
 
 **Layout.** Content on column edges; surface and padding hang in the gutter. Start-aligned, one left edge. No cards in cards; no lone item on its own row. **The identifier never disappears:** wraps, never ellipsis.
 
-**Actions.** One primary + one secondary per region, the rest in ⋯, a hover toolbar or detail. **Action stays with its context.** **One target, one behaviour.** Only pressable looks pressable. **One home per state:** one control and one mark; elsewhere shows it, never repeats it. Default, not asking; undo, not "are you sure".
+**Actions.** One primary + one secondary per region, the rest in ⋯, a hover toolbar or detail. **Action stays with its context.** **One target, one behaviour.** Only pressable looks pressable. **One home per state:** one control and one mark; elsewhere shows it, never repeats it. Default, not asking; undo, not "are you sure"; undo is a toast, never inline.
 
 **Stable under the hand.** State changes only on intent, and touch only what changed: same box and height. Scroll and focus move only on action; overlays never cover the work.
 

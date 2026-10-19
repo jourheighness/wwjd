@@ -27,6 +27,6 @@ Product UI copy is labels, values and one-line states. Persuade and Editorial ne
 ## Messages
 - **Errors:** what happened and how to fix it, at the field: "Enter a date as YYYY-MM-DD", not "Invalid date". No blame, "Oops", "Sorry", "please" or "!" (lint `oops`).
 - **Empty:** one line plus one action; seeded examples may teach the first few times, then step aside.
-- **Success** is silent when the effect is visible, still announced (`role=status`). Visible only for effects the person can't see: a quiet "Saved"/"Saving…" near the title for autosave (never a toast), add-to-cart confirmation, a toast for something elsewhere. Error toasts never auto-dismiss.
+- **Success** is silent when the effect is visible, still announced (`role=status`). Visible only for effects the person can't see: a quiet "Saved"/"Saving…" near the title for autosave (never a toast), add-to-cart confirmation, a toast for something elsewhere, the Undo toast after an edit in a work tool (`actions.md` Defaults and undo). Error toasts never auto-dismiss.
 - **AI** says in one sentence what it did and where.
 - **Never cut** accessibility text (alt, `aria-label`, error announcements); legal, consent, pricing and safety: SKILL.md Floor. Alt stands alone ("Revenue up 40% in Q4", not "Chart").

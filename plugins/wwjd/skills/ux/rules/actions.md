@@ -58,6 +58,6 @@ The how behind SKILL.md's Actions rules. A region is a card, row, toolbar, dialo
 
 ## Defaults and undo
 - **Enter** does the obvious thing; **Esc** steps back one level, never destroys work.
-- **Single-field edits of the person's own data** save silently (announced `role=status`); undo is Esc while open and Cmd/Ctrl+Z after. A visible Undo only for deletes, bulk changes and anything others see.
+- **Undo is a toast.** In a work tool (tracker, admin, pricing, CRM, editor) every discrete edit, delete or bulk change gets one toast: what changed ("Black Friday: 25% → 27%") and Undo, also Cmd/Ctrl+Z; the next edit replaces it; it never covers the cells being edited. Never an inline Undo in the row, cell or field. A setting or preference just applies: no Save, no toast, announced `role=status`. Continuous typing in a document autosaves with a quiet "Saved" status, no toast.
 - **No API undo:** an undo adapter in front (`// TODO(api): …`), hide at once, undo through it, commit on expiry or when the person moves on; flag the API at handover.
 - **The review step** is a sheet with real choices: "Send to 12 suppliers" / "Save draft".

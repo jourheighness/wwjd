@@ -79,7 +79,13 @@ Size classes come from the slot: wrap it in `.fit`, never a shrink-wrapped flex 
 ## Responsive structure
 - Check 320, 390, 768, 1440, 1920 (runtime `page-overflow`). Container queries for components, viewport queries for pages (lint `viewport-in-component`).
 - **Product UI responds structurally, not with fluid type:** sidebar → rail (56–72px, opt-in; labels stay in the DOM with tooltips) → off-canvas drawer on phones. Panes stack, collapse or resize; three fixed panes never crush main at 1280.
-- **Wide tables:** keep the 3 columns that carry the work; the rest to a drill-in or column picker. Sticky header and first column. Never shrink text.
+- **Wide tables** (`.table-wrap` in `kit/base.css`, cues from `kit/table-scroll.js`):
+  - **Fewer columns first:** keep the ones that carry the work; the rest to a column picker or drill-in. Never shrink text.
+  - **What still doesn't fit scrolls inside the table,** never the page; the table scrolls within its pane, so its horizontal scrollbar stays on screen.
+  - **The identifier is pinned** (with the select checkbox), ≤40% of the width; its edge shows a border and shadow only while content is scrolled under it. Sticky header too; the corner cell stacks above both.
+  - **Hidden columns are announced:** the edge with more to scroll shows a fade that goes at the end; overlay scrollbars hide the rest.
+  - **Reachable:** the scroller is `role=region`, named by the table's heading (`aria-labelledby`), `tabindex=0`, visible focus; `scroll-padding-inline-start` = pinned width, so a focused cell never lands under it. No scroll-snap.
+  - Phones, content registers (Editorial, Reference, Flow) only: rows may stack into cards instead.
 - **390 composed on its own,** by priority, not the desktop's order.
 - **Navigation visible:** top nav on desktop, never a hamburger; tab bar on mobile. Tabs one row, overflow to More, peer views only.
 - **Sticky header** <15% of mobile height, hides on scroll down. Text boxes get `min-height`, never fixed `height`.
