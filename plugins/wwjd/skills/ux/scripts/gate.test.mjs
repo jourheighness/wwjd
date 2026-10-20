@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync, utimesSync, appendFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync, utimesSync, appendFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,7 +38,12 @@ function project(strictness) {
     utimesSync(p, t, t);
     return p;
   };
-  const edit = (rel) => run("post", { tool_name: "Write", tool_input: { file_path: join(root, rel) } });
+  // as a Write leaves it: the file exists
+  const edit = (rel) => {
+    const f = join(root, rel);
+    if (!existsSync(f)) { mkdirSync(dirname(f), { recursive: true }); writeFileSync(f, "<div></div>"); utimesSync(f, Date.now() / 1000 - 60, Date.now() / 1000 - 60); }
+    return run("post", { tool_name: "Write", tool_input: { file_path: f } });
+  };
   return { root, state, run, runAsync, ledger, file, edit, transcript };
 }
 
@@ -204,6 +209,7 @@ test("artifacts live at the nearest folder with .wwjd.json, as render.mjs writes
   mkdirSync(app, { recursive: true });
   writeFileSync(join(app, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 } }));
   const inApp = (mode, input) => p.run(mode, { cwd: app, ...input });
+  writeFileSync(join(app, "card.html"), "<div></div>");
   inApp("post", { tool_name: "Write", tool_input: { file_path: join(app, "card.html") } });
   p.file(".wwjd/shots/card-390-light.png", "png", 5); // the git root: not this project's
   assert.equal(inApp("stop", { stop_hook_active: false }).decision, "block");
@@ -264,10 +270,36 @@ test("status: decisions logged in the edited project count, not only the session
   const p = project(3);
   const other = mkdtempSync(join(tmpdir(), "wwjd-other-"));
   execFileSync("git", ["init", "-q", other]);
+  writeFileSync(join(other, "card.html"), "<div></div>");
   p.run("post", { tool_name: "Write", tool_input: { file_path: join(other, "card.html") } });
   const log = () => p.run("status", {}).checks.find((c) => c.key === "log").done;
   assert.equal(log(), false);
   mkdirSync(join(other, ".wwjd"));
   writeFileSync(join(other, ".wwjd", "decisions.jsonl"), JSON.stringify({ id: "d1", at: new Date(Date.now() + 5000).toISOString(), surface: "Card", kind: "choice", text: "x" }) + "\n");
   assert.equal(log(), true);
+});
+
+test("stop: an edited file that is gone again asks for no checks", () => {
+  const p = project(3);
+  p.edit("fragment.html");
+  assert.match(p.run("stop", { stop_hook_active: false }).reason, /render/);
+  rmSync(join(p.root, "fragment.html"));
+  assert.equal(p.run("stop", { stop_hook_active: false }), null);
+  assert.equal(p.run("status", {}).hasEdits, false);
+});
+
+test("checks run from where the page is served count: reports at the edited file's project root", () => {
+  const p = project(3);
+  const site = mkdtempSync(join(tmpdir(), "wwjd-site-"));
+  writeFileSync(join(site, ".wwjd.json"), "{}");
+  writeFileSync(join(site, "page.html"), "<div></div>");
+  p.run("post", { tool_name: "Write", tool_input: { file_path: join(site, "page.html") } });
+  const later = Date.now() / 1000 + 5;
+  mkdirSync(join(site, ".wwjd", "shots"), { recursive: true });
+  for (const w of [390, 1440]) { const f = join(site, ".wwjd", "shots", `page-${w}-light.png`); writeFileSync(f, "png"); utimesSync(f, later, later); }
+  writeFileSync(join(site, ".wwjd", "fit.json"), JSON.stringify({ url: "http://127.0.0.1/page.html", errors: 0, findings: [] }));
+  utimesSync(join(site, ".wwjd", "fit.json"), later, later);
+  const done = Object.fromEntries(p.run("status", {}).checks.map((c) => [c.key, c.done]));
+  assert.equal(done.shots, true);
+  assert.equal(done.fit, true);
 });

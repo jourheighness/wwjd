@@ -118,9 +118,13 @@ function shotTarget(ledger) {
 // The checks Strictness `s` asks for after the last UI edit, each with whether it is done and how to do it.
 // Whether the sidebar's log (.wwjd/decisions.jsonl) gained an entry after `since`: at the session's root, or at the
 // root of the last edited file (the log tool writes to the project being edited, hooks/sidebar.tsx).
+// Where checks may have left their reports: the session's root and the edited file's project root (a page served over
+// http is shot from wherever the server runs, a session in one repo edits another).
+const roots = (ledger) => [...new Set([root(), ...(ledger.lastFile ? [artifactRoot(dirname(ledger.lastFile))] : [])])];
+// An edit whose file is gone (a build fragment, deleted again) asks for no checks.
+const editPending = (ledger) => Boolean(ledger.lastEdit) && !(ledger.lastFile && !existsSync(ledger.lastFile));
 function loggedSince(since, ledger) {
-  const roots = new Set([root(), ...(ledger.lastFile ? [artifactRoot(dirname(ledger.lastFile))] : [])]);
-  return [...roots].some((r) => {
+  return roots(ledger).some((r) => {
     try {
       return readFileSync(join(r, ".wwjd", "decisions.jsonl"), "utf8").split("\n").some((line) => {
         try { return Date.parse(JSON.parse(line).at) > since; } catch { return false; }
@@ -131,8 +135,7 @@ function loggedSince(since, ledger) {
 
 function checks(ledger, s) {
   const since = ledger.lastEdit || 0;
-  const shotsDir = join(root(), ".wwjd", "shots");
-  const fresh = existsSync(shotsDir) ? readdirSync(shotsDir).filter((f) => mtime(join(shotsDir, f)) > since) : [];
+  const fresh = roots(ledger).flatMap((r) => { const dir = join(r, ".wwjd", "shots"); return existsSync(dir) ? readdirSync(dir).filter((f) => mtime(join(dir, f)) > since) : []; });
   const unavailable = fresh.includes("UNAVAILABLE");
   const pngs = fresh.filter((f) => f.endsWith(".png"));
   const widths = new Set(pngs.map((f) => /-(\d+)-(?:light|dark)\.png$/.exec(f)?.[1]).filter(Boolean));
@@ -144,14 +147,15 @@ function checks(ledger, s) {
   if (s >= 3) {
     // Fit runs at 320–720px and must come back clean: wrapping, clipping and lone items are layout bugs, not taste.
     let fit = null;
-    try { fit = mtime(join(root(), ".wwjd", "fit.json")) > since ? JSON.parse(readFileSync(join(root(), ".wwjd", "fit.json"), "utf8")) : null; } catch { /* unreadable: not done */ }
+    const fitFile = roots(ledger).map((r) => join(r, ".wwjd", "fit.json")).filter((f) => mtime(f) > since).sort((a, b) => mtime(b) - mtime(a))[0];
+    try { fit = fitFile ? JSON.parse(readFileSync(fitFile, "utf8")) : null; } catch { /* unreadable: not done */ }
     const errs = fit ? fit.findings.filter((f) => f.severity === "error").map((f) => `${f.width}px ${f.rule}: ${f.what}`) : [];
     out.push({ key: "fit", label: errs.length ? "Fit errors" : "Fit check", done: unavailable || (fit !== null && errs.length === 0),
       how: errs.length ? `fix the fit errors, then rerun fit: ${[...new Set(errs)].slice(0, 4).join("; ")}` : `the fit check: node ${RENDER} fit ${target} --widths 320,480,720` });
   }
   if (s >= 4) {
     out.push({ key: "dark", label: "Dark shot", done: unavailable || pngs.some((f) => f.includes("-dark.")), how: `a dark-mode shot: node ${RENDER} shoot ${target} --theme dark` });
-    out.push({ key: "runtime", label: "Runtime checks", done: unavailable || mtime(join(root(), ".wwjd", "runtime.json")) > since, how: `the runtime checks: node ${RENDER} runtime ${target}` });
+    out.push({ key: "runtime", label: "Runtime checks", done: unavailable || roots(ledger).some((r) => mtime(join(r, ".wwjd", "runtime.json")) > since), how: `the runtime checks: node ${RENDER} runtime ${target}` });
   }
   // Asked once per run of edits: an agent that made no unasked choice says so in the handover and may stop.
   if (s >= 2) out.push({ key: "log", label: "Decisions logged", done: (ledger.logAsked || 0) >= since || loggedSince(ledger.start || 0, ledger),
@@ -165,7 +169,7 @@ if (mode === "status") {
   const ledger = ensured();
   const file = s >= 3 ? sheet(ledger) : null;
   // due: the pre gate refused a new UI file this session and no sheet has been written since.
-  say({ strictness: s, hasEdits: Boolean(ledger.lastEdit), lastFile: ledger.lastFile || null,
+  say({ strictness: s, hasEdits: editPending(ledger), lastFile: ledger.lastFile || null,
     sheet: { needed: s >= 3, file, due: s >= 3 && Boolean(ledger.denied) && !file }, checks: checks(ledger, s) });
 }
 
@@ -190,7 +194,7 @@ if (mode === "post") {
 
 if (mode === "stop") {
   const ledger = readLedger();
-  if (!ledger.lastEdit) process.exit(0);
+  if (!editPending(ledger)) process.exit(0);
   const s = strictness();
   const missing = checks(ledger, s).filter((c) => !c.done).map((c) => c.how);
   if (!missing.length && !ledger.blocks) process.exit(0);
