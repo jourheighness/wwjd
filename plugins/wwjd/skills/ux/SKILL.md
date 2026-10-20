@@ -5,7 +5,7 @@ when_to_use: '"redesign this", "clean up the settings page", "this looks busy", 
 ---
 
 # What Would Johannes Do
-If a rule would hurt this case, say so, propose the exception, apply once agreed.
+wwjd owns the design side: how a product looks, flows and reads is decided here, with the person, before code. If a rule would hurt this case, say so, propose the exception, apply once agreed.
 
 ## Gotchas
 - Settings graded as a `drawer`: name the job first; configure and review are expose surfaces.
@@ -23,7 +23,7 @@ If a rule would hurt this case, say so, propose the exception, apply once agreed
 
 | Situation | Do (`commands/<verb>.md`) |
 |---|---|
-| `scratch`, "make me a...", no DESIGN.md | `start`, `wwjd:look` (quick mode), then explore or build |
+| `scratch`, "make me a...", a new project | `start` §0 first: ask how to begin (variants in an Artifact, default; or build), then `wwjd:look`, then what they chose. The pre hook holds the first UI file until `.wwjd.json` records it |
 | add a component or screen; messy screen in scope | `build` |
 | "busy", "simplify", "clean up" | `simplify` |
 | "review", "what's wrong", screenshot | `review` |
@@ -61,7 +61,7 @@ Persuade: landing, hero, pricing · Showcase: portfolio, case study · Editorial
 
 ## 5. Loop
 - **Show** the smallest renderable slice with realistic data; hand over the link and what changed at once.
-- **Log as you go:** each assumption and each choice nobody asked for: one `mcp__wwjd__log` call. No tool: one line `{"surface","kind","text","why"}` in `.wwjd/decisions.jsonl`.
+- **Log as you go:** each assumption and each choice nobody asked for: one `mcp__wwjd__log` call, with `proof`: the shot path, the page URL or the Artifact link that shows it (the sidebar links them). No tool: one line `{"surface","kind","text","why","proof"}` in `.wwjd/decisions.jsonl`.
 - **Checks** per the Strictness dial (`references/dials.md`); hooks enforce them. Shoot every new state (focus, hover, editing, open popover) zoomed, both themes, before any "checked"; a check that could not run is reported as not run. Handover lists each `TODO(api)`.
 - **React:** change only what was named. Same correction twice: 3 structurally different options or one question with a default.
 

@@ -6,6 +6,7 @@
 //     --one              one shot: the primary width, one theme (the quick loop's per-handover look)
 //     --width <px>       primary width for --one (default: 1440 for operate/monitor, else 390; from --register or .wwjd.json)
 //     --theme light|dark --widths 1440,390 --out <dir> (default .wwjd/shots)  --full (full page with --one)
+//     --root <dir>       the project whose .wwjd/ gets the shots and reports (a session in one repo checking another)
 //   .wwjd/ is at the nearest folder up with .wwjd.json or .wwjd/, else the git root, else here (what gate.mjs reads).
 //   Dark: prefers-color-scheme, then the page's stored theme set to dark; a page that stays light gets no dark shot
 //   ("dark not applied", exit 1).
@@ -56,7 +57,7 @@ if (!cmd || cmd === "-h" || cmd === "--help" || !["shoot", "fit", "runtime"].inc
 }
 const flag = (k) => args.includes(k);
 const opt = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
-const VALUED = new Set(["--width", "--widths", "--theme", "--out", "--selector", "--register"]);
+const VALUED = new Set(["--width", "--widths", "--theme", "--out", "--selector", "--register", "--root"]);
 const target = args.slice(1).find((a, i, xs) => !a.startsWith("--") && !VALUED.has(xs[i - 1]));
 if (!target) { console.error(`usage: render.mjs ${cmd} <url|file> [options]`); process.exit(2); }
 const url = /^[a-z][\w+.-]*:/i.test(target) ? target : pathToFileURL(resolve(target)).href;
@@ -66,11 +67,11 @@ if (url.startsWith("file:")) {
   if (file && !existsSync(file)) { console.error(`render: file not found: ${file}`); process.exit(1); }
 }
 const json = flag("--json");
-const ROOT = artifactRoot(process.cwd());
+const ROOT = opt("--root") ? resolve(opt("--root")) : artifactRoot(process.cwd());
 const SHOTS = join(ROOT, ".wwjd", "shots");
 const register = () => {
   if (opt("--register")) return opt("--register").toLowerCase();
-  try { return JSON.parse(readFileSync(nearestConfig(process.cwd()), "utf8")).register?.toLowerCase() || null; } catch { return null; }
+  try { return JSON.parse(readFileSync(nearestConfig(ROOT), "utf8")).register?.toLowerCase() || null; } catch { return null; }
 };
 const H = (w) => (w < 800 ? 844 : 900);
 

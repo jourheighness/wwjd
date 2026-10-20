@@ -1,14 +1,18 @@
 #!/usr/bin/env node
 // gate.mjs: the Strictness dial, enforced by hooks. Reads the hook JSON on stdin; prints a hook decision or nothing.
-//   pre    PreToolUse (Write): from Strictness 3, a new UI file waits for a grade sheet (.wwjd/grade/*.md) written
-//          this session. A surface within budget still gets one line there ("within budget: title + 3").
+//   pre    PreToolUse (Write): a new project's first UI file waits for the start question (commands/start.md §0): the
+//          person picks variants first or straight to build, recorded as "start" in the project's .wwjd.json. Any
+//          Strictness: wwjd owns the design side, so a new product never starts as code by default.
+//          From Strictness 3, a new UI file also waits for a grade sheet (.wwjd/grade/*.md) written this session.
+//          A surface within budget still gets one line there ("within budget: title + 3").
 //   post   PostToolUse (Write, Edit, MultiEdit, Agent): notes the session's last UI edit and its last wwjd-critic run.
 //   stop   Stop: the checks the dial asks for, all newer than the last UI edit, before the turn may end:
 //          2 a screenshot · 3 two widths · 4 a dark shot and a runtime report · 5 a wwjd-critic run.
 //          .wwjd/shots/UNAVAILABLE (render.mjs writes it when it can't render) stands in for shots and runtime.
 //          Blocks at most twice per user turn, so a check that can't be done never traps the turn.
 //   status the same state as JSON, for the wwjd status band (hooks/status.tsx): stdin { session_id, cwd }.
-// Artifacts (.wwjd/) live at the nearest ancestor of cwd with .wwjd.json or .wwjd/, else the git root (paths.mjs).
+// Artifacts (.wwjd/) live at the nearest ancestor with .wwjd.json or .wwjd/, else the git root (paths.mjs): of the file
+// being written or last edited when a session in one folder works on another project, else of cwd.
 // Tests, fixtures and stories are not UI work here. The ledger (per session, in $TMPDIR/wwjd-gate) is updated under a
 // lock, re-read and merged field by field, then renamed into place, so parallel hooks never undo each other.
 // Strictness: the nearest .wwjd.json "dials" > the plugin option > WWJD_DIALS > 3. No deps, Node 20.10+.
@@ -16,7 +20,7 @@ import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, 
 import { tmpdir } from "node:os";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { STORY, TEST, UI_EXT, artifactRoot, nearestConfig } from "./paths.mjs";
+import { STORY, TEST, UI_EXT, artifactRoot, gitRoot, hasUI, nearestConfig, projectOf } from "./paths.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const RENDER = join(HERE, "render.mjs");
@@ -70,7 +74,10 @@ const ensured = () => { const l = readLedger(); return l.start ? l : update(() =
 const say = (o) => { console.log(JSON.stringify(o)); process.exit(0); };
 
 // ── project ──
-const configFile = nearestConfig(cwd);
+// The project's config: the file being written's (pre), else cwd's. A session in one repo may edit another.
+const fileDir = mode === "pre" && fp ? dirname(resolve(cwd, fp)) : null;
+const fileConfig = fileDir ? nearestConfig(fileDir) : null;
+const configFile = fileConfig || nearestConfig(cwd);
 const config = (() => { try { return configFile ? JSON.parse(readFileSync(configFile, "utf8")) : {}; } catch { return {}; } })();
 function strictness() {
   const v = config.dials?.strictness;
@@ -84,12 +91,13 @@ let rootMemo = null;
 const root = () => (rootMemo ??= artifactRoot(cwd));
 const mtime = (p) => { try { return statSync(p).mtimeMs; } catch { return 0; } };
 
-// The newest grade sheet written this session, or null.
-function sheet(ledger) {
-  const dir = join(root(), ".wwjd", "grade");
-  if (!existsSync(dir)) return null;
-  const fresh = readdirSync(dir).filter((f) => f.endsWith(".md") && mtime(join(dir, f)) >= (ledger.start || 0) - 1000);
-  return fresh.sort((a, b) => mtime(join(dir, b)) - mtime(join(dir, a)))[0] ?? null;
+// The newest grade sheet written this session in any of `dirs` (project roots), or null.
+function sheet(ledger, dirs = [root()]) {
+  const fresh = dirs.flatMap((r) => {
+    const dir = join(r, ".wwjd", "grade");
+    return existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(".md") && mtime(join(dir, f)) >= (ledger.start || 0) - 1000).map((f) => join(dir, f)) : [];
+  });
+  return fresh.sort((a, b) => mtime(b) - mtime(a))[0]?.split("/").pop() ?? null;
 }
 
 // Whether a wwjd-critic agent ran after `since`: the post hook's note, else the transcript.
@@ -135,6 +143,9 @@ function loggedSince(since, ledger) {
 
 function checks(ledger, s) {
   const since = ledger.lastEdit || 0;
+  // Reports go to the edited project: render.mjs --root when it is not the session's own
+  const edited = ledger.lastFile ? artifactRoot(dirname(ledger.lastFile)) : root();
+  const at = edited !== root() ? ` --root ${edited}` : "";
   const fresh = roots(ledger).flatMap((r) => { const dir = join(r, ".wwjd", "shots"); return existsSync(dir) ? readdirSync(dir).filter((f) => mtime(join(dir, f)) > since) : []; });
   const unavailable = fresh.includes("UNAVAILABLE");
   const pngs = fresh.filter((f) => f.endsWith(".png"));
@@ -142,8 +153,8 @@ function checks(ledger, s) {
   const target = shotTarget(ledger);
   const out = [];
   if (s >= 2) out.push(s >= 3
-    ? { key: "shots", label: "Shots at 2 widths", done: unavailable || widths.size >= 2, how: `screenshots at desktop and phone width: node ${RENDER} shoot ${target} --theme light` }
-    : { key: "shots", label: "Screenshot", done: unavailable || pngs.length > 0, how: `a screenshot: node ${RENDER} shoot ${target} --one, then look at it` });
+    ? { key: "shots", label: "Shots at 2 widths", done: unavailable || widths.size >= 2, how: `screenshots at desktop and phone width: node ${RENDER} shoot ${target} --theme light${at}` }
+    : { key: "shots", label: "Screenshot", done: unavailable || pngs.length > 0, how: `a screenshot: node ${RENDER} shoot ${target} --one${at}, then look at it` });
   if (s >= 3) {
     // Fit runs at 320–720px and must come back clean: wrapping, clipping and lone items are layout bugs, not taste.
     let fit = null;
@@ -151,15 +162,15 @@ function checks(ledger, s) {
     try { fit = fitFile ? JSON.parse(readFileSync(fitFile, "utf8")) : null; } catch { /* unreadable: not done */ }
     const errs = fit ? fit.findings.filter((f) => f.severity === "error").map((f) => `${f.width}px ${f.rule}: ${f.what}`) : [];
     out.push({ key: "fit", label: errs.length ? "Fit errors" : "Fit check", done: unavailable || (fit !== null && errs.length === 0),
-      how: errs.length ? `fix the fit errors, then rerun fit: ${[...new Set(errs)].slice(0, 4).join("; ")}` : `the fit check: node ${RENDER} fit ${target} --widths 320,480,720` });
+      how: errs.length ? `fix the fit errors, then rerun fit: ${[...new Set(errs)].slice(0, 4).join("; ")}` : `the fit check: node ${RENDER} fit ${target} --widths 320,480,720${at}` });
   }
   if (s >= 4) {
-    out.push({ key: "dark", label: "Dark shot", done: unavailable || pngs.some((f) => f.includes("-dark.")), how: `a dark-mode shot: node ${RENDER} shoot ${target} --theme dark` });
-    out.push({ key: "runtime", label: "Runtime checks", done: unavailable || roots(ledger).some((r) => mtime(join(r, ".wwjd", "runtime.json")) > since), how: `the runtime checks: node ${RENDER} runtime ${target}` });
+    out.push({ key: "dark", label: "Dark shot", done: unavailable || pngs.some((f) => f.includes("-dark.")), how: `a dark-mode shot: node ${RENDER} shoot ${target} --theme dark${at}` });
+    out.push({ key: "runtime", label: "Runtime checks", done: unavailable || roots(ledger).some((r) => mtime(join(r, ".wwjd", "runtime.json")) > since), how: `the runtime checks: node ${RENDER} runtime ${target}${at}` });
   }
   // Asked once per run of edits: an agent that made no unasked choice says so in the handover and may stop.
   if (s >= 2) out.push({ key: "log", label: "Decisions logged", done: (ledger.logAsked || 0) >= since || loggedSince(ledger.start || 0, ledger),
-    how: "the design assumptions and choices you made without being told: one mcp__wwjd__log call each (surface, kind, one-line text, why); none? say so in the handover" });
+    how: "the design assumptions and choices you made without being told: one mcp__wwjd__log call each (surface, kind, one-line text, why, proof: the shot path, the page URL or the Artifact link that shows it); none? say so in the handover" });
   if (s >= 5) out.push({ key: "critic", label: "Critic", done: criticSince(ledger, since), how: "a cold review: run the wwjd:wwjd-critic agent on what you built" });
   return out;
 }
@@ -167,21 +178,33 @@ function checks(ledger, s) {
 if (mode === "status") {
   const s = strictness();
   const ledger = ensured();
-  const file = s >= 3 ? sheet(ledger) : null;
+  const file = s >= 3 ? sheet(ledger, roots(ledger)) : null;
   // due: the pre gate refused a new UI file this session and no sheet has been written since.
   say({ strictness: s, hasEdits: editPending(ledger), lastFile: ledger.lastFile || null,
     sheet: { needed: s >= 3, file, due: s >= 3 && Boolean(ledger.denied) && !file }, checks: checks(ledger, s) });
 }
 
 if (mode === "pre") {
+  const project = projectOf(fp, cwd);
+  // A new project (a repo or package with no .wwjd.json and no UI yet): the person decides how it starts, before any UI
+  // file is written. Loose files outside a project (an Artifact page in a scratchpad, the variants themselves) pass.
+  const isProject = existsSync(join(project, "package.json")) || Boolean(gitRoot(project));
+  if (!fileConfig && isProject && !hasUI(project)) {
+    say({ hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason:
+      `wwjd: ${project} is a new project, and wwjd owns its design side. Before the first UI file, ask the start question ` +
+      `(skills/ux/commands/start.md §0) in one AskUserQuestion batch, each with a default: how to begin (lettered variants ` +
+      `in an Artifact first, recommended; or straight to build), how many directions, and the look (a board of options, ` +
+      `or quick mode). Then write ${join(project, ".wwjd.json")} with "start": "variants" or "build" (plus "register" and, ` +
+      `once the comparison Artifact exists, "board": its link), and do what they chose before writing ${fp}.` } });
+  }
   const s = strictness();
   if (s < 3) process.exit(0);
   const ledger = ensured();
-  if (sheet(ledger)) process.exit(0);
+  if (sheet(ledger, [...new Set([project, root()])])) process.exit(0);
   update((l) => { l.denied = Date.now(); });
   say({ hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason:
     `wwjd Strictness ${s}: grade this surface before building it (references/budgets.md, Grade gate). ` +
-    `Write .wwjd/grade/<surface>.json in ${root()}, run node ${join(HERE, "grade.mjs")} .wwjd/grade/<surface>.json there and answer its sheet in .wwjd/grade/<surface>.md. ` +
+    `Write .wwjd/grade/<surface>.json in ${project}, run node ${join(HERE, "grade.mjs")} .wwjd/grade/<surface>.json there and answer its sheet in .wwjd/grade/<surface>.md. ` +
     `Within budget: one line in that .md ("within budget: title + 3"). Then write ${fp} again.` } });
 }
 

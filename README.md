@@ -34,7 +34,7 @@ docs/research/            archived research (faux-pas catalogue, layouts, look);
 
 ## How it runs
 1. **Entry, once per session:** `wwjd.mjs status` prints the stage (`scratch`, `kit`, `messy`), the baseline files, the kit, Storybook, golden and legacy files, the dials and whether over-budget surfaces get a grade sheet. The agent reads what it lists.
-2. **Route:** six verbs. `start` sets up a baseline, `build` builds or rebuilds, `simplify` removes and reorders, `review` returns a verdict and ranked findings, `explore` shows ~5 structure variants (a redesign of an existing screen: 3 directions from the job, today's layout set aside), `audit` maps the debt.
+2. **Route:** six verbs. `start` asks a new project how to begin (variants in an Artifact, or build) and sets up a baseline, `build` builds or rebuilds, `simplify` removes and reorders, `review` returns a verdict and ranked findings, `explore` shows ~5 structure variants (a redesign of an existing screen: 3 directions from the job, today's layout set aside), `audit` maps the debt.
 3. **Loop:** show the work at once, react, adjust. A hook lints each edited UI file silently; one screenshot per handover; the full matrix only at milestones; the critic only when asked.
 
 ## Install
@@ -58,11 +58,13 @@ Six dials tune how wwjd designs, never the floor: **Look** (plain ↔ expressive
 ## Per project
 - **`.wwjd.json`** (committed, repo-relative paths only):
   ```json
-  { "register": "operate", "locale": ["sv", "en"], "kitDirs": ["packages/ui"], "dials": { "creativity": 4 },
+  { "start": "variants", "board": "https://claude.ai/artifact/…", "register": "operate", "locale": ["sv", "en"],
+    "kitDirs": ["packages/ui"], "dials": { "creativity": 4 },
     "golden": ["src/pages/Orders.tsx"], "legacy": ["src/old/**"],
     "storybook": "pnpm storybook", "rules": { "gradient": "off" } }
   ```
   Never preview URLs or hosts: use the `WWJD_PREVIEW` env var or an untracked `AGENTS.local.md`.
+  A new project (a repo or package with no `.wwjd.json` and no UI yet) asks first how to begin: variants in an Artifact, or build. The pre hook holds its first UI file until `.wwjd.json` records `"start"`.
 - **`.wwjd-baseline.json`** (committed): `wwjd.mjs check --baseline` writes it. The hook and `check --new` then report only errors and new warnings, and re-running `--baseline` only lowers counts. Delete it to accept new debt on purpose.
 - **`.wwjd/`** (gitignored): screenshots, references, look.json.
 - **One-off exceptions:** a trailing `wwjd-ignore: <reason>` comment on the line.

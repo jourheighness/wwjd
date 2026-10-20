@@ -312,3 +312,53 @@ test("checks run from where the page is served count: reports at the edited file
   assert.equal(done.shots, true);
   assert.equal(done.fit, true);
 });
+
+test("pre: a new project's first UI file waits for the start question, at any Strictness", () => {
+  const p = project(1);
+  const app = mkdtempSync(join(tmpdir(), "wwjd-new-"));
+  execFileSync("git", ["init", "-q", app]);
+  writeFileSync(join(app, "package.json"), "{}");
+  const r = p.run("pre", write(join(app, "src", "App.tsx")));
+  assert.equal(r.hookSpecificOutput.permissionDecision, "deny");
+  assert.match(r.hookSpecificOutput.permissionDecisionReason, /start question/);
+  assert.match(r.hookSpecificOutput.permissionDecisionReason, /wwjd-new-\w+\/\.wwjd\.json/);
+  writeFileSync(join(app, ".wwjd.json"), JSON.stringify({ start: "variants", dials: { strictness: 1 } }));
+  assert.equal(p.run("pre", write(join(app, "src", "App.tsx"))), null);
+});
+
+test("pre: no start question for a project that already has UI, or a loose page outside any project", () => {
+  const p = project(1);
+  const app = mkdtempSync(join(tmpdir(), "wwjd-old-"));
+  execFileSync("git", ["init", "-q", app]);
+  mkdirSync(join(app, "src"));
+  writeFileSync(join(app, "src", "Home.tsx"), "<div/>");
+  assert.equal(p.run("pre", write(join(app, "src", "New.tsx")), { CLAUDE_PLUGIN_OPTION_STRICTNESS: "2" }), null);
+  const loose = mkdtempSync(join(tmpdir(), "wwjd-scratch-"));
+  assert.equal(p.run("pre", write(join(loose, "variants.html")), { CLAUDE_PLUGIN_OPTION_STRICTNESS: "2" }), null);
+});
+
+test("pre: a session in one repo writing another project reads that project's dials and grade sheets", () => {
+  const p = project(1);
+  const app = mkdtempSync(join(tmpdir(), "wwjd-other-"));
+  execFileSync("git", ["init", "-q", app]);
+  writeFileSync(join(app, ".wwjd.json"), JSON.stringify({ dials: { strictness: 3 } }));
+  const r = p.run("pre", write(join(app, "Card.tsx")));
+  assert.equal(r.hookSpecificOutput.permissionDecision, "deny");
+  assert.match(r.hookSpecificOutput.permissionDecisionReason, new RegExp(`grade/<surface>\\.json in ${app.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+  mkdirSync(join(app, ".wwjd", "grade"), { recursive: true });
+  writeFileSync(join(app, ".wwjd", "grade", "card.md"), "within budget: title + 2");
+  assert.equal(p.run("pre", write(join(app, "Card.tsx"))), null);
+});
+
+test("stop: render commands write to the edited project with --root when it is not the session's", () => {
+  const p = project(3);
+  const app = mkdtempSync(join(tmpdir(), "wwjd-other-"));
+  writeFileSync(join(app, ".wwjd.json"), "{}");
+  writeFileSync(join(app, "Card.tsx"), "<div/>");
+  p.run("post", { tool_name: "Write", tool_input: { file_path: join(app, "Card.tsx") } });
+  const how = p.run("status", {}).checks.map((c) => c.how).join("\n");
+  assert.match(how, new RegExp(`shoot .* --root ${app.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+  assert.match(how, /fit .* --root /);
+  p.edit("card.html");
+  assert.doesNotMatch(p.run("status", {}).checks.map((c) => c.how).join("\n"), /--root/);
+});

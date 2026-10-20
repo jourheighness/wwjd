@@ -1,9 +1,9 @@
 // paths.mjs: where wwjd's scripts find a project's config and artifacts, and which files count as UI. No deps, Node 20.10+.
 // gate.mjs, render.mjs and wwjd.mjs share it, so the gate reads what render writes and lints what the hook checks.
 import { execFileSync } from "node:child_process";
-import { existsSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, extname, join, resolve } from "node:path";
 
 export const UI_EXT = new Set([".tsx", ".jsx", ".vue", ".svelte", ".astro", ".html", ".mdx", ".css", ".scss"]);
 // Tests and fixtures: never linted, never gated.
@@ -35,4 +35,29 @@ export function artifactRoot(cwd) {
     if (dirname(d) === d) break;
   }
   return gitRoot(cwd) || cwd;
+}
+
+/** The project a file belongs to, even one not written yet: artifactRoot() from its nearest existing folder. */
+export function projectOf(file, cwd = process.cwd()) {
+  let d = dirname(resolve(cwd, file));
+  while (!isDir(d) && dirname(d) !== d) d = dirname(d);
+  return artifactRoot(d);
+}
+
+const SKIP = new Set(["node_modules", "dist", "build", "out", ".next", ".git", ".wwjd", ".svelte-kit", ".astro", "coverage"]);
+/** Whether `root` already holds a UI file (tests, fixtures and stories aside). Bounded: a huge tree counts as "has UI". */
+export function hasUI(root) {
+  let seen = 0;
+  const walk = (d, depth) => {
+    let entries = [];
+    try { entries = readdirSync(d, { withFileTypes: true }); } catch { return false; }
+    for (const e of entries) {
+      if (++seen > 4000) return true;
+      const p = join(d, e.name);
+      if (e.isDirectory()) { if (!SKIP.has(e.name) && !e.name.startsWith(".") && depth < 6 && walk(p, depth + 1)) return true; }
+      else if (UI_EXT.has(extname(e.name)) && !TEST.test(p) && !STORY.test(p)) return true;
+    }
+    return false;
+  };
+  return walk(root, 0);
 }
