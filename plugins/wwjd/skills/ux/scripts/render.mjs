@@ -8,10 +8,12 @@
 //     --theme light|dark --widths 1440,390 --out <dir> (default .wwjd/shots)  --full (full page with --one)
 //   .wwjd/ is at the nearest folder up with .wwjd.json or .wwjd/, else the git root, else here (what gate.mjs reads).
 //   fit      resize a page or story and catch components that break as they shrink (also orphan-item: a lone
-//            avatar, icon or badge wrapped onto its own line); writes .wwjd/fit.json for the Strictness gate
+//            avatar, icon, dot or badge wrapped onto its own line, in a flex row or in running text); writes
+//            .wwjd/fit.json for the Strictness gate
 //     --widths 240,320,480,720  --selector "<container css>" (resize that element, not the viewport)
-//     identifier-clipped · identifier-long · icon-detached · overflow · hover-shift · hover-unreachable ·
-//     text-collapsed · ring-clipped · value-fill-empty · control-height-mismatch
+//     identifier-clipped · identifier-long · icon-detached · overflow · overlap (text or controls drawn over each
+//     other) · text-sliced (cut mid-line by an overflow clip) · hover-shift · hover-unreachable · text-collapsed ·
+//     ring-clipped · value-fill-empty · control-height-mismatch. Visually hidden (sr-only) text is skipped.
 //   runtime  the milestone checks: page-overflow (320/390/768/1440/1920), clipped-text, small-target (<24px),
 //     hover-shift (layout shift after hovering rows), focus-hidden (Tab stops invisible or under sticky chrome),
 //     reduced-motion (transform animations left under reduce), broken-image, spacing-drift (radii, max-widths, button styles),
@@ -231,8 +233,35 @@ if (cmd === "fit") {
       const root = sel ? document.querySelector(sel) : document.documentElement;
       const lineH = (el) => parseFloat(getComputedStyle(el).lineHeight) || parseFloat(getComputedStyle(el).fontSize) * 1.3;
       const name = (el) => (el.getAttribute("data-identifier") || el.textContent || "").trim().slice(0, 40);
+      const label = (el) => (el.getAttribute("aria-label") || el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 30) || el.tagName.toLowerCase();
+      const css = (el) => el.tagName.toLowerCase() + (typeof el.className === "string" && el.className.trim() ? "." + el.className.trim().split(/\s+/)[0] : "");
+      // Visually hidden on purpose (sr-only: a 1px box, clip rect(0 0 0 0), clip-path inset(50%)), itself or above.
+      const srOnly = (el) => {
+        for (let p = el; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+          const c = getComputedStyle(p), b = p.getBoundingClientRect();
+          if ((b.width <= 1 && b.height <= 1) || ((b.width <= 1 || b.height <= 1) && c.overflow !== "visible")) return true;
+          if (/inset\(\s*(50|100)%/.test(c.clipPath)) return true;
+          if ((c.position === "absolute" || c.position === "fixed") && c.clip && c.clip !== "auto") {
+            const n = (c.clip.match(/-?[\d.]+/g) || []).map(Number);
+            if (n.length === 4 && (n[2] - n[0] <= 1 || n[1] - n[3] <= 1)) return true;
+          }
+        }
+        return false;
+      };
+      const shown = (el) => el.getClientRects().length && (el.checkVisibility?.({ checkOpacity: true, checkVisibilityCSS: true }) ?? true) && !srOnly(el);
+      // A text node's line fragments, trimmed to the line box: glyph ink past a tight line-height is not text.
+      const textLines = (node) => {
+        const r = document.createRange(); r.selectNodeContents(node);
+        const L = lineH(node.parentElement);
+        return [...r.getClientRects()].filter((x) => x.width > 0.5 && x.height > 0.5).map((x) => {
+          const cut = x.height > L ? (x.height - L) / 2 : 0;
+          return { left: x.left, right: x.right, top: x.top + cut, bottom: x.bottom - cut };
+        });
+      };
+      const ownText = (el) => [...el.childNodes].filter((n) => n.nodeType === 3 && n.textContent.trim());
       for (const el of root.querySelectorAll("[data-identifier], h1, h2, h3, h4, h5, h6")) {
         if (!el.offsetParent && el.tagName !== "BODY") continue;
+        if (srOnly(el)) continue;
         // Vertically, a box that doesn't clip only loses text when a whole line spills; glyph ink past a tight
         // line-height (scrollHeight a px or two over) is not a clip.
         const cs = getComputedStyle(el), spill = cs.overflowY === "visible" && cs.webkitLineClamp === "none" ? lineH(el) / 2 : 1;
@@ -240,14 +269,49 @@ if (cmd === "fit") {
         else if (el.getBoundingClientRect().height / lineH(el) > 3.5) out.push(["identifier-long", "warn", name(el)]);
       }
       // A wrapping flex row that left one child alone on a line, or a row holding one small item: a lone item.
+      // Lines are items whose boxes share height, so a dot centred beside taller text sits on the text's line.
+      const small = (b) => b.width < 56 && b.height < 56;
+      const lines = (items) => {
+        const ls = [];
+        for (const it of [...items].sort((a, b) => a.b.top - b.b.top)) {
+          const cur = ls.at(-1);
+          if (cur && it.b.top < cur.bottom - 1) { cur.items.push(it); cur.bottom = Math.max(cur.bottom, it.b.bottom); }
+          else ls.push({ items: [it], bottom: it.b.bottom });
+        }
+        return ls;
+      };
+      const orphanName = (k) => k.getAttribute("aria-label") || (typeof k.className === "string" && k.className) || k.tagName;
+      let orphan = false;
       for (const el of root.querySelectorAll("*")) {
         const cs = getComputedStyle(el);
         if (!cs.display.includes("flex") || !el.getClientRects().length) continue;
         const kids = [...el.children].filter((k) => k.getClientRects().length && getComputedStyle(k).position !== "absolute");
-        if (cs.flexWrap !== "nowrap" && cs.flexDirection.startsWith("row") && kids.length >= 3) {
-          const tops = kids.map((k) => Math.round(k.getBoundingClientRect().top));
-          const lines = [...new Set(tops)];
-          if (lines.length > 1) { const box = el.getBoundingClientRect(); const alone = kids.find((k, i) => { const kb = k.getBoundingClientRect(); return tops[i] !== lines[0] && tops.filter((t) => t === tops[i]).length === 1 && (kb.width < 56 || kb.left - box.left > box.width * 0.4); }); if (alone) { out.push(["orphan-item", "error", (alone.getAttribute("aria-label") || alone.className || alone.tagName) + " wrapped onto a line of its own"]); break; } }
+        if (cs.flexWrap !== "nowrap" && cs.flexDirection.startsWith("row") && kids.length >= 2) {
+          const ls = lines(kids.map((k) => ({ k, b: k.getBoundingClientRect() })));
+          const box = el.getBoundingClientRect();
+          // two items: only a small one (a dot after a title) counts; from three, also one pushed to the far side
+          const lone = ls.slice(1).find((l) => l.items.length === 1 && (small(l.items[0].b) || (kids.length >= 3 && l.items[0].b.left - box.left > box.width * 0.4)));
+          if (lone) { out.push(["orphan-item", "error", orphanName(lone.items[0].k) + " wrapped onto a line of its own"]); orphan = true; break; }
+        }
+      }
+      // In running text: a small inline item (a status dot, an icon, a badge) that wrapped alone onto the last line.
+      for (const el of orphan ? [] : root.querySelectorAll("*")) {
+        const cs = getComputedStyle(el);
+        if (!cs.display.startsWith("inline") || el.ownerSVGElement || el.textContent.trim().length > 3 || !shown(el)) continue;
+        const b = el.getBoundingClientRect();
+        if (!small(b) || b.width < 2) continue;
+        let block = el.parentElement;
+        while (block && getComputedStyle(block).display.startsWith("inline")) block = block.parentElement;
+        // preformatted text breaks where it was written
+        if (!block || (block.textContent || "").length > 1000 || /^pre|break-spaces/.test(getComputedStyle(block).whiteSpace)) continue;
+        const rects = (range) => [...range.getClientRects()].filter((x) => x.width > 0.5 && x.height > 0.5);
+        const before = document.createRange(); before.setStart(block, 0); before.setEndBefore(el);
+        const after = document.createRange(); after.setStartAfter(el); after.setEnd(block, block.childNodes.length);
+        const prior = rects(before);
+        if (!prior.length || !(before.toString().trim() || prior.length > 1)) continue;
+        const sameLine = (x) => x.top < b.bottom - 1 && x.bottom > b.top + 1;
+        if (!prior.some(sameLine) && !rects(after).some(sameLine) && prior.some((x) => x.bottom <= b.top + 1)) {
+          out.push(["orphan-item", "error", orphanName(el) + " wrapped onto a line of its own"]); break;
         }
       }
       for (const el of root.querySelectorAll("*")) {
@@ -256,6 +320,74 @@ if (cmd === "fit") {
         if (kids.length !== 1 || sib.length < 2 || el.textContent.trim().length > 3 || !el.getClientRects().length) continue;
         const b = kids[0].getBoundingClientRect(), row = el.getBoundingClientRect();
         if (b.width < 56 && row.width > b.width * 4 && b.height < 56) { out.push(["orphan-item", "error", (kids[0].getAttribute("aria-label") || kids[0].className || kids[0].tagName) + " sits alone in its own row"]); break; }
+      }
+      // Text cut mid-line by an overflow clip (a fixed-height excerpt whose third line shows half). Scrollers scroll,
+      // line-clamp cuts at a line and a mask fades on purpose; sr-only text is meant to be clipped.
+      const textBlocks = [...root.querySelectorAll("*")].filter((el) => ownText(el).length).slice(0, 3000);
+      sliced: for (const el of textBlocks) {
+        if (!shown(el)) continue;
+        for (let p = el; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+          const c = getComputedStyle(p);
+          if (c.overflowY === "visible") continue;
+          if ((c.overflowY !== "hidden" && c.overflowY !== "clip") || c.webkitLineClamp !== "none" || (c.maskImage && c.maskImage !== "none") || (c.webkitMaskImage && c.webkitMaskImage !== "none")) break;
+          const pb = p.getBoundingClientRect(), edge = pb.bottom - parseFloat(c.borderBottomWidth || 0);
+          for (const t of ownText(el)) for (const x of textLines(t)) {
+            const h = x.bottom - x.top;
+            if (x.top < edge - h * 0.25 && x.bottom > edge + h * 0.25) {
+              out.push(["text-sliced", "error", `"${label(el)}" cut mid-line by ${css(p)} (${Math.round(pb.height)}px tall)`]);
+              break sliced;
+            }
+          }
+          break;
+        }
+      }
+      // Text or a control drawn over another it is not nested in (a toolbar positioned over the headline). Overlays
+      // that float on purpose are skipped: fixed or sticky, dialogs, popovers, menus, tooltips, toasts; also
+      // pointer-events none, aria-hidden and sr-only, and adornments inside a field (a clear button, a floating label).
+      const CONTROL = "button, a[href], input:not([type=hidden]), select, textarea, summary, [role=button], [role=tab], [role=radio], [role=checkbox], [role=switch], [role=link], [role=menuitem], [role=option]";
+      const FLOAT = "dialog, [popover], [role=dialog], [role=alertdialog], [role=tooltip], [role=menu], [role=listbox], [role=status], [role=alert], [aria-modal=true], [aria-hidden=true]";
+      const floats = (el) => { for (let p = el; p && p !== document.documentElement; p = p.parentElement) { if (p.matches(FLOAT)) return true; const pos = getComputedStyle(p).position; if (pos === "fixed" || pos === "sticky") return true; } return false; };
+      const clipMemo = new Map();
+      const clipOf = (el) => {
+        if (!el || el === document.documentElement || el === document.body) return { left: -1e9, top: -1e9, right: 1e9, bottom: 1e9 };
+        if (clipMemo.has(el)) return clipMemo.get(el);
+        const up = clipOf(el.parentElement), c = getComputedStyle(el.parentElement || el);
+        let r = up;
+        if (el.parentElement && el.parentElement !== document.body && el.parentElement !== document.documentElement) {
+          const pb = el.parentElement.getBoundingClientRect();
+          r = { left: c.overflowX !== "visible" ? Math.max(up.left, pb.left) : up.left, right: c.overflowX !== "visible" ? Math.min(up.right, pb.right) : up.right,
+            top: c.overflowY !== "visible" ? Math.max(up.top, pb.top) : up.top, bottom: c.overflowY !== "visible" ? Math.min(up.bottom, pb.bottom) : up.bottom };
+        }
+        clipMemo.set(el, r); return r;
+      };
+      const clipTo = (x, k) => ({ left: Math.max(x.left, k.left), right: Math.min(x.right, k.right), top: Math.max(x.top, k.top), bottom: Math.min(x.bottom, k.bottom) });
+      const items = [];
+      for (const el of [...root.querySelectorAll("*")].slice(0, 6000)) {
+        const control = el.matches(CONTROL), text = ownText(el);
+        if ((!control && !text.length) || !shown(el) || getComputedStyle(el).pointerEvents === "none" || floats(el)) continue;
+        // text is clipped by its own box too (a td with overflow hidden and an ellipsis)
+        const own = getComputedStyle(el), eb = el.getBoundingClientRect(), up = clipOf(el);
+        const k = control ? up : clipTo(up, { left: own.overflowX !== "visible" ? eb.left : -1e9, right: own.overflowX !== "visible" ? eb.right : 1e9,
+          top: own.overflowY !== "visible" ? eb.top : -1e9, bottom: own.overflowY !== "visible" ? eb.bottom : 1e9 });
+        const boxes = control ? [eb] : text.flatMap(textLines);
+        for (const x of boxes) { const v = clipTo(x, k); if (v.right - v.left > 1 && v.bottom - v.top > 1) items.push({ el, control, ...v }); }
+        if (items.length > 4000) break;
+      }
+      items.sort((a, b) => a.top - b.top);
+      const FIELD = "input, select, textarea";
+      const inside = (a, b) => a.left >= b.left - 1 && a.right <= b.right + 1 && a.top >= b.top - 1 && a.bottom <= b.bottom + 1;
+      overlap: for (let i = 0; i < items.length; i++) {
+        const a = items[i];
+        for (let j = i + 1; j < items.length && items[j].top < a.bottom; j++) {
+          const b = items[j];
+          if (a.el === b.el || a.el.contains(b.el) || b.el.contains(a.el)) continue;
+          const iw = Math.min(a.right, b.right) - Math.max(a.left, b.left), ih = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+          if (iw <= 4 || ih <= Math.max(2, Math.min(a.bottom - a.top, b.bottom - b.top) * 0.3)) continue;
+          if ((a.el.matches(FIELD) && inside(b, a)) || (b.el.matches(FIELD) && inside(a, b))) continue;
+          if ((a.el.tagName === "LABEL" && a.el.control === b.el) || (b.el.tagName === "LABEL" && b.el.control === a.el)) continue;
+          out.push(["overlap", "error", `"${label(a.el)}" (${css(a.el)}) and "${label(b.el)}" (${css(b.el)}) are drawn over each other`]);
+          break overlap;
+        }
       }
       for (const el of root.querySelectorAll("*")) {
         const cs = getComputedStyle(el);

@@ -46,3 +46,77 @@ test("ring-clipped: a ring cut by overflow:hidden at an edge still counts", (t) 
   if (!rules) return t.skip("no Playwright");
   assert.ok(rules.includes("ring-clipped"), rules.join(", "));
 });
+
+// A 390px phone header, as in the live run: two segmented groups positioned over the headline.
+const HEAD = "header{position:relative;width:390px;padding:16px;box-sizing:border-box}h1{font-size:28px;margin:0}button{font:inherit;padding:6px 10px}[role=group]{display:flex}";
+const GROUPS = '<div role="group"><button>Dag</button><button>Vecka</button></div><div role="group"><button>Lista</button><button>Karta</button></div>';
+
+test("overlap: controls positioned over the headline", (t) => {
+  const rules = fit(`<style>${HEAD}.tools{position:absolute;top:16px;right:16px;display:flex;gap:8px}</style><header><h1>Mina utredningar och ärenden</h1><div class="tools">${GROUPS}</div></header>`);
+  if (!rules) return t.skip("no Playwright");
+  assert.ok(rules.includes("overlap"), rules.join(", "));
+});
+
+test("overlap: a laid-out header, field adornments, a fixed toast, a badge and ellipsis cells stay clean", (t) => {
+  const rules = fit(`<style>${HEAD}header{display:flex;flex-wrap:wrap;gap:8px}h1{flex:1 1 100%}
+    .field{position:relative;width:300px}.field input{width:100%;padding:18px 32px 6px 8px;box-sizing:border-box}.field label{position:absolute;left:8px;top:4px;font-size:11px}
+    .field .clear{position:absolute;right:4px;top:8px;width:24px;height:24px;padding:0}.toast{position:fixed;bottom:16px;left:16px;right:16px;background:#222;color:#fff}
+    .inbox{position:relative}.badge{position:absolute;top:-6px;right:-6px;font-size:10px}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+    table{table-layout:fixed;width:300px}td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}</style>
+    <header><h1>Mina utredningar och ärenden</h1>${GROUPS}<button class="inbox">Inkorg<span class="badge">3</span></button></header>
+    <span class="sr">Filter för listan</span><p>Lista</p>
+    <div class="field"><input id="q" placeholder=" "><label for="q">Sök ärende</label><button class="clear" aria-label="Rensa">×</button></div>
+    <table><tr><td>Leverantörsavtal för städtjänster i region Mitt</td><td>Anna Lindqvist, handläggare</td></tr></table>
+    <div class="toast" role="status">Ärendet sparades</div>`);
+  if (!rules) return t.skip("no Playwright");
+  assert.ok(!rules.includes("overlap"), rules.join(", "));
+});
+
+const DOT = ".dot{width:8px;height:8px;border-radius:50%;background:green}";
+
+test("orphan-item: a status dot wrapped alone, in a flex row of two and in running text", (t) => {
+  const flex = fit(`<style>${DOT}.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;width:300px}</style>
+    <div class="row"><b>Granskning av leverantörsavtalen 2026 i regionen</b><span class="dot"></span></div>`);
+  if (!flex) return t.skip("no Playwright");
+  assert.ok(flex.includes("orphan-item"), flex.join(", "));
+  // monospace at the text's width in ch: the line is full, so the dot has to wrap
+  const inline = fit(`<style>${DOT}.dot{display:inline-block}h3{width:19ch;font:bold 17px monospace}</style>
+    <h3>Granskning av avtal <span class="dot"></span></h3>`);
+  assert.ok(inline.includes("orphan-item"), inline.join(", "));
+});
+
+test("orphan-item: a dot centred beside taller text on one line is not alone", (t) => {
+  const rules = fit(`<style>${DOT}.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}</style>
+    <div class="row"><span style="font-size:20px">Granskning</span><span class="dot"></span><span>Aktiv</span></div>
+    <pre>Rader\n<b>NS</b>\nskrivna så</pre>`);
+  if (!rules) return t.skip("no Playwright");
+  assert.ok(!rules.includes("orphan-item"), rules.join(", "));
+});
+
+test("identifier-clipped: a visually hidden (sr-only) heading is skipped; a clipped one still counts", (t) => {
+  const rules = fit(`<style>.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0}
+    .vh{position:absolute;clip-path:inset(50%);white-space:nowrap}</style>
+    <h2 class="sr-only">Mina utredningar</h2><h2 class="vh">Mina utredningar och ärenden</h2><p>Lista</p>`);
+  if (!rules) return t.skip("no Playwright");
+  assert.ok(!rules.includes("identifier-clipped"), rules.join(", "));
+  const cut = fit(`<h2 style="width:120px;overflow:hidden;white-space:nowrap">Mina utredningar och ärenden</h2>`);
+  assert.ok(cut.includes("identifier-clipped"), cut.join(", "));
+});
+
+const EXCERPT = "Leverantören har inte lämnat de begärda underlagen inom utsatt tid och vi behöver därför skicka en påminnelse innan nästa vecka, annars går ärendet vidare.";
+
+test("text-sliced: an excerpt whose box cuts its third line in half", (t) => {
+  const rules = fit(`<style>p{width:300px;font:14px/20px sans-serif;margin:0}</style><div style="height:50px;overflow:hidden"><p>${EXCERPT}</p></div>`);
+  if (!rules) return t.skip("no Playwright");
+  assert.ok(rules.includes("text-sliced"), rules.join(", "));
+});
+
+test("text-sliced: a cut on a line boundary, line-clamp, a scroller and a fade stay clean", (t) => {
+  const rules = fit(`<style>p{width:300px;font:14px/20px sans-serif;margin:0}</style>
+    <p style="height:40px;overflow:hidden">${EXCERPT}</p>
+    <p style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${EXCERPT}</p>
+    <div style="height:50px;overflow:auto"><p>${EXCERPT}</p></div>
+    <p style="height:50px;overflow:hidden;mask-image:linear-gradient(#000 40%,transparent)">${EXCERPT}</p>`);
+  if (!rules) return t.skip("no Playwright");
+  assert.ok(!rules.includes("text-sliced"), rules.join(", "));
+});
