@@ -116,13 +116,17 @@ function shotTarget(ledger) {
 }
 
 // The checks Strictness `s` asks for after the last UI edit, each with whether it is done and how to do it.
-// Whether the sidebar's log (.wwjd/decisions.jsonl) gained an entry after `since`.
-function loggedSince(since) {
-  try {
-    return readFileSync(join(root(), ".wwjd", "decisions.jsonl"), "utf8").split("\n").some((line) => {
-      try { return Date.parse(JSON.parse(line).at) > since; } catch { return false; }
-    });
-  } catch { return false; }
+// Whether the sidebar's log (.wwjd/decisions.jsonl) gained an entry after `since`: at the session's root, or at the
+// root of the last edited file (the log tool writes to the project being edited, hooks/sidebar.tsx).
+function loggedSince(since, ledger) {
+  const roots = new Set([root(), ...(ledger.lastFile ? [artifactRoot(dirname(ledger.lastFile))] : [])]);
+  return [...roots].some((r) => {
+    try {
+      return readFileSync(join(r, ".wwjd", "decisions.jsonl"), "utf8").split("\n").some((line) => {
+        try { return Date.parse(JSON.parse(line).at) > since; } catch { return false; }
+      });
+    } catch { return false; }
+  });
 }
 
 function checks(ledger, s) {
@@ -150,7 +154,7 @@ function checks(ledger, s) {
     out.push({ key: "runtime", label: "Runtime checks", done: unavailable || mtime(join(root(), ".wwjd", "runtime.json")) > since, how: `the runtime checks: node ${RENDER} runtime ${target}` });
   }
   // Asked once per run of edits: an agent that made no unasked choice says so in the handover and may stop.
-  if (s >= 2) out.push({ key: "log", label: "Decisions logged", done: (ledger.logAsked || 0) >= since || loggedSince(ledger.start || 0),
+  if (s >= 2) out.push({ key: "log", label: "Decisions logged", done: (ledger.logAsked || 0) >= since || loggedSince(ledger.start || 0, ledger),
     how: "the design assumptions and choices you made without being told: one mcp__wwjd__log call each (surface, kind, one-line text, why); none? say so in the handover" });
   if (s >= 5) out.push({ key: "critic", label: "Critic", done: criticSince(ledger, since), how: "a cold review: run the wwjd:wwjd-critic agent on what you built" });
   return out;

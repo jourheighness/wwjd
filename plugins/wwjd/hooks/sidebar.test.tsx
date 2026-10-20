@@ -110,3 +110,25 @@ test('parallel log calls each keep their entry under its own id', async ($, on) 
   expect(logged).toHaveLength(4)
   expect(new Set(logged).size).toBe(4)
 })
+
+test('the log lands in the project being edited, not the session folder; the sidebar reads it there', async ($, on) => {
+  mock.store(on)
+  const files: Record<string, string> = { '/q/.git': 'gitdir: /p/.git/worktrees/q\n', '/r/.wwjd.json': '{}' }
+  disk(on as never, files)
+  on('ui.open', () => ({ value: { isPlaced: true } }) as never)
+  on('tool.call', { tool: 'Edit' }, () => ({ result: 'edited' }) as never)
+  await $.tool.call({ tool: 'mcp__wwjd__log', surface: 'Board', kind: 'choice', text: 'In the session folder' } as never)
+  expect(files['/p/.wwjd/decisions.jsonl']).toMatch(/In the session folder/)
+
+  await $.tool.call({ tool: 'Edit', file_path: '/q/src/Board.tsx', old_string: 'a', new_string: 'b' } as never)
+  await $.tool.call({ tool: 'mcp__wwjd__log', surface: 'Board', kind: 'choice', text: 'Columns by owner' } as never)
+  expect(files['/q/.wwjd/decisions.jsonl']).toMatch(/Columns by owner/)
+  await $.tool.call({ tool: 'mcp__wwjd__log', surface: 'Card', kind: 'choice', text: 'Named by path', path: '/r/src/Card.tsx' } as never)
+  expect(files['/r/.wwjd/decisions.jsonl']).toMatch(/Named by path/)
+  expect(files['/p/.wwjd/decisions.jsonl']).not.toMatch(/Columns by owner|Named by path/)
+
+  await $.command.run({ command: 'wwjd' } as never)
+  const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })
+  expect(await ui.find({ type: 'Text', text: 'Named by path' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: 'In the session folder' })).toBeUndefined()
+})

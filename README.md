@@ -69,7 +69,7 @@ Six dials tune how wwjd designs, never the floor: **Look** (plain ↔ expressive
 - **Hook off for a project:** `WWJD_HOOK_CHECK=0`.
 
 ## Decisions and corrections
-`/wwjd` opens the sidebar (it then reopens every session until you close it, and opens by itself on the first logged decision): every design assumption and choice the agent made without being told, grouped by component, screen or layout (the agent logs them with the `mcp__wwjd__log` tool into `.wwjd/decisions.jsonl`). **Correct** one with a note for **This project** (its decision log: `docs/decisions/design.md`, else a Decisions section in `DESIGN.md`) or **You, every project** (your taste file); the note also goes straight to the agent. The dials sit behind **Settings**.
+`/wwjd` opens the sidebar (it then reopens every session until you close it, and opens by itself on the first logged decision): every design assumption and choice the agent made without being told, grouped by component, screen or layout (the agent logs them with the `mcp__wwjd__log` tool into `.wwjd/decisions.jsonl` of the project being edited: the file the call names, else the last edited file's project, else the session's folder). **Correct** one with a note for **This project** (its decision log: `docs/decisions/design.md`, else a Decisions section in `DESIGN.md`) or **You, every project** (your taste file); the note also goes straight to the agent. The dials sit behind **Settings**.
 
 ## Your taste and profile
 - **`~/.config/wwjd/taste.md`** (or `$WWJD_TASTE`): your design rules for every project, written by sidebar corrections or by hand.

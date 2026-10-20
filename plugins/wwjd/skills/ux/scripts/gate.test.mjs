@@ -259,3 +259,15 @@ test("stop: from Strictness 3 a fit report with errors blocks and names them", (
   p.file(".wwjd/fit.json", JSON.stringify({ findings: [] }), 6);
   assert.equal(p.run("stop", { stop_hook_active: false }), null);
 });
+
+test("status: decisions logged in the edited project count, not only the session's", () => {
+  const p = project(3);
+  const other = mkdtempSync(join(tmpdir(), "wwjd-other-"));
+  execFileSync("git", ["init", "-q", other]);
+  p.run("post", { tool_name: "Write", tool_input: { file_path: join(other, "card.html") } });
+  const log = () => p.run("status", {}).checks.find((c) => c.key === "log").done;
+  assert.equal(log(), false);
+  mkdirSync(join(other, ".wwjd"));
+  writeFileSync(join(other, ".wwjd", "decisions.jsonl"), JSON.stringify({ id: "d1", at: new Date(Date.now() + 5000).toISOString(), surface: "Card", kind: "choice", text: "x" }) + "\n");
+  assert.equal(log(), true);
+});

@@ -37,6 +37,10 @@ declare module 'claude-code' {
       noteScope: Scope
       logVersion: number
       showHandled: boolean
+      /** The last file the session wrote or edited: names the project whose log the agent writes. */
+      lastEdited: string
+      /** The root whose .wwjd/decisions.jsonl the log tool last wrote; the sidebar reads it. */
+      logRoot: string
     }
   }
 }

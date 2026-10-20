@@ -2,7 +2,7 @@
 // is kept as it is or changed with a note for you (~/.config/wwjd/taste.md) or for this project (its decision log);
 // either way it leaves the open list for Handled, with a toast saying what happened. The dials sit
 // behind Settings (dials.tsx). The agent logs through the `log` tool registered here (mcp__wwjd__log); entries
-// live in .wwjd/decisions.jsonl at the project root.
+// live in .wwjd/decisions.jsonl at the root of the project being edited (artifactRoot below).
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
@@ -20,31 +20,57 @@ const showHandled = atom({ plugin: 'wwjd', key: 'showHandled' } as const, false)
 const TOOL = 'mcp__wwjd__log'
 const SHOWN = 60
 
-// Same root as skills/ux/scripts/paths.mjs artifactRoot(): the nearest ancestor of cwd with .wwjd.json or .wwjd/
-// (never the home folder), else the session's root; so the gate and the sidebar read one log.
-async function artifactRoot($: EngineInterface): Promise<string> {
+// Same root as skills/ux/scripts/paths.mjs artifactRoot(): the nearest ancestor with .wwjd.json or .wwjd/ (never the
+// home folder), else the git root; so the gate and the sidebar read one log. It starts from the project being edited,
+// not the session's: the file the log call names, else the last file the session edited (a session in repo A that
+// edits repo B or a worktree logs to B), else the session's cwd. The sidebar reads the root it last wrote to.
+const lastEdited = atom({ plugin: 'wwjd', key: 'lastEdited' } as const, '')
+const logRoot = atom({ plugin: 'wwjd', key: 'logRoot' } as const, '')
+const EDITS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit'])
+const parent = (p: string) => p.replace(/\/[^/]+\/?$/, '')
+
+async function rootOf($: EngineInterface, start: string): Promise<string | null> {
   const home = await $.env.get('HOME')
-  for (let dir = await $.session.cwd(); dir && dir !== home; ) {
+  let git: string | null = null
+  for (let dir = start; dir; ) {
+    if ((await $.fs.exists(`${dir}/.wwjd.json`)) || (dir !== home && (await $.fs.exists(`${dir}/.wwjd`)))) return dir
+    if (!git && (await $.fs.exists(`${dir}/.git`))) git = dir
+    const up = parent(dir)
+    if (!up || up === dir) break
+    dir = up
+  }
+  return git
+}
+async function artifactRoot($: EngineInterface, file?: string): Promise<string> {
+  const cwd = await $.session.cwd()
+  const from = file ? (file.startsWith('/') ? file : `${cwd}/${file}`) : await read($, lastEdited)
+  if (from) {
+    const root = await rootOf($, parent(from))
+    if (root) return root
+  }
+  for (let dir = cwd, home = await $.env.get('HOME'); dir && dir !== home; ) {
     if ((await $.fs.exists(`${dir}/.wwjd.json`)) || (await $.fs.exists(`${dir}/.wwjd`))) return dir
-    const up = dir.replace(/\/[^/]+$/, '')
+    const up = parent(dir)
     if (!up || up === dir) break
     dir = up
   }
   return $.session.root()
 }
-const logFile = async ($: EngineInterface) => `${await artifactRoot($)}/.wwjd/decisions.jsonl`
+// Where the sidebar reads, keeps and changes: the root the log tool last wrote to, else the one it would write to now.
+const shownRoot = async ($: EngineInterface) => (await read($, logRoot)) || artifactRoot($)
+const logFile = (root: string) => `${root}/.wwjd/decisions.jsonl`
 
-async function readLog($: EngineInterface): Promise<Entry[]> {
+async function readLog($: EngineInterface, root: string): Promise<Entry[]> {
   try {
-    return (await $.fs.read(await logFile($))).split('\n').filter(Boolean).flatMap(line => {
+    return (await $.fs.read(logFile(root))).split('\n').filter(Boolean).flatMap(line => {
       try { return [JSON.parse(line) as Entry] } catch { return [] }
     })
   } catch {
     return []
   }
 }
-const writeLog = async ($: EngineInterface, entries: Entry[]) =>
-  $.fs.write(await logFile($), entries.map(x => JSON.stringify(x)).join('\n') + '\n')
+const writeLog = async ($: EngineInterface, root: string, entries: Entry[]) =>
+  $.fs.write(logFile(root), entries.map(x => JSON.stringify(x)).join('\n') + '\n')
 
 // Every read-modify-write of the log runs one at a time: parallel `log` calls would otherwise read the same
 // entries and the last write would drop the others.
@@ -66,12 +92,11 @@ const newId = (now: number, taken: Set<string>) => {
 const today = async ($: EngineInterface) => new Date(await $.clock.now()).toISOString().slice(0, 10)
 
 // Where a correction is kept: your taste file, or the project's decision log (docs/decisions/, else DESIGN.md).
-async function target($: EngineInterface, where: Scope): Promise<{ file: string; head: string }> {
+async function target($: EngineInterface, where: Scope, root: string): Promise<{ file: string; head: string }> {
   if (where === 'person') {
     const taste = (await $.env.get('WWJD_TASTE')) || `${await $.env.get('HOME')}/.config/wwjd/taste.md`
     return { file: taste, head: '# Taste\n\nDesign rules for every project. A project\'s DESIGN.md and decision log outrank them.\n\n' }
   }
-  const root = await $.session.root()
   if (await $.fs.exists(`${root}/docs/decisions`)) return { file: `${root}/docs/decisions/design.md`, head: '# Design decisions\n\n' }
   return { file: `${root}/DESIGN.md`, head: '# Design\n' }
 }
@@ -80,10 +105,11 @@ async function correct($: EngineInterface, id: string) {
   const note = (await read($, draft)).trim()
   if (!note) return
   const where = await read($, noteScope)
-  const { file, head } = await target($, where)
+  const root = await shownRoot($)
+  const { file, head } = await target($, where, root)
   const day = await today($)
   const entry = await serial(async () => {
-    const entries = await readLog($)
+    const entries = await readLog($, root)
     const entry = entries.find(x => x.id === id)
     if (!entry || entry.correction) return null
     const line = `- ${day} · ${entry.surface}: ${note} (was: ${entry.text})\n`
@@ -91,7 +117,7 @@ async function correct($: EngineInterface, id: string) {
     if (where === 'project' && file.endsWith('DESIGN.md') && !/^## Decisions$/m.test(text)) text = `${text.trimEnd()}\n\n## Decisions\n`
     await $.fs.write(file, `${text.trimEnd()}\n${line}`)
     entry.correction = { note, scope: where, file, at: day }
-    await writeLog($, entries)
+    await writeLog($, root, entries)
     return entry
   })
   if (!entry) return
@@ -110,13 +136,14 @@ const settled = (x: Entry) => Boolean(x.correction || x.kept)
 // only, so the way back lives in Handled rather than an Undo in the toast.
 async function setKept($: EngineInterface, id: string, isKept: boolean) {
   const day = await today($)
+  const root = await shownRoot($)
   const entry = await serial(async () => {
-    const entries = await readLog($)
+    const entries = await readLog($, root)
     const entry = entries.find(x => x.id === id)
     if (!entry || entry.correction || Boolean(entry.kept) === isKept) return null
     if (isKept) entry.kept = { at: day }
     else delete entry.kept
-    await writeLog($, entries)
+    await writeLog($, root, entries)
     return entry
   })
   if (!entry) return
@@ -140,6 +167,7 @@ export const register: Register = (on, options) => {
           kind: { type: 'string', enum: ['assumption', 'choice'], description: 'assumption: a guess about product, data or intent; choice: a design call nobody asked for' },
           text: { type: 'string', description: 'One line, what was assumed or chosen ("Dropped the comment count")' },
           why: { type: 'string', description: 'One short reason ("over the card budget")' },
+          path: { type: 'string', description: 'A file this is about, when the project being edited is not the session\'s folder; the entry goes to that project\'s log' },
         },
       },
     })
@@ -154,25 +182,41 @@ export const register: Register = (on, options) => {
   })
 
   on('tool.call', { tool: TOOL }, async ($, e) => {
-    const x = e as unknown as { surface?: unknown; kind?: unknown; text?: unknown; why?: unknown }
+    const x = e as unknown as { surface?: unknown; kind?: unknown; text?: unknown; why?: unknown; path?: unknown }
     if (typeof x.surface !== 'string' || typeof x.text !== 'string' || (x.kind !== 'assumption' && x.kind !== 'choice')) {
       return { deny: 'Needs surface, kind (assumption or choice) and text.' }
     }
     const entry = { surface: x.surface.trim(), kind: x.kind as Entry['kind'], text: x.text.trim(), ...(typeof x.why === 'string' && x.why.trim() ? { why: x.why.trim() } : {}) }
     const now = await $.clock.now()
+    const root = await artifactRoot($, typeof x.path === 'string' && x.path.trim() ? x.path.trim() : undefined)
     const id = await serial(async () => {
-      const entries = await readLog($)
+      const entries = await readLog($, root)
       const id = newId(now, new Set(entries.map(y => y.id)))
       entries.push({ id, at: new Date(now).toISOString(), ...entry })
-      await writeLog($, entries)
+      await writeLog($, root, entries)
       return id
     })
+    await update($, logRoot, () => root)
     await update($, logVersion, n => (n ?? 0) + 1)
     // The log is the sidebar's reason to exist: it opens on the first entry (an open pane is left as it is).
     await $.ui.open({ id: PANE, title: 'wwjd' }).catch(() => undefined)
     // An MCP tool answers with text (or content blocks); an object fails the host's output schema.
     return { result: `Logged ${id}.` }
   })
+
+  // The last file the session edited names the project being worked on (see artifactRoot).
+  for (const tool of EDITS) {
+    on('tool.call', { tool }, async ($, e, next) => {
+      const result = await next(e)
+      const x = e as unknown as { file_path?: unknown; notebook_path?: unknown }
+      const fp = typeof x.file_path === 'string' ? x.file_path : typeof x.notebook_path === 'string' ? x.notebook_path : ''
+      if (fp) {
+        const cwd = await $.session.cwd()
+        await update($, lastEdited, () => (fp.startsWith('/') ? fp : `${cwd}/${fp}`))
+      }
+      return result
+    }).catch(($, e, next) => next(e))
+  }
 
   on('command.run', { command: 'wwjd' }, async $ => {
     await $.store.set('isPinned', true)
@@ -206,7 +250,7 @@ export const register: Register = (on, options) => {
     // What Strictness still wants after the last UI edit, from the same gate state the hooks enforce.
     const g = await read($, gate)
     const due = g?.hasEdits ? [...(g.sheet.due ? ['Grade sheet'] : []), ...g.checks.filter(c => !c.done).map(c => c.label)] : []
-    const all = await readLog($)
+    const all = await shownRoot($).then(root => readLog($, root), () => [] as Entry[])
     const entries = all.filter(x => !settled(x)).slice(-SHOWN)
     const handled = all.filter(settled).slice(-SHOWN).reverse()
     const open = await read($, editing)
