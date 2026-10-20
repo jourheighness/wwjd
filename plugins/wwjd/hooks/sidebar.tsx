@@ -1,13 +1,14 @@
-// The wwjd sidebar (/wwjd): the design decisions and assumptions the agent logged, grouped by surface. Each open one
-// is kept as it is or changed with a note for you (~/.config/wwjd/taste.md) or for this project (its decision log);
-// either way it leaves the open list for Handled, with a toast saying what happened. The dials sit
-// behind Settings (dials.tsx). The agent logs through the `log` tool registered here (mcp__wwjd__log); entries
-// live in .wwjd/decisions.jsonl at the root of the project being edited (artifactRoot below).
+// The wwjd sidebar (/wwjd): what Strictness still wants before handover, as Blocking cards under Needs you, then the
+// design decisions and assumptions the agent logged, as cards grouped by task (else surface). Each card's bottom edge
+// holds its actions: a problem's fix, a decision's Keep | Change. A change is a note for you (~/.config/wwjd/taste.md)
+// or for this project (its decision log); either way it leaves the open list for Handled, with a toast saying what
+// happened. The dials sit behind Settings (dials.tsx). The agent logs through the `log` tool registered here
+// (mcp__wwjd__log); entries live in .wwjd/decisions.jsonl at the root of the project being edited (artifactRoot below).
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { Entry, Scope } from '../types'
-import { PANE, exportDials, loadProjectDials, settingsView } from './dials'
+import { PANE, edgeCard, exportDials, loadProjectDials, settingsView } from './dials'
 
 const view = atom({ plugin: 'wwjd', key: 'view' } as const, 'log')
 const editing = atom({ plugin: 'wwjd', key: 'editing' } as const, '')
@@ -16,6 +17,7 @@ const noteScope = atom({ plugin: 'wwjd', key: 'noteScope' } as const, 'project')
 const gate = atom({ plugin: 'wwjd', key: 'gate' } as const, null)
 const logVersion = atom({ plugin: 'wwjd', key: 'logVersion' } as const, 0)
 const showHandled = atom({ plugin: 'wwjd', key: 'showHandled' } as const, false)
+const detail = atom({ plugin: 'wwjd', key: 'detail' } as const, '')
 
 const TOOL = 'mcp__wwjd__log'
 const SHOWN = 60
@@ -132,6 +134,39 @@ async function correct($: EngineInterface, id: string) {
 
 const settled = (x: Entry) => Boolean(x.correction || x.kept)
 
+// The project's board artifact, when .wwjd.json names one ("board"): the same link every session.
+async function boardUrl($: EngineInterface): Promise<string | null> {
+  const f = `${await shownRoot($)}/.wwjd.json`
+  try {
+    const url = (JSON.parse(await $.fs.read(f)) as { board?: unknown }).board
+    return typeof url === 'string' && /^https:\/\//.test(url) ? url : null
+  } catch {
+    return null
+  }
+}
+
+// A proof as a link: a live dev-server URL is a way to try the state, an image a screenshot, anything else a file or
+// a page. Paths resolve from the project root; a file's :line stays in the label.
+const LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|[^/]+\.localhost|[^/]+\.test)(:\d+)?(\/|$)/
+export function proofLink(p: string, root: string): { href: string; label: string } {
+  if (/^https?:\/\//.test(p)) {
+    if (LOCAL.test(p)) return { href: p, label: `▶ Try ${p.replace(/^https?:\/\/[^/]+/, '') || '/'}` }
+    if (/claude\.ai\/(code\/)?artifact\//.test(p)) return { href: p, label: '↗ Artifact' }
+    return { href: p, label: `↗ ${p.replace(/^https?:\/\//, '').split('/')[0]}` }
+  }
+  const [path = p, line] = p.split(/:(?=\d+$)/)
+  const abs = path.startsWith('/') ? path : `${root}/${path}`
+  const name = abs.split('/').pop() ?? abs
+  if (/\.(png|jpe?g|webp|gif)$/i.test(name)) return { href: `file://${abs}`, label: `◩ ${name.replace(/\.\w+$/, '')}` }
+  return { href: `file://${abs}`, label: `‹› ${name}${line ? `:${line}` : ''}` }
+}
+
+// A problem's fix: one message to the agent, nothing run behind the person's back.
+async function sendFix($: EngineInterface, label: string, ask: string) {
+  await $.session.append({ message: { type: 'user', content: [{ type: 'text', text: `From the wwjd sidebar: ${ask}` }] } })
+  $.ui.toast(`Sent · ${label}`)
+}
+
 // Keep: the decision stands. It leaves the open list; Reopen in Handled brings it back. The host's toast holds text
 // only, so the way back lives in Handled rather than an Undo in the toast.
 async function setKept($: EngineInterface, id: string, isKept: boolean) {
@@ -168,6 +203,8 @@ export const register: Register = (on, options) => {
           text: { type: 'string', description: 'One line, what was assumed or chosen ("Dropped the comment count")' },
           why: { type: 'string', description: 'One short reason ("over the card budget")' },
           path: { type: 'string', description: 'A file this is about, when the project being edited is not the session\'s folder; the entry goes to that project\'s log' },
+          task: { type: 'string', description: 'The task this belongs to, the same words for every entry of it ("Signup flow", "Sidebar log")' },
+          proof: { type: 'array', items: { type: 'string' }, description: 'What it is about: a screenshot or file path (file:line), the dev-server URL that shows the state, an artifact link' },
         },
       },
     })
@@ -182,11 +219,17 @@ export const register: Register = (on, options) => {
   })
 
   on('tool.call', { tool: TOOL }, async ($, e) => {
-    const x = e as unknown as { surface?: unknown; kind?: unknown; text?: unknown; why?: unknown; path?: unknown }
+    const x = e as unknown as { surface?: unknown; kind?: unknown; text?: unknown; why?: unknown; path?: unknown; task?: unknown; proof?: unknown }
     if (typeof x.surface !== 'string' || typeof x.text !== 'string' || (x.kind !== 'assumption' && x.kind !== 'choice')) {
       return { deny: 'Needs surface, kind (assumption or choice) and text.' }
     }
-    const entry = { surface: x.surface.trim(), kind: x.kind as Entry['kind'], text: x.text.trim(), ...(typeof x.why === 'string' && x.why.trim() ? { why: x.why.trim() } : {}) }
+    const proof = Array.isArray(x.proof) ? x.proof.filter((p): p is string => typeof p === 'string' && p.trim() !== '' && p.length <= 2048).map(p => p.trim()).slice(0, 6) : []
+    const entry = {
+      surface: x.surface.trim(), kind: x.kind as Entry['kind'], text: x.text.trim(),
+      ...(typeof x.why === 'string' && x.why.trim() ? { why: x.why.trim() } : {}),
+      ...(typeof x.task === 'string' && x.task.trim() ? { task: x.task.trim() } : {}),
+      ...(proof.length ? { proof } : {}),
+    }
     const now = await $.clock.now()
     const root = await artifactRoot($, typeof x.path === 'string' && x.path.trim() ? x.path.trim() : undefined)
     const id = await serial(async () => {
@@ -205,8 +248,9 @@ export const register: Register = (on, options) => {
   })
 
   // The last file the session edited names the project being worked on (see artifactRoot).
+  // One matched hook per edit tool: the module's one unmatched tool.call hook is status.tsx's.
   for (const tool of EDITS) {
-    on('tool.call', { tool }, async ($, e, next) => {
+    on('tool.call', { tool: tool as 'Edit' }, async ($, e, next) => {
       const result = await next(e)
       const x = e as unknown as { file_path?: unknown; notebook_path?: unknown }
       const fp = typeof x.file_path === 'string' ? x.file_path : typeof x.notebook_path === 'string' ? x.notebook_path : ''
@@ -246,10 +290,20 @@ export const register: Register = (on, options) => {
     }
 
     await read($, logVersion)
+    const isTerminal = e.surface === 'terminal'
+    const Link = ui.Link
     const isHandledShown = await read($, showHandled)
-    // What Strictness still wants after the last UI edit, from the same gate state the hooks enforce.
+    const shownDetail = await read($, detail)
+    const root = await shownRoot($).catch(() => '')
+    const board = await boardUrl($).catch(() => null)
+    // What Strictness still wants after the last UI edit, from the same gate state the hooks enforce: Blocking cards.
     const g = await read($, gate)
-    const due = g?.hasEdits ? [...(g.sheet.due ? ['Grade sheet'] : []), ...g.checks.filter(c => !c.done).map(c => c.label)] : []
+    const due = g?.hasEdits
+      ? [
+          ...(g.sheet.due ? [{ key: 'sheet', text: 'Grade sheet due', fix: 'Write sheet', ask: `write the grade sheet before building${g.sheet.file ? ` ${g.sheet.file}` : ''} (references/budgets.md, Grade gate).`, how: g.sheet.file ?? '' }] : []),
+          ...g.checks.filter(c => !c.done).map(c => ({ key: c.key, text: c.label.charAt(0).toUpperCase() + c.label.slice(1), fix: 'Run', ask: `run this check before handover: ${c.label}. ${c.how}`, how: c.how })),
+        ]
+      : []
     const all = await shownRoot($).then(root => readLog($, root), () => [] as Entry[])
     const entries = all.filter(x => !settled(x)).slice(-SHOWN)
     const handled = all.filter(settled).slice(-SHOWN).reverse()
@@ -258,55 +312,82 @@ export const register: Register = (on, options) => {
     const note = await read($, draft)
     const Input = 'Input' in ui ? ui.Input : null
 
-    // Surfaces in order of their latest entry, newest first; entries in each oldest first.
-    const bySurface = new Map<string, Entry[]>()
-    for (const x of entries) bySurface.set(x.surface, [...(bySurface.get(x.surface) ?? []), x])
-    const groups = [...bySurface.entries()].sort((a, b) => (b[1].at(-1)?.at ?? '').localeCompare(a[1].at(-1)?.at ?? ''))
+    // Tasks (else surfaces) in order of their latest entry, newest first; entries in each oldest first.
+    const groupOf = (x: Entry) => x.task ?? x.surface
+    const byGroup = new Map<string, Entry[]>()
+    for (const x of entries) byGroup.set(groupOf(x), [...(byGroup.get(groupOf(x)) ?? []), x])
+    const groups = [...byGroup.entries()].sort((a, b) => (b[1].at(-1)?.at ?? '').localeCompare(a[1].at(-1)?.at ?? ''))
 
-    const editor = (x: Entry) => (
-      <Box flexDirection="column" gap="sm" marginLeft={2}>
-        {Input ? (
-          <Input key={`note:${x.id}`} placeholder="What it should be" value={note} autoFocus
-            onInput={v => update($, draft, () => v)} onSubmit={v => update($, draft, () => v).then(() => correct($, x.id))} />
-        ) : null}
-        <Box flexDirection="row" flexWrap="wrap" gap="xs" alignItems="center">
-          {(['project', 'person'] as const).map(s => (
-            <Button key={`scope:${x.id}:${s}`} label={s === 'project' ? 'This project' : 'You, every project'}
-              variant={where === s ? 'primary' : undefined} dimColor={where !== s} onPress={() => update($, noteScope, () => s)} />
-          ))}
-          <Button key={`save:${x.id}`} label="Save" variant="primary" onPress={() => correct($, x.id)} />
-          <Button key={`cancel:${x.id}`} plain dimColor label="Cancel" onPress={() => update($, editing, () => '')} />
+    // One cell of a card's edge: a native button on the desktop, a plain label on the terminal.
+    const cell = (key: string, label: string, onPress: () => unknown, isPrimary = false) =>
+      isTerminal
+        ? <Button key={key} plain dimColor={!isPrimary} label={label} onPress={() => { void onPress() }} />
+        : <Button key={key} label={label} variant={isPrimary ? 'primary' : undefined} onPress={() => { void onPress() }} />
+    const proofs = (key: string, list: string[] | undefined) => list?.length ? (
+      <Box key={`proof:${key}`} flexDirection="row" flexWrap="wrap" gap="sm">
+        {list.map((p, i) => { const l = proofLink(p, root); return <Text key={`proof:${key}:${i}`}><Link href={l.href} label={l.label} /></Text> })}
+      </Box>
+    ) : null
+    const mark = (kind: Entry['kind'] | 'blocking') => kind === 'blocking'
+      ? <Text color="error" bold>✕</Text>
+      : kind === 'assumption' ? <Text color="suggestion" bold>?</Text> : <Text dimColor bold>·</Text>
+    const head = (kind: Entry['kind'] | 'blocking', text: string, why: string | undefined, extra: JSX.Element | null = null) => (
+      <Box flexDirection="row" gap={1}>
+        {mark(kind)}
+        <Box flexDirection="column" flexGrow={1} flexShrink={1}>
+          <Text wrap="wrap">{text}</Text>
+          {why ? <Text wrap="wrap" dimColor>{why}</Text> : null}
+          {extra}
         </Box>
       </Box>
     )
 
-    const mark = (x: Entry) =>
-      <Text color={x.kind === 'assumption' ? 'warning' : undefined} dimColor={x.kind === 'choice'}>{x.kind === 'assumption' ? '?' : '·'}</Text>
+    const blockingCard = (d: (typeof due)[number]) => {
+      const isOpen = shownDetail === `due:${d.key}`
+      const more = (
+        <Box flexDirection="column">
+          {d.how ? <Button key={`detail:${d.key}`} plain dimColor label={isOpen ? 'Hide details' : 'Details'} onPress={() => update($, detail, v => (v === `due:${d.key}` ? '' : `due:${d.key}`))} /> : null}
+          {isOpen ? <Text wrap="wrap" dimColor>{d.how}</Text> : null}
+        </Box>
+      )
+      return edgeCard(ui, `due-card:${d.key}`, head('blocking', d.text, 'Before handover', more),
+        [cell(`fix:${d.key}`, d.fix, () => sendFix($, `${d.fix} · ${d.text}`, d.ask), true)], 'error')
+    }
 
-    const row = (x: Entry) => (
-      <Box key={`entry:${x.id}`} flexDirection="column">
-        <Box flexDirection="row" gap={1}>
-          {mark(x)}
-          <Box flexDirection="column" flexGrow={1} flexShrink={1}>
-            <Text wrap="wrap">{x.text}</Text>
-            {x.why ? <Text wrap="wrap" dimColor>{x.why}</Text> : null}
-          </Box>
-          {open !== x.id ? (
-            <Box flexDirection="row" gap="xs">
-              <Button key={`keep:${x.id}`} plain dimColor label="Keep" onPress={() => setKept($, x.id, true)} />
-              <Button key={`change:${x.id}`} plain dimColor label="Change" onPress={() => update($, draft, () => '').then(() => update($, editing, () => x.id))} />
+    const decisionCard = (x: Entry) => {
+      if (open === x.id) {
+        const content = (
+          <Box flexDirection="column" gap="sm">
+            {head(x.kind, x.text, x.why)}
+            {Input ? (
+              <Input key={`note:${x.id}`} placeholder="What it should be" value={note} autoFocus
+                onInput={v => update($, draft, () => v)} onSubmit={v => update($, draft, () => v).then(() => correct($, x.id))} />
+            ) : null}
+            <Box flexDirection="row" flexWrap="wrap" gap="xs" alignItems="center">
+              <Text dimColor>Save for</Text>
+              {(['project', 'person'] as const).map(sc => (
+                <Button key={`scope:${x.id}:${sc}`} label={sc === 'project' ? 'This project' : 'Every project'}
+                  plain={isTerminal && where !== sc ? true : undefined} dimColor={where !== sc} onPress={() => update($, noteScope, () => sc)} />
+              ))}
             </Box>
-          ) : null}
-        </Box>
-        {open === x.id ? editor(x) : null}
-      </Box>
-    )
+          </Box>
+        )
+        return edgeCard(ui, `card:${x.id}`, content, [
+          cell(`cancel:${x.id}`, 'Cancel', () => update($, editing, () => '')),
+          cell(`save:${x.id}`, 'Save', () => correct($, x.id), true),
+        ])
+      }
+      return edgeCard(ui, `card:${x.id}`, head(x.kind, x.text, x.why, proofs(x.id, x.proof)), [
+        cell(`keep:${x.id}`, 'Keep', () => setKept($, x.id, true)),
+        cell(`change:${x.id}`, 'Change', () => update($, draft, () => '').then(() => update($, editing, () => x.id))),
+      ])
+    }
 
     const handledRow = (x: Entry) => (
       <Box key={`handled:${x.id}`} flexDirection="row" gap={1}>
-        {mark(x)}
+        {mark(x.kind)}
         <Box flexDirection="column" flexGrow={1} flexShrink={1}>
-          <Text wrap="wrap" dimColor><Text dimColor>{x.surface} · </Text>{x.text}</Text>
+          <Text wrap="wrap" dimColor><Text dimColor>{x.task ?? x.surface} · </Text>{x.text}</Text>
           {x.correction
             ? <Text wrap="wrap">→ {x.correction.note} <Text dimColor>· {x.correction.scope === 'person' ? 'yours' : 'project'}</Text></Text>
             : <Text dimColor>Kept</Text>}
@@ -317,16 +398,36 @@ export const register: Register = (on, options) => {
 
     return (
       <Box flexDirection="column" padding="md" gap="md">
-        {header('Decisions', <Button key="to-settings" plain dimColor label="Settings" onPress={() => update($, view, () => 'settings')} />)}
-        {due.length ? <Text color="warning" wrap="wrap">Before handover: {due.join(' · ')}</Text> : null}
+        <Box flexDirection="row" alignItems="center" gap="sm">
+          <Box flexGrow={1}><Text bold>Decisions</Text></Box>
+          {board ? <Text><Link href={board} label="↗ Board" /></Text> : null}
+          <Button key="to-settings" plain dimColor label="Settings" onPress={() => update($, view, () => 'settings')} />
+        </Box>
+        {due.length ? (
+          <Box key="needs" flexDirection="column" gap="sm">
+            <Text bold color="error">Needs you <Text dimColor>{String(due.length)}</Text></Text>
+            {due.map(blockingCard)}
+          </Box>
+        ) : null}
         {groups.length
-          ? groups.map(([surface, xs]) => (
-            <Box key={`surface:${surface}`} flexDirection="column" gap="xs">
-              <Text bold>{surface}</Text>
-              {xs.map(row)}
-            </Box>
-          ))
-          : <Text dimColor>{handled.length ? 'Nothing open.' : 'No decisions logged in this project yet.'}</Text>}
+          ? groups.map(([name, xs]) => {
+            const surfaces = [...new Set(xs.map(x => x.surface))]
+            const isTask = xs.some(x => x.task)
+            return (
+              <Box key={`group:${name}`} flexDirection="column" gap="sm">
+                <Text bold>{name}</Text>
+                {isTask && surfaces.length > 1
+                  ? surfaces.map(sf => (
+                    <Box key={`sub:${name}:${sf}`} flexDirection="column" gap="sm">
+                      <Text dimColor>{sf}</Text>
+                      {xs.filter(x => x.surface === sf).map(decisionCard)}
+                    </Box>
+                  ))
+                  : xs.map(decisionCard)}
+              </Box>
+            )
+          })
+          : due.length ? null : <Text dimColor>{handled.length ? 'Nothing open.' : 'No decisions logged in this project yet.'}</Text>}
         {handled.length ? (
           <Box flexDirection="column" gap="xs">
             <Button key="handled" plain dimColor label={`${isHandledShown ? '▾' : '▸'} Handled · ${handled.length}`}

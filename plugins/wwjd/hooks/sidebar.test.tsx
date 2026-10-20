@@ -132,3 +132,23 @@ test('the log lands in the project being edited, not the session folder; the sid
   expect(await ui.find({ type: 'Text', text: 'Named by path' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: 'In the session folder' })).toBeUndefined()
 })
+
+test('cards group by task with a surface label inside; proof shows as links; the board link comes from .wwjd.json', async ($, on) => {
+  mock.store(on)
+  const files: Record<string, string> = { '/p/.wwjd.json': JSON.stringify({ board: 'https://claude.ai/artifact/abc' }) }
+  disk(on as never, files)
+  on('ui.open', () => ({ value: { isPlaced: true } }) as never)
+  await $.tool.call({ tool: 'mcp__wwjd__log', task: 'Signup flow', surface: 'Email step', kind: 'assumption', text: 'Work email only',
+    proof: ['http://localhost:5173/signup?step=email', '.wwjd/shots/signup-390-light.png', 'src/Signup.tsx:42'] } as never)
+  await $.tool.call({ tool: 'mcp__wwjd__log', task: 'Signup flow', surface: 'Password step', kind: 'choice', text: 'Rules shown before typing' } as never)
+  await $.tool.call({ tool: 'mcp__wwjd__log', surface: 'Board', kind: 'choice', text: 'Columns by status' } as never)
+  await $.command.run({ command: 'wwjd' } as never)
+  const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })
+  expect(await ui.find({ type: 'Text', text: 'Signup flow' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: 'Email step' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: 'Board' })).toBeDefined()
+  expect(await ui.find({ type: 'Link', label: '▶ Try /signup?step=email' })).toBeDefined()
+  expect(await ui.find({ type: 'Link', label: '◩ signup-390-light', href: 'file:///p/.wwjd/shots/signup-390-light.png' })).toBeDefined()
+  expect(await ui.find({ type: 'Link', label: '‹› Signup.tsx:42' })).toBeDefined()
+  expect(await ui.find({ type: 'Link', label: '↗ Board', href: 'https://claude.ai/artifact/abc' })).toBeDefined()
+})

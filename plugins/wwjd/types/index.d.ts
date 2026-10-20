@@ -19,6 +19,10 @@ export type Entry = {
   kind: 'assumption' | 'choice'
   text: string
   why?: string
+  /** The task it belongs to ("Signup flow"); the sidebar groups by it, else by surface. */
+  task?: string
+  /** What it is about: screenshot or file paths (a file may end in :line), live dev-server URLs, artifact links. */
+  proof?: string[]
   correction?: { note: string; scope: Scope; file: string; at: string }
   kept?: { at: string }
 }
@@ -28,7 +32,6 @@ declare module 'claude-code' {
     wwjd: {
       scope: Scope
       project: Record<string, string | number>
-      focused: string
       gate: Gate | null
       isActive: boolean
       view: 'log' | 'settings'
@@ -41,6 +44,7 @@ declare module 'claude-code' {
       lastEdited: string
       /** The root whose .wwjd/decisions.jsonl the log tool last wrote; the sidebar reads it. */
       logRoot: string
+      detail: string
     }
   }
 }

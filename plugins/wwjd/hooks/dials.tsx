@@ -1,9 +1,9 @@
-// The Settings view of the wwjd sidebar (sidebar.tsx): one row per dial, for you (the plugin options) or for this project
-// (.wwjd.json "dials"). Each dial is a segmented control of its named stops: native buttons on the desktop, [ ] on
-// the terminal, so Tab, Enter and the pointer all work. The stops and what each does come from
-// skills/ux/scripts/dials-spec.mjs. Scripts read WWJD_DIALS, then .wwjd.json.
+// The Settings view of the wwjd sidebar (sidebar.tsx): one card per dial, for you (the plugin options) or for this
+// project (.wwjd.json "dials"). A card names the dial and what its current stop does; its bottom edge is the five stops,
+// equal cells (native buttons on the desktop, plain labels on the terminal), so Tab, Enter and the pointer all work.
+// The stops and what each does come from skills/ux/scripts/dials-spec.mjs. Scripts read WWJD_DIALS, then .wwjd.json.
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, PluginOptions, Register, RenderInput } from 'claude-code'
+import type { EngineInterface, PluginOptions, RenderInput } from 'claude-code'
 
 import { DIALS, isDefault, stopOf, valueOf } from '../skills/ux/scripts/dials-spec.mjs'
 import type { Scope } from '../types'
@@ -13,7 +13,6 @@ export const PANE = 'wwjd'
 
 const scope = atom({ plugin: 'wwjd', key: 'scope' } as const, 'person')
 const project = atom({ plugin: 'wwjd', key: 'project' } as const, {})
-const focused = atom({ plugin: 'wwjd', key: 'focused' } as const, '')
 
 const dialOf = (key: string) => DIALS.find(d => d.key === key) as Dial | undefined
 const mine = (options: PluginOptions, dial: Dial) => stopOf(dial, options[dial.key] ?? dial.default)
@@ -78,97 +77,77 @@ async function pick($: EngineInterface, key: string, stop: number) {
   await update($, project, () => dials)
 }
 
-export const register: Register = on => {
-  // The detail line follows the focus ring and the last pick, so a stop explains itself before it is set.
-  on('ui.focus', { requestId: PANE }, async ($, e, next) => {
-    await update($, focused, () => e.element ?? '').catch(() => undefined)
-    return next(e)
-  })
-
-}
-
 /** The project's dials into state, before the sidebar opens. */
 export async function loadProjectDials($: EngineInterface) {
   const { json = {} } = await readProject($)
   await update($, project, () => (json.dials && typeof json.dials === 'object' ? (json.dials as Record<string, string | number>) : {}))
 }
 
-/** The dials grid, the sidebar's Settings view. */
+/** A card whose bottom edge is a row of equal cells, the sidebar's one card (sidebar.tsx draws decisions with it). */
+export function edgeCard(ui: ReturnType<EngineInterface['ui']['resolve']>, key: string, content: JSX.Element, cells: JSX.Element[], borderColor = 'subtle') {
+  const { Box } = ui
+  const w = `${Math.floor(100 / Math.max(1, cells.length))}%`
+  return (
+    <Box key={key} flexDirection="column" borderStyle="round" borderColor={borderColor}>
+      <Box flexDirection="column" paddingX="md" paddingY="sm" gap="xs">{content}</Box>
+      {cells.length ? (
+        <Box flexDirection="row">
+          {cells.map((cell, i) => <Box key={`${key}-cell-${i}`} width={w} justifyContent="center">{cell}</Box>)}
+        </Box>
+      ) : null}
+    </Box>
+  )
+}
+
+/** The dial cards, the sidebar's Settings view. */
 export async function settingsView($: EngineInterface, e: RenderInput, options: PluginOptions) {
-    const { Box, Text, Button } = $.ui.resolve(e)
-    const where = await read($, scope)
-    const proj = (await read($, project)) as Record<string, string | number>
-    const [fKey = '', fWhat = ''] = (await read($, focused)).split(':')
-    const labelW = Math.max('Applies to'.length, ...DIALS.map(d => d.name.length)) + 3
+  const ui = $.ui.resolve(e)
+  const { Box, Text, Button } = ui
+  const isTerminal = e.surface === 'terminal'
+  const where = await read($, scope)
+  const proj = (await read($, project)) as Record<string, string | number>
 
-    // Where each dial stands in the scope being edited; a project dial with no value of its own shows yours.
-    const state = (dial: Dial) => {
-      const isOwn = where === 'project' && proj[dial.key] !== undefined
-      const at = isOwn ? stopOf(dial, proj[dial.key]) : mine(options, dial)
-      return { at, isOwn, isInherited: where === 'project' && !isOwn }
-    }
-    const set = async (key: string, i: number) => {
-      await pick($, key, i)
-      await update($, focused, () => `${key}:${i}`)
-    }
-
-    // One row of the grid: a fixed label column, then the control.
-    const row = (id: string, label: string, control: JSX.Element, isStrong = false) => (
-      <Box key={`row-${id}`} flexDirection="row" alignItems="center">
-        <Box width={labelW} flexShrink={0}>
-          <Text bold={isStrong}>{label}</Text>
-        </Box>
-        {control}
+  // Where each dial stands in the scope being edited; a project dial with no value of its own shows yours.
+  const state = (dial: Dial) => {
+    const isOwn = where === 'project' && proj[dial.key] !== undefined
+    const at = isOwn ? stopOf(dial, proj[dial.key]) : mine(options, dial)
+    return { at, isOwn, isInherited: where === 'project' && !isOwn }
+  }
+  // One cell of an edge: the picked one is the primary button on the desktop, bold and underlined on the terminal.
+  const stop = (key: string, label: string, isPicked: boolean, onPress: () => void) =>
+    isTerminal
+      ? <Button key={key} plain dimColor={!isPicked} onPress={onPress}><Text bold={isPicked} underline={isPicked}>{label}</Text></Button>
+      : <Button key={key} label={label} variant={isPicked ? 'primary' : undefined} dimColor={!isPicked} onPress={onPress} />
+  const top = (name: string, right: JSX.Element | null, does: string) => (
+    <Box flexDirection="column">
+      <Box flexDirection="row" justifyContent="space-between" alignItems="center">
+        <Text bold>{name}</Text>
+        {right}
       </Box>
-    )
-    const segment = (id: string, labels: string[], at: number, isInherited: boolean, onSet: (i: number) => void) => (
-      <Box flexDirection="row" flexWrap="wrap" gap="xs">
-        {labels.map((label, i) => (
-          <Button
-            key={`${id}:${i}`}
-            label={label}
-            variant={i === at && !isInherited ? 'primary' : undefined}
-            dimColor={i !== at}
-            onPress={() => onSet(i)}
-            autoFocus={id === 'scope' && i === at ? true : undefined}
-          />
-        ))}
-      </Box>
-    )
+      <Text wrap="wrap" dimColor>{does}</Text>
+    </Box>
+  )
 
-    const dialRows = DIALS.map(dial => {
-      const { at, isOwn, isInherited } = state(dial)
-      const control = (
-        <Box flexDirection="row" alignItems="center" gap="md">
-          {segment(dial.key, dial.stops.map(([n]) => n), at, isInherited, i => set(dial.key, i))}
-          {isOwn && <Button key={`${dial.key}:reset`} plain dimColor label="Use mine" onPress={() => pick($, dial.key, -1)} />}
-        </Box>
-      )
-      return row(dial.key, dial.name, control, !isInherited && !isDefault(dial, at))
-    })
+  const scopeCard = edgeCard(ui, 'card-scope',
+    top('Applies to', null, where === 'person'
+      ? "Your plugin options. A project's .wwjd.json overrides them."
+      : "This project's .wwjd.json; commit it to share. Unset dials use yours."),
+    (['You, every project', 'This project'] as const).map((label, i) =>
+      stop(`scope:${i}`, label, (where === 'person' ? 0 : 1) === i, () => update($, scope, () => (i === 0 ? 'person' : 'project') as Scope))))
 
-    // The detail: the focused or last-set stop; a focus off the stops shows the dial as it stands.
-    const fDial = dialOf(fKey)
-    const fStop = fDial ? (/^\d+$/.test(fWhat) && fDial.stops[Number(fWhat)] ? Number(fWhat) : state(fDial).at) : -1
-    const [title, does] =
-      fKey === 'scope'
-        ? fWhat === '1'
-          ? ['This project', 'Saved to .wwjd.json "dials"; commit it to share. A dial left unset uses yours.']
-          : ['You, every project', 'Saved to your wwjd plugin options. A project .wwjd.json overrides them.']
-        : fDial && fWhat === 'reset'
-          ? [`${fDial.name} · Use mine`, "Drop this project's value and use yours."]
-          : fDial
-            ? [`${fDial.name} · ${fDial.stops[fStop]?.[0]}${isDefault(fDial, fStop) ? ' (default)' : ''}`, fDial.stops[fStop]?.[1] ?? '']
-            : ['', '']
+  const dialCards = DIALS.map(dial => {
+    const { at, isOwn, isInherited } = state(dial)
+    const right = isOwn
+      ? <Button key={`${dial.key}:reset`} plain dimColor label="Use mine" onPress={() => pick($, dial.key, -1)} />
+      : isInherited ? <Text dimColor>yours</Text> : null
+    return edgeCard(ui, `card-${dial.key}`, top(dial.name, right, dial.stops[at]?.[1] ?? ''),
+      dial.stops.map(([name], i) => stop(`${dial.key}:${i}`, name, i === at && !isInherited, () => pick($, dial.key, i))))
+  })
 
-    return (
-      <Box flexDirection="column" gap="md">
-        {row('scope', 'Applies to', segment('scope', ['You, every project', 'This project'], where === 'person' ? 0 : 1, false, i => update($, scope, () => (i === 0 ? 'person' : 'project') as Scope)))}
-        <Box flexDirection="column" gap="sm">{dialRows}</Box>
-        <Box flexDirection="column" minHeight={3}>
-          <Text bold>{title}</Text>
-          <Text wrap="wrap" dimColor>{does}</Text>
-        </Box>
-      </Box>
-    )
+  return (
+    <Box flexDirection="column" gap="sm">
+      {scopeCard}
+      {dialCards}
+    </Box>
+  )
 }

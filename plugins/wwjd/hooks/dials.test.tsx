@@ -60,20 +60,31 @@ test('person picks go to the plugin options', async ($, on) => {
   expect(sets).toEqual([['wwjd.budget', 2], ['wwjd.motion', 2]])
 })
 
-test('the detail line names the focused stop and what it does', async ($, on) => {
+test('each dial card says what its picked stop does', async ($, on) => {
   mock.store(on)
   mock.env(on, { HOME: '/home/j' })
+  const files: Record<string, string> = {}
   on('session.cwd', () => ({ value: '/p' }))
-  on('fs.exists', () => ({ value: false }))
-  on('fs.read', () => { throw new Error('missing') })
-  on('config.set', (_$, e) => ({ value: e.value }))
+  on('fs.exists', (_$, e) => ({ value: e.path in files }))
+  on('fs.read', (_$, e) => {
+    const text = files[e.path]
+    if (text === undefined) throw new Error('missing')
+    return { value: text }
+  })
+  on('fs.write', (_$, e) => {
+    files[e.path] = e.text
+    return { value: undefined }
+  })
   on('ui.open', () => opened)
   await $.command.run({ command: 'wwjd' } as never)
   const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })
   await ui.press({ key: 'to-settings' })
+  expect(await ui.find({ type: 'Text', text: /The product type decides/ })).toBeDefined()
+  await ui.press({ key: 'scope:1' })
   await ui.press({ key: 'density:4' })
-  expect(await ui.find({ type: 'Text', text: 'Spacing · Compact' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: 'Spacing' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /32px rows/ })).toBeDefined()
+  expect(await ui.find({ key: 'density:reset' })).toBeDefined()
 })
 
 test('a .wwjd.json that does not parse is never overwritten by a pick', async ($, on) => {
