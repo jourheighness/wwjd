@@ -2,8 +2,9 @@
 // wwjd: project status, static UI lint, baseline ratchet and debt map. No deps, Node 20.10+.
 //
 // Usage: node wwjd.mjs <command> [paths...] [options]
-//   status                     stage (scratch | kit | messy), baseline files, kit, Storybook, golden and legacy files,
-//                              dials, and whether over-budget surfaces get a grade.mjs sheet (Strictness 3+)
+//   status [paths]             stage (scratch | kit | messy), baseline files, kit, Storybook, golden and legacy files,
+//                              dials, and whether over-budget surfaces get a grade.mjs sheet (Strictness 3+);
+//                              PRODUCT.md / DESIGN.md: the nearest up from the paths (or cwd), nested ones listed
 //   dials                      the effective dials, one line: plugin options (/plugin configure wwjd@wwjd), then
 //                              "dials" in .wwjd.json override per project; meanings in references/dials.md
 //   check [paths]              lint UI files (default: files changed against HEAD plus untracked)
@@ -329,6 +330,36 @@ function goldenPicks(files, findings, kit) {
     .filter((f) => COMPONENT.test(f) && !STORY.test(f) && !inKit(f) && !kit.some((k) => f.startsWith(k + "/")) && !isLegacy(f) && SCREEN.test(f) && !bad.has(f) && importsKit(texts.get(f) || ""))
     .sort((a, b) => (texts.get(b)?.length || 0) - (texts.get(a)?.length || 0)).slice(0, 3);
 }
+// PRODUCT.md and DESIGN.md per app: a monorepo keeps them by the app (apps/web/PRODUCT.md). The nearest one up from
+// the paths in scope (or cwd) applies; the others are listed. Git lists them without a tree walk; outside git a walk
+// four folders deep that skips SKIP_DIR.
+const BRIEFS = ["PRODUCT.md", "DESIGN.md"];
+function briefs() {
+  const starts = (opt.paths.length ? opt.paths.map((p) => resolve(p)) : [process.cwd()])
+    .map((p) => { try { return statSync(p).isDirectory() ? p : dirname(p); } catch { return dirname(p); } });
+  const nearest = {};
+  for (const name of BRIEFS) for (const s of starts) {
+    for (let d = s; ; d = dirname(d)) {
+      if (rel(d).startsWith("..")) break;
+      if (existsSync(join(d, name))) { nearest[name] ??= rel(join(d, name)); break; }
+      if (d === ROOT || dirname(d) === d) break;
+    }
+  }
+  let all = git(["ls-files", "-z", "-co", "--exclude-standard", "--", ...BRIEFS.map((b) => `:(glob)**/${b}`)], ROOT)?.split("\0").filter(Boolean) ?? null;
+  if (all === null) {
+    all = [];
+    const look = (d, depth) => {
+      let es = []; try { es = readdirSync(d, { withFileTypes: true }); } catch { return; }
+      for (const e of es) {
+        if (e.isFile() && BRIEFS.includes(e.name)) all.push(rel(join(d, e.name)));
+        else if (e.isDirectory() && depth > 0 && !e.name.startsWith(".") && !SKIP_DIR.test(e.name)) look(join(d, e.name), depth - 1);
+      }
+    };
+    look(ROOT, 4);
+  }
+  const others = all.filter((f) => !SKIP_DIR.test(f) && !Object.values(nearest).includes(f)).sort();
+  return { nearest, others };
+}
 const kb = (f) => { try { return Math.round(statSync(join(ROOT, f)).size / 1024) + "KB"; } catch { return ""; } };
 
 // ── commands ───────────────────────────────────────────────────────
@@ -368,17 +399,20 @@ if (cmd === "status") {
   const kit = findKit(files);
   const tokens = files.map(rel).filter((f) => TOKEN_FILE.test(f) && /\.(css|scss)$/.test(f)).slice(0, 3);
   const density = files.length ? open.length / files.length : 0;
-  const stage = !kit.length && !tokens.length && !existsSync(join(ROOT, "DESIGN.md")) && files.length < 5 ? "scratch"
+  const brief = briefs();
+  const stage = !kit.length && !tokens.length && !brief.nearest["DESIGN.md"] && files.length < 5 ? "scratch"
     : !kit.length || density > 0.5 || LEGACY.length ? "messy" : "kit";
   const have = ["DESIGN.md", "PRODUCT.md", "RATCHET.md", ".wwjd.json", ".wwjd-baseline.json"].map((f) => f === ".wwjd.json" && PROJECT_CFG
     ? (dirname(PROJECT_CFG) === ROOT ? f : rel(PROJECT_CFG))
-    : existsSync(join(ROOT, f)) ? `${f}${/\.md$/.test(f) ? " " + kb(f) : ""}` : `${f}: none`);
+    : brief.nearest[f] ? `${brief.nearest[f]} ${kb(brief.nearest[f])}`
+    : !BRIEFS.includes(f) && existsSync(join(ROOT, f)) ? `${f}${/\.md$/.test(f) ? " " + kb(f) : ""}` : `${f}: none`);
   const log = decisionLog();
   const golden = [].concat(cfg.golden || []);
   const picks = golden.length ? [] : goldenPicks(files, findings, kit);
   const read = [];
-  if (existsSync(join(ROOT, "PRODUCT.md"))) read.push("PRODUCT.md");
-  if (existsSync(join(ROOT, "DESIGN.md"))) read.push("DESIGN.md prose (Named rules and Do's/Don'ts in full; skip token frontmatter)");
+  if (brief.nearest["PRODUCT.md"]) read.push(brief.nearest["PRODUCT.md"]);
+  if (brief.nearest["DESIGN.md"]) read.push(`${brief.nearest["DESIGN.md"]} prose (Named rules and Do's/Don'ts in full; skip token frontmatter)`);
+  if (brief.others.length) read.push(`the ${brief.others.length > 1 ? "ones" : "one"} of ${brief.others.slice(0, 6).join(", ")} over the files you work on`);
   if (existsSync(join(ROOT, "RATCHET.md"))) read.push("RATCHET.md Gotchas, Tells, [design] items");
   if (log.length) read.push(`decision-log lines that grep for the surface's names (${log.join(", ")})`);
   read.push(golden.length ? `golden: ${golden.slice(0, 2).join(", ")}` : picks.length ? `golden (suggested): ${picks.slice(0, 2).join(", ")}` : "no golden file yet");
@@ -388,10 +422,11 @@ if (cmd === "status") {
   if (profile) read.push(`profile ${profile} (workflow, locale only)`);
   const dd = dials().d;
   if (opt.json) {
-    console.log(JSON.stringify({ stage, uiFiles: files.length, findings: findings.length, open: open.length, density: +density.toFixed(2), kit, tokens, files: have, decisionLog: log, taste, profile, storybook: storybook(), golden, goldenSuggested: picks, legacy: cfg.legacy || [], register: cfg.register || null, dials: dd, read }, null, 2));
+    console.log(JSON.stringify({ stage, uiFiles: files.length, findings: findings.length, open: open.length, density: +density.toFixed(2), kit, tokens, files: have, briefs: brief, decisionLog: log, taste, profile, storybook: storybook(), golden, goldenSuggested: picks, legacy: cfg.legacy || [], register: cfg.register || null, dials: dd, read }, null, 2));
   } else {
     console.log(`stage: ${stage}  (${files.length} UI files, ${open.length} ${base ? "new " : ""}findings, ${density.toFixed(2)}/file)`);
     console.log(`files: ${have.join(" · ")}`);
+    if (brief.others.length) console.log(`nested: ${brief.others.slice(0, 8).join(", ")}${brief.others.length > 8 ? ` (+${brief.others.length - 8})` : ""}  (each applies to the files below it)`);
     console.log(`decision log: ${log.join(", ") || "none"}`);
     console.log(`kit: ${kit.join(", ") || "none"}${tokens.length ? `  tokens: ${tokens.join(", ")}` : ""}`);
     console.log(`storybook: ${storybook() || "none"}`);

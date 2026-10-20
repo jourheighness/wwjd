@@ -79,7 +79,7 @@ Six dials tune how wwjd designs, never the floor: **Look** (plain ↔ expressive
 
 ## Scripts
 ```bash
-node plugins/wwjd/skills/ux/scripts/wwjd.mjs status
+node plugins/wwjd/skills/ux/scripts/wwjd.mjs status [paths]   # PRODUCT.md / DESIGN.md: the nearest up from paths (or cwd), nested ones listed
 node plugins/wwjd/skills/ux/scripts/wwjd.mjs check [paths] [--register operate] [--new] [--baseline] [--json]
 node plugins/wwjd/skills/ux/scripts/wwjd.mjs audit
 node plugins/wwjd/skills/ux/scripts/render.mjs shoot <url|file> [--one]

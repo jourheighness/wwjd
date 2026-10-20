@@ -75,3 +75,17 @@ test("check.sh: non-UI paths exit before node; UI files get findings", () => {
   const quiet = spawnSync("bash", [CHECK], { input: JSON.stringify({ cwd: fixture, tool_input: { file_path: join(fixture, "fixtures/card.html") } }), env, encoding: "utf8" });
   assert.equal(quiet.stdout, "");
 });
+
+test("status finds a nested PRODUCT.md: the nearest one up from the paths in scope, the rest listed", () => {
+  const root = repo({ "apps/ai-investigator/PRODUCT.md": "# Product\n", "apps/ai-investigator/src/page.html": "<p>x</p>\n",
+    "apps/web/DESIGN.md": "# Design\n", "node_modules/pkg/PRODUCT.md": "# not ours\n" });
+  const status = (cwd, ...paths) => JSON.parse(spawnSync("node", [WWJD, "status", ...paths, "--json"], { cwd, env, encoding: "utf8" }).stdout);
+  const top = status(root);
+  assert.equal(top.briefs.nearest["PRODUCT.md"], undefined);
+  assert.deepEqual(top.briefs.others, ["apps/ai-investigator/PRODUCT.md", "apps/web/DESIGN.md"]);
+  assert.ok(top.read.some((r) => r.includes("apps/ai-investigator/PRODUCT.md")), top.read.join("; "));
+  const app = status(join(root, "apps/ai-investigator/src"));
+  assert.equal(app.briefs.nearest["PRODUCT.md"], "apps/ai-investigator/PRODUCT.md");
+  assert.ok(app.files.some((f) => f.startsWith("apps/ai-investigator/PRODUCT.md")), app.files.join(" · "));
+  assert.equal(status(root, "apps/web").briefs.nearest["DESIGN.md"], "apps/web/DESIGN.md");
+});
