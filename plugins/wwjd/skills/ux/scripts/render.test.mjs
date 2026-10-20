@@ -149,3 +149,13 @@ test("shoot dark: a page that stays light gets no dark shot and says so", (t) =>
   const media = shootDark(`<style>html{background:#fff}@media (prefers-color-scheme: dark){html{background:#111}}</style><p>Both</p>`);
   assert.equal(media.shot, true, media.stderr);
 });
+
+test("a missing page exits 1 with file not found, never a clean fit or a blank shot", () => {
+  const root = mkdtempSync(join(tmpdir(), "wwjd-render-"));
+  for (const cmd of ["fit", "shoot"]) {
+    const run = spawnSync("node", [RENDER, cmd, join(root, "gone.html"), "--widths", "390", "--out", join(root, "shots")], { cwd: root, encoding: "utf8", timeout: 60000 });
+    assert.equal(run.status, 1, cmd + ": " + run.stdout + run.stderr);
+    assert.match(run.stderr, /file not found/);
+    assert.equal(existsSync(join(root, "shots")), false);
+  }
+});

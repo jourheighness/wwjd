@@ -34,7 +34,7 @@ import { createRequire } from "node:module";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { resolve, join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { artifactRoot, nearestConfig } from "./paths.mjs";
 
 const args = process.argv.slice(2);
@@ -60,6 +60,11 @@ const VALUED = new Set(["--width", "--widths", "--theme", "--out", "--selector",
 const target = args.slice(1).find((a, i, xs) => !a.startsWith("--") && !VALUED.has(xs[i - 1]));
 if (!target) { console.error(`usage: render.mjs ${cmd} <url|file> [options]`); process.exit(2); }
 const url = /^[a-z][\w+.-]*:/i.test(target) ? target : pathToFileURL(resolve(target)).href;
+// A missing page is an error, never a blank shot or a clean fit.
+if (url.startsWith("file:")) {
+  let file = null; try { file = fileURLToPath(url.replace(/[?#].*$/, "")); } catch { /* not a local path */ }
+  if (file && !existsSync(file)) { console.error(`render: file not found: ${file}`); process.exit(1); }
+}
 const json = flag("--json");
 const ROOT = artifactRoot(process.cwd());
 const SHOTS = join(ROOT, ".wwjd", "shots");
@@ -233,8 +238,10 @@ const add = (width, rule, severity, what) => findings.push({ width, rule, severi
 
 // Load, then a short settle; no networkidle (a busy page never idles) and no reload.
 async function open(page, settle = 300) {
-  try { await page.goto(url, { waitUntil: "load", timeout: 30000 }); }
+  let res = null;
+  try { res = await page.goto(url, { waitUntil: "load", timeout: 30000 }); }
   catch (e) { console.error(`render: ${url} did not finish loading (${e.message.split("\n")[0]}); checking what rendered`); }
+  if (res && res.status() >= 400) { console.error(`render: ${url} answered ${res.status()}${res.status() === 404 ? " (not found)" : ""}; nothing checked`); await browser.close(); process.exit(1); }
   await page.waitForTimeout(settle);
 }
 
