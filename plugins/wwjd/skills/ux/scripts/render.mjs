@@ -7,6 +7,8 @@
 //     --width <px>       primary width for --one (default: 1440 for operate/monitor, else 390; from --register or .wwjd.json)
 //     --theme light|dark --widths 1440,390 --out <dir> (default .wwjd/shots)  --full (full page with --one)
 //   .wwjd/ is at the nearest folder up with .wwjd.json or .wwjd/, else the git root, else here (what gate.mjs reads).
+//   Dark: prefers-color-scheme, then the page's stored theme set to dark; a page that stays light gets no dark shot
+//   ("dark not applied", exit 1).
 //   fit      resize a page or story and catch components that break as they shrink (also orphan-item: a lone
 //            avatar, icon, dot or badge wrapped onto its own line, in a flex row or in running text); writes
 //            .wwjd/fit.json for the Strictness gate
@@ -117,6 +119,28 @@ function systemChrome() {
   }
   return null;
 }
+// Dark shots: emulating prefers-color-scheme is not enough for an app that keeps its theme in a saved setting. After
+// load, LUMA reads the ground the viewer sees (the first opaque background under a few points, normalised through a
+// canvas so oklch() and color() read too). Still light: the theme keys the page stored (values light/dark/system,
+// plain or in JSON) plus the common names are set to dark before a reload. Still light then: no dark shot, and the
+// report says so, so a light picture never passes as the dark one.
+const LUMA = `(() => {
+  const ctx = Object.assign(document.createElement("canvas"), { width: 1, height: 1 }).getContext("2d", { willReadFrequently: true });
+  const rgba = (c) => { ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = "#0000"; ctx.fillStyle = c; ctx.fillRect(0, 0, 1, 1); return ctx.getImageData(0, 0, 1, 1).data; };
+  const ground = (x, y) => {
+    for (let el = document.elementFromPoint(x, y); el; el = el.parentElement) { const d = rgba(getComputedStyle(el).backgroundColor); if (d[3] > 128) return d; }
+    const d = rgba(getComputedStyle(document.documentElement).backgroundColor); return d[3] > 128 ? d : [255, 255, 255];
+  };
+  const ls = [[innerWidth / 2, 8], [innerWidth / 2, innerHeight / 2], [8, innerHeight / 2], [innerWidth - 8, innerHeight - 8]]
+    .map(([x, y]) => ground(x, y)).map(([r, g, b]) => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255).sort((a, b) => a - b);
+  return (ls[1] + ls[2]) / 2;
+})()`;
+const THEME_KEYS = ["theme", "color-scheme", "colorScheme", "vite-ui-theme", "ui-theme", "theme-mode", "darkMode"];
+const STORED = `JSON.stringify(Object.keys(localStorage).filter((k) => /^"?(light|dark|system|auto)"?$/i.test(localStorage.getItem(k) || "") || /"(theme|mode|colou?rScheme)"\s*:\s*"(light|dark|system|auto)"/i.test(localStorage.getItem(k) || "")))`;
+const SET_DARK = (keys) => `(() => { try { for (const k of ${JSON.stringify(keys)}) { const v = localStorage.getItem(k);
+  localStorage.setItem(k, v && v.startsWith("{") ? v.replace(/("(?:theme|mode|colou?rScheme)"\s*:\s*)"(light|system|auto)"/gi, '$1"dark"') : v && v.startsWith('"') ? '"dark"' : "dark"); } } catch { /* no storage */ } })()`;
+const NOT_DARK = "dark not applied: the page stayed light under prefers-color-scheme dark and with its stored theme set to dark (it may keep the theme elsewhere, or have no dark mode); no dark shot taken";
+
 // Chrome's own --screenshot can't do this: headless windows are at least 500px wide, so a 390 shot lays out at 500
 // and crops the right edge. Drive the DevTools protocol over a pipe instead (no port, no WebSocket): the viewport
 // is set exactly, as Playwright sets it.
@@ -146,7 +170,7 @@ async function chromeShots(exe, shots, fullPage) {
     const done = (v) => { clearTimeout(timer); listeners.delete(fn); ok(v); };
     listeners.add(fn);
   });
-  let failed = 0;
+  let failed = 0, notDark = 0;
   try {
     for (const { w, scheme, file } of shots) {
       try {
@@ -155,10 +179,20 @@ async function chromeShots(exe, shots, fullPage) {
         await send("Page.enable", {}, s);
         await send("Emulation.setDeviceMetricsOverride", { width: w, height: H(w), deviceScaleFactor: 1, mobile: false }, s);
         await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: scheme }] }, s);
-        const loaded = event(s, "Page.loadEventFired", 30000);
-        await send("Page.navigate", { url }, s);
-        if (!(await loaded)) console.error(`render: ${url} did not finish loading at ${w}px; shooting what rendered`);
-        await new Promise((ok) => setTimeout(ok, 500));
+        const go = async () => {
+          const loaded = event(s, "Page.loadEventFired", 30000);
+          await send("Page.navigate", { url }, s);
+          if (!(await loaded)) console.error(`render: ${url} did not finish loading at ${w}px; shooting what rendered`);
+          await new Promise((ok) => setTimeout(ok, 500));
+        };
+        const evalValue = async (expression) => (await send("Runtime.evaluate", { expression, returnByValue: true }, s)).result.value;
+        await go();
+        if (scheme === "dark" && (await evalValue(LUMA)) > 0.5) {
+          const keys = [...new Set([...JSON.parse(await evalValue(STORED)), ...THEME_KEYS])];
+          await send("Page.addScriptToEvaluateOnNewDocument", { source: SET_DARK(keys) }, s);
+          await go();
+          if ((await evalValue(LUMA)) > 0.5) { notDark++; console.error(`render: ${w}px ${NOT_DARK}`); await send("Target.closeTarget", { targetId }); continue; }
+        }
         const { result: { value: [sw, sh] } } = await send("Runtime.evaluate", { expression: "[document.documentElement.scrollWidth - innerWidth, document.documentElement.scrollHeight]", returnByValue: true }, s);
         const height = fullPage ? Math.max(H(w), sh) : H(w);
         const { data } = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: fullPage, clip: { x: 0, y: 0, width: w, height, scale: 1 } }, s);
@@ -172,15 +206,16 @@ async function chromeShots(exe, shots, fullPage) {
     proc.kill();
     try { rmSync(profile, { recursive: true, force: true }); } catch { /* left in tmp */ }
   }
-  return failed;
+  return { failed, notDark };
 }
 if (!chromium && cmd === "shoot") {
   const exe = systemChrome();
   if (exe) {
     mkdirSync(plan.out, { recursive: true });
-    const failed = await chromeShots(exe, plan.shots, plan.fullPage);
+    // a page that stays light is a finding, not a renderer that can't run: no UNAVAILABLE for it
+    const { failed, notDark } = await chromeShots(exe, plan.shots, plan.fullPage);
     if (failed === plan.shots.length) unavailable(`render: system Chrome (${exe}) took no shot of ${target}`);
-    process.exit(failed ? 1 : 0);
+    process.exit(failed || notDark ? 1 : 0);
   }
 }
 if (!chromium) unavailable(`render needs Playwright: run node ${new URL(import.meta.url).pathname} setup once (or npm i -D playwright here)`);
@@ -206,17 +241,27 @@ async function open(page, settle = 300) {
 // ── shoot ──────────────────────────────────────────────────────────
 if (cmd === "shoot") {
   mkdirSync(plan.out, { recursive: true });
+  let failed = 0;
   for (const { w, scheme, file } of plan.shots) {
-    const page = await browser.newPage({ viewport: { width: w, height: H(w) }, colorScheme: scheme });
-    const errs = []; page.on("pageerror", (e) => errs.push(e.message));
+    let page = await browser.newPage({ viewport: { width: w, height: H(w) }, colorScheme: scheme });
+    let errs = []; page.on("pageerror", (e) => errs.push(e.message));
     await open(page, 500);
+    if (scheme === "dark" && (await page.evaluate(LUMA)) > 0.5) {
+      const keys = [...new Set([...JSON.parse(await page.evaluate(STORED)), ...THEME_KEYS])];
+      await page.close();
+      page = await browser.newPage({ viewport: { width: w, height: H(w) }, colorScheme: scheme });
+      errs = []; page.on("pageerror", (e) => errs.push(e.message));
+      await page.addInitScript(SET_DARK(keys));
+      await open(page, 500);
+      if ((await page.evaluate(LUMA)) > 0.5) { failed++; console.error(`render: ${w}px ${NOT_DARK}`); await page.close(); continue; }
+    }
     await page.screenshot({ path: file, fullPage: plan.fullPage });
     const ox = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     console.log(file + (ox > 1 ? `  (scrolls sideways by ${ox}px)` : "") + (errs.length ? `  (page errors: ${errs.slice(0, 2).join(" | ")})` : ""));
     await page.close();
   }
   await browser.close();
-  process.exit(0);
+  process.exit(failed ? 1 : 0);
 }
 
 // ── fit ────────────────────────────────────────────────────────────

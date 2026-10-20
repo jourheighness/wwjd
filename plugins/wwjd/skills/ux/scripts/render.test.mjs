@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -119,4 +119,33 @@ test("text-sliced: a cut on a line boundary, line-clamp, a scroller and a fade s
     <p style="height:50px;overflow:hidden;mask-image:linear-gradient(#000 40%,transparent)">${EXCERPT}</p>`);
   if (!rules) return t.skip("no Playwright");
   assert.ok(!rules.includes("text-sliced"), rules.join(", "));
+});
+
+// shoot --theme dark: { shot, stderr, status }, or null without Playwright.
+function shootDark(body) {
+  const root = mkdtempSync(join(tmpdir(), "wwjd-render-"));
+  writeFileSync(join(root, ".wwjd.json"), "{}");
+  writeFileSync(join(root, "page.html"), `<!doctype html><meta charset="utf-8">${body}`);
+  const run = spawnSync("node", [RENDER, "shoot", join(root, "page.html"), "--theme", "dark", "--widths", "390", "--out", join(root, "shots")], { cwd: root, encoding: "utf8", timeout: 60000 });
+  if (run.status === 2) return null;
+  return { shot: existsSync(join(root, "shots", "page-390-dark.png")), stderr: run.stderr, status: run.status };
+}
+
+test("shoot dark: an app that keeps its theme in localStorage is shot dark", (t) => {
+  const r = shootDark(`<style>html{background:#fff}html.dark{background:#111}</style>
+    <script>if (!localStorage.getItem("theme")) localStorage.setItem("theme", "light");
+    if (localStorage.getItem("theme") === "dark") document.documentElement.classList.add("dark");</script><p>App</p>`);
+  if (!r) return t.skip("no Playwright");
+  assert.equal(r.shot, true, r.stderr);
+  assert.equal(r.status, 0, r.stderr);
+});
+
+test("shoot dark: a page that stays light gets no dark shot and says so", (t) => {
+  const r = shootDark(`<style>html{background:#fff}</style><p>Light only</p>`);
+  if (!r) return t.skip("no Playwright");
+  assert.equal(r.shot, false);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /dark not applied/);
+  const media = shootDark(`<style>html{background:#fff}@media (prefers-color-scheme: dark){html{background:#111}}</style><p>Both</p>`);
+  assert.equal(media.shot, true, media.stderr);
 });
