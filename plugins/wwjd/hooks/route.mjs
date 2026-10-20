@@ -36,7 +36,10 @@ const NUDGES = [
 const moves = {};
 for (const [key, step, alts] of NUDGES) if (word(alts).test(prompt)) (moves[key] ??= new Set()).add(step);
 const nudges = Object.entries(moves).filter(([, s]) => s.size === 1).map(([k, s]) => `${k} ${[...s][0] > 0 ? "+1" : "-1"}`);
-const nudgeText = nudges.length ? ` Dial nudge for this request only: ${nudges.join("; ")} (references/dials.md).` : "";
+// A redesign is explore §5, every time it is asked for: build would keep today's structure.
+const redesign = word("redesign|redo|start over|from scratch|rethink|re-?imagine|clean slate").test(prompt);
+const nudgeText = (nudges.length ? ` Dial nudge for this request only: ${nudges.join("; ")} (references/dials.md).` : "") +
+  (redesign ? " Redesign: commands/explore.md §5 (today's layout is the before, not the brief; 3 directions from the job)." : "");
 
 const say = (text) => { console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: text } })); process.exit(0); };
 
@@ -47,7 +50,7 @@ if (existsSync(marker)) { if (nudgeText) say(`wwjd:${nudgeText}`); process.exit(
 // Strong: UI on its own. Weak nouns only count next to a design word.
 const strong = "ui|ux|(?:chat|assistant|copilot|agent) (?:panel|ui|interface|window|sidebar|view)|redesign|layouts?|mock-?ups?|wireframes?|figma|storybook|landing ?page|hero|dashboard|css(?!-(?:loader|modules?|in-js))|tailwind|styling|typography|fonts?|colou?r ?palette|contrast|dark mode|light mode|animations?|hover|tooltips?|modal|drawer|sidebar|navbar|buttons?|cards?|components?|design system|design\\.md|onboarding|empty state|ui copy|microcopy|a11y|accessibility" + (process.env.WWJD_ROUTE_WORDS ? `|${process.env.WWJD_ROUTE_WORDS}` : "");
 const weak = "page|screen|view|form|table|menu|header|footer|input|labels?|copy|charts?|list|panel|chat|checkout|article|docs|blog|templates?|settings|pricing|navigation|profile";
-const verb = "design|redesign|bolder|safer|leaner|richer|denser|airier|roomier|livelier|calmer|warmer|terser|make it|looks?|align|aligned|spacing|padding|polish|prettier|cleaner|clean ?up|busy|cluttered|messy|ugly|nicer|simplify|style|restyle|tidy|centered|centred|wrap|jumps?|responsive|mobile|reads? well|readab(?:le|ility)|hard to (?:use|read|find|navigate)";
+const verb = "design|redesign|redo|start over|from scratch|rethink|re-?imagine|bolder|safer|leaner|richer|denser|airier|roomier|livelier|calmer|warmer|terser|make it|looks?|align|aligned|spacing|padding|polish|prettier|cleaner|clean ?up|busy|cluttered|messy|ugly|nicer|simplify|style|restyle|tidy|centered|centred|wrap|jumps?|responsive|mobile|reads? well|readab(?:le|ility)|hard to (?:use|read|find|navigate)";
 const isUI = word(strong).test(prompt) || (word(weak).test(prompt) && word(verb).test(prompt)) || /\[Image #\d+\]/.test(prompt);
 if (!isUI) process.exit(0);
 

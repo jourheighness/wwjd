@@ -34,7 +34,7 @@ docs/research/            archived research (faux-pas catalogue, layouts, look);
 
 ## How it runs
 1. **Entry, once per session:** `wwjd.mjs status` prints the stage (`scratch`, `kit`, `messy`), the baseline files, the kit, Storybook, golden and legacy files, the dials and whether over-budget surfaces get a grade sheet. The agent reads what it lists.
-2. **Route:** six verbs. `start` sets up a baseline, `build` builds or rebuilds, `simplify` removes and reorders, `review` returns a verdict and ranked findings, `explore` shows ~5 structure variants, `audit` maps the debt.
+2. **Route:** six verbs. `start` sets up a baseline, `build` builds or rebuilds, `simplify` removes and reorders, `review` returns a verdict and ranked findings, `explore` shows ~5 structure variants (a redesign of an existing screen: 3 directions from the job, today's layout set aside), `audit` maps the debt.
 3. **Loop:** show the work at once, react, adjust. A hook lints each edited UI file silently; one screenshot per handover; the full matrix only at milestones; the critic only when asked.
 
 ## Install

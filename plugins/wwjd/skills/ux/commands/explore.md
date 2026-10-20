@@ -1,6 +1,6 @@
 # explore: options for something new
 
-For anything that doesn't exist yet, or "show me options". Small fixes skip it. Structure only: the look comes from `wwjd:look` (3 look variants); here ~5 structure variants (the count Strictness 5 means).
+For anything that doesn't exist yet, "show me options", or a redesign of what exists (§5). Small fixes skip it. Structure only: the look comes from `wwjd:look` (3 look variants); here ~5 structure variants (the count Strictness 5 means).
 
 ## 1. Research before drawing
 - **The best current examples of this exact job:** real products at the top of this register and category, not the domain's dated look. A few named references, each with the move to steal; verified facts apart from inference.
@@ -36,3 +36,11 @@ For anything that doesn't exist yet, or "show me options". Small fixes skip it. 
 ## 4. Picking
 - **By letter:** "A and D", "B everywhere". Merge exactly what was named; keep what they liked while consolidating. Refine until approved.
 - **Record the approval** with date and comparison-page link in the decision log. That page is now the spec for `build`.
+
+## 5. Redesign: an existing screen, from the job
+"Redesign", "start over", "from scratch", "rethink": the person wants a different answer, not a tidier one. `build` keeps today's structure; this doesn't. A redesign that comes back as the old screen with cards moved is a miss (bans.md "Tame").
+- **Keeps:** the Floor; the real content and data (cut, merge, reorder, rewrite, never invent); the brand marks (name, logo, brand colours, faces); PRODUCT.md principles; legal, consent and pricing text.
+- **Sets aside:** today's layout, information architecture, navigation, component choices and section order. DESIGN.md tokens stay; its layouts, golden files and earlier layout decisions are evidence of what worked, never the template. The current screen is the before.
+- **Start from the job,** not the screen: the 3 things a person comes to do, in order; grade every fact on the current screen from zero (the grade gate); name 3 real products that do this job best and the move taken from each.
+- **3 directions, A–C,** different in what leads, how it is grouped and how you move through it. One is the calmest honest version; one a person who knows the old screen would not recognise. Each is a complete screen at 1440 and 390 with the real content, never a wireframe.
+- **Pick one and say why** in a line; the others stay on the comparison page. In a repo, compose the existing kit first; a new component is named, built in the kit and marked not yet approved.

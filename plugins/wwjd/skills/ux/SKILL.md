@@ -27,7 +27,7 @@ If a rule would hurt this case, say so, propose the exception, apply once agreed
 | add a component or screen; messy screen in scope | `build` |
 | "busy", "simplify", "clean up" | `simplify` |
 | "review", "what's wrong", screenshot | `review` |
-| "options", "show me", new flow | `explore` |
+| "options", "show me", new flow; "redesign", "start over" | `explore` |
 | `messy` + broad ask, debt | `audit` |
 | small change | rules + loop only |
 
