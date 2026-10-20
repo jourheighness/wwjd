@@ -151,4 +151,9 @@ test('cards group by task with a surface label inside; proof shows as links; the
   expect(await ui.find({ type: 'Link', label: '◩ signup-390-light', href: 'file:///p/.wwjd/shots/signup-390-light.png' })).toBeDefined()
   expect(await ui.find({ type: 'Link', label: '‹› Signup.tsx:42' })).toBeDefined()
   expect(await ui.find({ type: 'Link', label: '↗ Board', href: 'https://claude.ai/artifact/abc' })).toBeDefined()
+  // The mark sits top left on the first line, never centred against a wrapped text; actions hang under the text.
+  const [first] = ids(files)
+  const lead = await ui.find({ key: `lead:${first}` }) as unknown as { props: { alignItems?: string } } | undefined
+  expect(lead?.props.alignItems).toBe('flex-start')
+  expect(await ui.find({ key: `actions:${first}` })).toBeDefined()
 })

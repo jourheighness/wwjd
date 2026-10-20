@@ -1,6 +1,6 @@
 // The Settings view of the wwjd sidebar (sidebar.tsx): one card per dial, for you (the plugin options) or for this
-// project (.wwjd.json "dials"). A card names the dial and what its current stop does; its bottom edge is the five stops,
-// equal cells (native buttons on the desktop, plain labels on the terminal), so Tab, Enter and the pointer all work.
+// project (.wwjd.json "dials"). A card names the dial and what its current stop does, then the five stops as a row of
+// buttons (native on the desktop, [ ] on the terminal), the picked one primary, so Tab, Enter and the pointer all work.
 // The stops and what each does come from skills/ux/scripts/dials-spec.mjs. Scripts read WWJD_DIALS, then .wwjd.json.
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, PluginOptions, RenderInput } from 'claude-code'
@@ -83,18 +83,13 @@ export async function loadProjectDials($: EngineInterface) {
   await update($, project, () => (json.dials && typeof json.dials === 'object' ? (json.dials as Record<string, string | number>) : {}))
 }
 
-/** A card whose bottom edge is a row of equal cells, the sidebar's one card (sidebar.tsx draws decisions with it). */
-export function edgeCard(ui: ReturnType<EngineInterface['ui']['resolve']>, key: string, content: JSX.Element, cells: JSX.Element[], borderColor = 'subtle') {
+/** The sidebar's one card: a rounded border around its content (sidebar.tsx draws decisions with it). A desktop button
+ *  is native and sized to its label, so actions sit in a row under the text rather than in cells. */
+export function card(ui: ReturnType<EngineInterface['ui']['resolve']>, key: string, content: JSX.Element, borderColor = 'subtle') {
   const { Box } = ui
-  const w = `${Math.floor(100 / Math.max(1, cells.length))}%`
   return (
-    <Box key={key} flexDirection="column" borderStyle="round" borderColor={borderColor}>
-      <Box flexDirection="column" paddingX="md" paddingY="sm" gap="xs">{content}</Box>
-      {cells.length ? (
-        <Box flexDirection="row">
-          {cells.map((cell, i) => <Box key={`${key}-cell-${i}`} width={w} justifyContent="center">{cell}</Box>)}
-        </Box>
-      ) : null}
+    <Box key={key} flexDirection="column" borderStyle="round" borderColor={borderColor} paddingX="md" paddingY="sm">
+      {content}
     </Box>
   )
 }
@@ -103,7 +98,6 @@ export function edgeCard(ui: ReturnType<EngineInterface['ui']['resolve']>, key: 
 export async function settingsView($: EngineInterface, e: RenderInput, options: PluginOptions) {
   const ui = $.ui.resolve(e)
   const { Box, Text, Button } = ui
-  const isTerminal = e.surface === 'terminal'
   const where = await read($, scope)
   const proj = (await read($, project)) as Record<string, string | number>
 
@@ -113,25 +107,25 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
     const at = isOwn ? stopOf(dial, proj[dial.key]) : mine(options, dial)
     return { at, isOwn, isInherited: where === 'project' && !isOwn }
   }
-  // One cell of an edge: the picked one is the primary button on the desktop, bold and underlined on the terminal.
+  // One stop: the picked one is the primary button, the rest dim.
   const stop = (key: string, label: string, isPicked: boolean, onPress: () => void) =>
-    isTerminal
-      ? <Button key={key} plain dimColor={!isPicked} onPress={onPress}><Text bold={isPicked} underline={isPicked}>{label}</Text></Button>
-      : <Button key={key} label={label} variant={isPicked ? 'primary' : undefined} dimColor={!isPicked} onPress={onPress} />
-  const top = (name: string, right: JSX.Element | null, does: string) => (
-    <Box flexDirection="column">
-      <Box flexDirection="row" justifyContent="space-between" alignItems="center">
-        <Text bold>{name}</Text>
-        {right}
+    <Button key={key} label={label} variant={isPicked ? 'primary' : undefined} dimColor={!isPicked} onPress={onPress} />
+  const dialCard = (key: string, name: string, right: JSX.Element | null, does: string, stops: JSX.Element[]) => card(ui, key, (
+    <Box flexDirection="column" gap="sm">
+      <Box flexDirection="column">
+        <Box flexDirection="row" justifyContent="space-between" alignItems="center">
+          <Text bold>{name}</Text>
+          {right}
+        </Box>
+        <Text wrap="wrap" dimColor>{does}</Text>
       </Box>
-      <Text wrap="wrap" dimColor>{does}</Text>
+      <Box flexDirection="row" flexWrap="wrap" gap="xs">{stops}</Box>
     </Box>
-  )
+  ))
 
-  const scopeCard = edgeCard(ui, 'card-scope',
-    top('Applies to', null, where === 'person'
+  const scopeCard = dialCard('card-scope', 'Applies to', null, where === 'person'
       ? "Your plugin options. A project's .wwjd.json overrides them."
-      : "This project's .wwjd.json; commit it to share. Unset dials use yours."),
+      : "This project's .wwjd.json; commit it to share. Unset dials use yours.",
     (['You, every project', 'This project'] as const).map((label, i) =>
       stop(`scope:${i}`, label, (where === 'person' ? 0 : 1) === i, () => update($, scope, () => (i === 0 ? 'person' : 'project') as Scope))))
 
@@ -140,7 +134,7 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
     const right = isOwn
       ? <Button key={`${dial.key}:reset`} plain dimColor label="Use mine" onPress={() => pick($, dial.key, -1)} />
       : isInherited ? <Text dimColor>yours</Text> : null
-    return edgeCard(ui, `card-${dial.key}`, top(dial.name, right, dial.stops[at]?.[1] ?? ''),
+    return dialCard(`card-${dial.key}`, dial.name, right, dial.stops[at]?.[1] ?? '',
       dial.stops.map(([name], i) => stop(`${dial.key}:${i}`, name, i === at && !isInherited, () => pick($, dial.key, i))))
   })
 

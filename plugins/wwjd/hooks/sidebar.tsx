@@ -1,6 +1,6 @@
 // The wwjd sidebar (/wwjd): what Strictness still wants before handover, as Blocking cards under Needs you, then the
-// design decisions and assumptions the agent logged, as cards grouped by task (else surface). Each card's bottom edge
-// holds its actions: a problem's fix, a decision's Keep | Change. A change is a note for you (~/.config/wwjd/taste.md)
+// design decisions and assumptions the agent logged, as cards grouped by task (else surface). A card's mark sits top
+// left; its actions are a row of buttons under the text: a problem's fix first, a decision's Keep and Change. A change is a note for you (~/.config/wwjd/taste.md)
 // or for this project (its decision log); either way it leaves the open list for Handled, with a toast saying what
 // happened. The dials sit behind Settings (dials.tsx). The agent logs through the `log` tool registered here
 // (mcp__wwjd__log); entries live in .wwjd/decisions.jsonl at the root of the project being edited (artifactRoot below).
@@ -8,7 +8,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { Entry, Scope } from '../types'
-import { PANE, edgeCard, exportDials, loadProjectDials, settingsView } from './dials'
+import { PANE, card, exportDials, loadProjectDials, settingsView } from './dials'
 
 const view = atom({ plugin: 'wwjd', key: 'view' } as const, 'log')
 const editing = atom({ plugin: 'wwjd', key: 'editing' } as const, '')
@@ -290,7 +290,6 @@ export const register: Register = (on, options) => {
     }
 
     await read($, logVersion)
-    const isTerminal = e.surface === 'terminal'
     const Link = ui.Link
     const isHandledShown = await read($, showHandled)
     const shownDetail = await read($, detail)
@@ -318,11 +317,11 @@ export const register: Register = (on, options) => {
     for (const x of entries) byGroup.set(groupOf(x), [...(byGroup.get(groupOf(x)) ?? []), x])
     const groups = [...byGroup.entries()].sort((a, b) => (b[1].at(-1)?.at ?? '').localeCompare(a[1].at(-1)?.at ?? ''))
 
-    // One cell of a card's edge: a native button on the desktop, a plain label on the terminal.
-    const cell = (key: string, label: string, onPress: () => unknown, isPrimary = false) =>
-      isTerminal
-        ? <Button key={key} plain dimColor={!isPrimary} label={label} onPress={() => { void onPress() }} />
-        : <Button key={key} label={label} variant={isPrimary ? 'primary' : undefined} onPress={() => { void onPress() }} />
+    // A card action: a native button on the desktop, [ ] on the terminal; the one primary per card, the rest plain.
+    const action = (key: string, label: string, onPress: () => unknown, kind: 'primary' | 'plain' | 'dim' = 'plain') =>
+      <Button key={key} label={label} variant={kind === 'primary' ? 'primary' : undefined} dimColor={kind === 'dim'} onPress={() => { void onPress() }} />
+    const actions = (key: string, list: JSX.Element[]) =>
+      <Box key={`actions:${key}`} flexDirection="row" flexWrap="wrap" gap="xs" marginTop="xs">{list}</Box>
     const proofs = (key: string, list: string[] | undefined) => list?.length ? (
       <Box key={`proof:${key}`} flexDirection="row" flexWrap="wrap" gap="sm">
         {list.map((p, i) => { const l = proofLink(p, root); return <Text key={`proof:${key}:${i}`}><Link href={l.href} label={l.label} /></Text> })}
@@ -331,60 +330,62 @@ export const register: Register = (on, options) => {
     const mark = (kind: Entry['kind'] | 'blocking') => kind === 'blocking'
       ? <Text color="error" bold>✕</Text>
       : kind === 'assumption' ? <Text color="suggestion" bold>?</Text> : <Text dimColor bold>·</Text>
-    const head = (kind: Entry['kind'] | 'blocking', text: string, why: string | undefined, extra: JSX.Element | null = null) => (
-      <Box flexDirection="row" gap={1}>
+    // The mark sits on the first line at the top left; everything else, the actions included, hangs on the text's edge.
+    const lead = (key: string, kind: Entry['kind'] | 'blocking', text: string, why: string | undefined, below: (JSX.Element | null)[]) => (
+      <Box key={`lead:${key}`} flexDirection="row" gap={1} alignItems="flex-start">
         {mark(kind)}
-        <Box flexDirection="column" flexGrow={1} flexShrink={1}>
-          <Text wrap="wrap">{text}</Text>
-          {why ? <Text wrap="wrap" dimColor>{why}</Text> : null}
-          {extra}
+        <Box flexDirection="column" flexGrow={1} flexShrink={1} gap="xs">
+          <Box flexDirection="column">
+            <Text wrap="wrap">{text}</Text>
+            {why ? <Text wrap="wrap" dimColor>{why}</Text> : null}
+          </Box>
+          {below}
         </Box>
       </Box>
     )
 
     const blockingCard = (d: (typeof due)[number]) => {
       const isOpen = shownDetail === `due:${d.key}`
-      const more = (
-        <Box flexDirection="column">
-          {d.how ? <Button key={`detail:${d.key}`} plain dimColor label={isOpen ? 'Hide details' : 'Details'} onPress={() => update($, detail, v => (v === `due:${d.key}` ? '' : `due:${d.key}`))} /> : null}
-          {isOpen ? <Text wrap="wrap" dimColor>{d.how}</Text> : null}
-        </Box>
-      )
-      return edgeCard(ui, `due-card:${d.key}`, head('blocking', d.text, 'Before handover', more),
-        [cell(`fix:${d.key}`, d.fix, () => sendFix($, `${d.fix} · ${d.text}`, d.ask), true)], 'error')
+      return card(ui, `due-card:${d.key}`, lead(d.key, 'blocking', d.text, 'Before handover', [
+        isOpen ? <Text key={`how:${d.key}`} wrap="wrap" dimColor>{d.how}</Text> : null,
+        actions(d.key, [
+          action(`fix:${d.key}`, d.fix, () => sendFix($, `${d.fix} · ${d.text}`, d.ask), 'primary'),
+          ...(d.how ? [action(`detail:${d.key}`, isOpen ? 'Hide details' : 'Details', () => update($, detail, v => (v === `due:${d.key}` ? '' : `due:${d.key}`)), 'dim')] : []),
+        ]),
+      ]), 'error')
     }
 
     const decisionCard = (x: Entry) => {
       if (open === x.id) {
-        const content = (
-          <Box flexDirection="column" gap="sm">
-            {head(x.kind, x.text, x.why)}
-            {Input ? (
-              <Input key={`note:${x.id}`} placeholder="What it should be" value={note} autoFocus
-                onInput={v => update($, draft, () => v)} onSubmit={v => update($, draft, () => v).then(() => correct($, x.id))} />
-            ) : null}
-            <Box flexDirection="row" flexWrap="wrap" gap="xs" alignItems="center">
-              <Text dimColor>Save for</Text>
-              {(['project', 'person'] as const).map(sc => (
-                <Button key={`scope:${x.id}:${sc}`} label={sc === 'project' ? 'This project' : 'Every project'}
-                  plain={isTerminal && where !== sc ? true : undefined} dimColor={where !== sc} onPress={() => update($, noteScope, () => sc)} />
-              ))}
-            </Box>
-          </Box>
-        )
-        return edgeCard(ui, `card:${x.id}`, content, [
-          cell(`cancel:${x.id}`, 'Cancel', () => update($, editing, () => '')),
-          cell(`save:${x.id}`, 'Save', () => correct($, x.id), true),
-        ])
+        return card(ui, `card:${x.id}`, lead(x.id, x.kind, x.text, x.why, [
+          Input ? (
+            <Input key={`note:${x.id}`} placeholder="What it should be" value={note} autoFocus
+              onInput={v => update($, draft, () => v)} onSubmit={v => update($, draft, () => v).then(() => correct($, x.id))} />
+          ) : null,
+          <Box key={`scope:${x.id}`} flexDirection="row" flexWrap="wrap" gap="xs" alignItems="center">
+            <Text dimColor>Save for</Text>
+            {(['project', 'person'] as const).map(sc => (
+              <Button key={`scope:${x.id}:${sc}`} label={sc === 'project' ? 'This project' : 'Every project'}
+                dimColor={where !== sc} onPress={() => update($, noteScope, () => sc)} />
+            ))}
+          </Box>,
+          actions(x.id, [
+            action(`save:${x.id}`, 'Save', () => correct($, x.id), 'primary'),
+            action(`cancel:${x.id}`, 'Cancel', () => update($, editing, () => ''), 'dim'),
+          ]),
+        ]))
       }
-      return edgeCard(ui, `card:${x.id}`, head(x.kind, x.text, x.why, proofs(x.id, x.proof)), [
-        cell(`keep:${x.id}`, 'Keep', () => setKept($, x.id, true)),
-        cell(`change:${x.id}`, 'Change', () => update($, draft, () => '').then(() => update($, editing, () => x.id))),
-      ])
+      return card(ui, `card:${x.id}`, lead(x.id, x.kind, x.text, x.why, [
+        proofs(x.id, x.proof),
+        actions(x.id, [
+          action(`keep:${x.id}`, 'Keep', () => setKept($, x.id, true)),
+          action(`change:${x.id}`, 'Change', () => update($, draft, () => '').then(() => update($, editing, () => x.id))),
+        ]),
+      ]))
     }
 
     const handledRow = (x: Entry) => (
-      <Box key={`handled:${x.id}`} flexDirection="row" gap={1}>
+      <Box key={`handled:${x.id}`} flexDirection="row" gap={1} alignItems="flex-start">
         {mark(x.kind)}
         <Box flexDirection="column" flexGrow={1} flexShrink={1}>
           <Text wrap="wrap" dimColor><Text dimColor>{x.task ?? x.surface} · </Text>{x.text}</Text>
