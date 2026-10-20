@@ -89,3 +89,11 @@ test("status finds a nested PRODUCT.md: the nearest one up from the paths in sco
   assert.ok(app.files.some((f) => f.startsWith("apps/ai-investigator/PRODUCT.md")), app.files.join(" · "));
   assert.equal(status(root, "apps/web").briefs.nearest["DESIGN.md"], "apps/web/DESIGN.md");
 });
+
+test("gradient: a flat fill through border-image (one colour, both stops) is not a decorative gradient", () => {
+  const css = ".band { border-image: linear-gradient(var(--surface-2), var(--surface-2)) fill 0 // 0 100vmax; }\n"
+    + ".flat { background: linear-gradient(to right, #fff 0%, #fff 100%); }\n"
+    + ".hero { background: linear-gradient(90deg, var(--a) 0%, var(--b) 100%); }\n";
+  const r = check(repo({ "band.css": css }), ["band.css"]);
+  assert.deepEqual(r.findings.filter((x) => x.rule === "gradient").map((x) => x.line), [3]);
+});

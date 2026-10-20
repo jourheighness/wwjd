@@ -118,6 +118,24 @@ const near = (lines, i, re, span = 3) => lines.slice(Math.max(0, i - span), i + 
 const PROGRESS_EL = /<progress|role=["']progressbar|aria-valuenow|\b\w*(Progress|Meter|Stepper|Bar|Ring)\b|\bprogress|\bmeter\b/;
 const PROGRESS_WORD = /\b(done|complete[ds]?|finished|answered|scored|published|connected|measured|assessed|counted|scanned|reviewed|checked|approved|signed|uploaded|read|set up|reporting|ready|passed|verified)|(step|page|question|item|slide|photo|image|result)s?\b[^\n]{0,4}[{$]|index(Of)?\s*\(|\+\s*1\s*\}/i;
 
+// A gradient whose stops are all one colour is a flat fill (the full-bleed band trick:
+// border-image: linear-gradient(c, c) fill 0 // 0 100vmax). True when every gradient on the line is one.
+function flatGradients(line) {
+  if (/\bbg-(gradient|linear|radial)-/.test(line)) return false;
+  const split = (t, sep) => { const out = []; let depth = 0, cur = ""; for (const ch of t) { if (ch === "(") depth++; if (ch === ")") depth--; if (depth === 0 && sep.test(ch)) { out.push(cur); cur = ""; } else cur += ch; } return [...out, cur].map((x) => x.trim()).filter(Boolean); };
+  let any = false;
+  for (const m of line.matchAll(/(?:repeating-)?(?:linear|radial|conic)-gradient\(/g)) {
+    let depth = 1, j = m.index + m[0].length;
+    for (; j < line.length && depth; j++) depth += line[j] === "(" ? 1 : line[j] === ")" ? -1 : 0;
+    const args = split(line.slice(m.index + m[0].length, j - 1), /,/);
+    if (args.length && /^(to\b|from\b|at\b|in\b|circle|ellipse|closest|farthest|[-+.\d])/.test(args[0])) args.shift();
+    const colours = new Set(args.map((a) => split(a, /\s/)[0]?.toLowerCase()).filter((c) => c && !/^[-+.\d]/.test(c)));
+    if (colours.size !== 1) return false;
+    any = true;
+  }
+  return any;
+}
+
 // sev: default severity. off: registers where the rule doesn't apply. ok(lines, i): context that makes the hit fine.
 const rules = [
   // ── floor: accessibility and honesty ──
@@ -172,7 +190,8 @@ const rules = [
   { id: "break-all", sev: "warn", re: /word-break:\s*break-all|\bbreak-all\b/, msg: "break-all; use overflow-wrap:anywhere on a shrinkable child" },
   // ── visual (generated-UI tells; the project's DESIGN.md may own an exception: set the rule off in .wwjd.json) ──
   { id: "gradient-text", sev: "warn", re: /bg-clip-text|background-clip:\s*text/, msg: "gradient text is a generated-UI tell" },
-  { id: "gradient", sev: "warn", re: /\bbg-gradient-|\bbg-linear-|\bbg-radial-|linear-gradient\(|radial-gradient\(|conic-gradient\(/, skip: (f) => TOKEN_FILE.test(f), off: EXPRESSIVE, msg: "decorative gradient; flat unless the project's look owns it" },
+  { id: "gradient", sev: "warn", re: /\bbg-gradient-|\bbg-linear-|\bbg-radial-|linear-gradient\(|radial-gradient\(|conic-gradient\(/, skip: (f) => TOKEN_FILE.test(f), off: EXPRESSIVE,
+    ok: (lines, i) => flatGradients(lines[i]), msg: "decorative gradient; flat unless the project's look owns it" },
   { id: "glass", sev: "warn", re: /\bbackdrop-blur|backdrop-filter:\s*blur/, off: R("native"), msg: "glass/blur; flat by default" },
   { id: "accent-stripe", sev: "warn", re: /\bborder-[ls]-(?:[2-9]|\[)|border-left:\s*[2-9]px/, off: READING, msg: "thick accent stripe on a card is a generated-UI tell" },
   { id: "default-accent", sev: "warn", re: /#(6366f1|8b5cf6|7c3aed|a855f7|4f46e5|9333ea)\b|\b(bg|text|from|to)-(indigo|violet|purple)-(500|600)\b/i, skip: (f) => TOKEN_FILE.test(f), msg: "library default accent (indigo/violet); use the project accent" },
