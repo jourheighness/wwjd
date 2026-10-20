@@ -312,6 +312,9 @@ if (cmd === "fit") {
         const sh = /(-?\d+)px\s+(-?\d+)px\s+(-?\d+)px\s+(\d+)px/.exec(cs.boxShadow || "");
         const ring = Math.max(spread, sh && !/inset/.test(cs.boxShadow) ? +sh[4] : 0);
         if (!ring) continue;
+        // a control scrolled out of its scroller's view is not clipped; bring it to the middle first, so only an
+        // edge that stays in the way (padding too thin, the end of the scroll) reads as a cut ring
+        el.scrollIntoView({ block: "center", inline: "center" });
         const r = el.getBoundingClientRect();
         for (let p = el.parentElement; p && p !== document.documentElement; p = p.parentElement) {
           const pc = getComputedStyle(p);
@@ -335,6 +338,8 @@ async function hoverShift(page, selector) {
   const rows = await page.$$(`${selector ? selector + " " : ""}:is([data-row], [role=row], li, tr)`);
   for (const row of rows.slice(0, 5)) {
     if (!(await row.isVisible())) continue;
+    // hover() scrolls the row into view; scroll first so the scroll itself never reads as a shift
+    try { await row.scrollIntoViewIfNeeded({ timeout: 2000 }); } catch { continue; }
     const took = await page.evaluate((row) => {
       if (!row.parentElement) return false;
       window.__wwjdBoxes = new Map([...row.parentElement.children].map((c) => { const b = c.getBoundingClientRect(); return [c, [b.x, b.y, b.width, b.height]]; }));
