@@ -33,7 +33,7 @@ Ten axes. Light and dark are always both generated, so mode is not an axis. **bo
 | springy-work | springy in Operate, Monitor, Flow or Transact |
 | brand-shape · photo-mono · imagery-product | brand-shape without `"brandAsset": true` · photo + mono-label · non-ui imagery in product registers |
 | indigo-default | accent hue 265–320 with no brand hex |
-| trend-font | a `fonts` override naming a bans.md lane 5 face |
+| trend-font | a `fonts` override naming a bans.md lane 5 face, unless `"lock": ["fonts"]` (the project's own faces) |
 | ink-chroma | `inkChroma` above .03 (Stripe-style navy ink) |
 
 ## Generation (look.mjs)

@@ -13,6 +13,7 @@ Axes, presets and clashes: `references/axes.md`. Where references come from and 
 ## Quick mode (no DESIGN.md, no board asked)
 wwjd:ux runs this before the first build in a project without a look. About a minute; no screenshots, no questions.
 - **Read the Look dial** (`creativity`; `wwjd.mjs dials`, wwjd:ux `references/dials.md`): loud axes 1–3 at most one, 4 two, 5 two plus one signature idea per page. 1 Plain still picks its accent hue for the subject, never the kit default (lint `default-look`).
+- **The project's own look wins:** fonts or colour tokens already in the repo (a tokens file, shadcn `globals.css`, a Tailwind theme, `@font-face`) are the brand. Keep its faces (`"fonts"` + `"lock": ["fonts"]`) and pin its colours (`"fixed"`: `surface`, `on-surface`, `primary`, `outline`, `dark-…`); choose only the axes they leave open. The bans below are for new choices, never for faces or colours the project has.
 - **Subject first:** one line of the subject's world: materials, place, tools, audience, era.
 - **Anchor:** name one real product or site it should feel like (from what you know; no capture).
 - **Choose the open axes from the subject:** accent hue from its world (never the kit's default 258, never indigo/violet without a brand); neutral temperature; shape; surface; elevation. Density follows the register.
@@ -38,7 +39,7 @@ wwjd:ux runs this before the first build in a project without a look. About a mi
 Gather 6–8 references, board them, pick, run look.mjs, variants: `references/board.md`.
 
 ## 3. Hand back
-- `tokens.css` replaces the kit's `:root` token block. The names are the same; new tokens are only additions (`--font-display`, `--weight-heading`, `--tracking-display`, `--shadow-card`, `--r-button`, `--focus-width`, plus `--chrome-*`, `--surface-material` and `--accent-2` when the axis uses them). Components stay untouched.
+- `tokens.css` uses the wwjd kit's names (`--surface-1`, `--text`, `--accent`) and replaces the kit's `:root` block. A repo with its own names (shadcn `--background`, `--foreground`, `--primary`) keeps them: map each value onto its existing token, never ship a second set. New tokens are only additions (`--font-display`, `--weight-heading`, `--tracking-display`, `--shadow-card`, `--r-button`, `--focus-width`, plus `--chrome-*`, `--surface-material` and `--accent-2` when the axis uses them). Components stay untouched.
 - Density is applied with `<html data-density="compact|comfortable">` (kit `base.css` owns the scale), as the tokens.css header says.
 - Load the font with the `<link>` in the tokens.css header. Licensed reference fonts map to the open preset with the same job.
 - **Motion:** name the theme only. Set `<html data-motion="…">` with wwjd:motion's `motion.css`; the theme owns the durations and easings.

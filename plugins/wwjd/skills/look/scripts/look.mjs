@@ -106,7 +106,8 @@ const CLASH = [
   ['photo-mono', x => x.imagery == 'photo' && x.type == 'mono-label', 'photography plus mono data type mixes two voices'],
   ['imagery-product', x => x.imagery != 'ui' && /operate|monitor|flow|converse/.test(x.register), 'product registers show the real UI; imagery is fixed to ui'],
   ['indigo-default', x => !x.brand && x.accent != 'mono' && x.hue >= 265 && x.hue <= 320, 'an indigo/violet accent without a brand is the generated default (bans.md); give a brand hex or another hue'],
-  ['trend-font', x => TREND.test(JSON.stringify(x.fonts || {})), 'a trend face (bans.md lane 5): pick by job, or keep the project font'],
+  // bans are for new choices: the project's own faces ("lock": ["fonts"]) stay whatever they are
+  ['trend-font', x => !x.lock?.includes('fonts') && TREND.test(JSON.stringify(x.fonts || {})), 'a trend face (bans.md lane 5): pick by job, or keep the project font (its own faces: "lock": ["fonts"])'],
   ['ink-chroma', x => x.inkChroma > .03, 'ink chroma above the .03 cap needs a reference card and the owner\'s OK'] ];
 
 const die = (msg, code = 2) => { console.error(msg); process.exit(code); };
@@ -119,7 +120,7 @@ function resolve(look) {
   for (const k of Object.keys(look.axes || {})) if (!AXES.includes(k)) die(`unknown axis "${k}"; axes: ${AXES.join(', ')}`);
   const [temp, chroma] = ax.neutral.split('/'), brand = look.brand ? fromHex(look.brand) : null;
   return { ...ax, temp, chroma, brand, brandLch: brand, hue: brand ? brand[2] : (look.hue ?? 258), register: (look.register || 'operate').toLowerCase(),
-    brandAsset: look.brandAsset, fonts: look.fonts, inkChroma: look.inkChroma };
+    brandAsset: look.brandAsset, fonts: look.fonts, inkChroma: look.inkChroma, lock: [].concat(look.lock || []) };
 }
 const clashes = (x, allow = []) => CLASH.filter(([id, t]) => t(x) && !allow.includes(id)).map(([id, , m]) => `${m} [${id}]`);
 
