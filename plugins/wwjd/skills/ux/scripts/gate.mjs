@@ -198,13 +198,16 @@ if (mode === "stop") {
   const s = strictness();
   const missing = checks(ledger, s).filter((c) => !c.done).map((c) => c.how);
   if (!missing.length && !ledger.blocks) process.exit(0);
-  // Blocks count per user turn: a stop that is not the continuation of a block (stop_hook_active false) starts over.
-  // Edits in between never reset it, so fixing things after a block can't loop the turn.
+  // Asked once per run of edits: once the checks were named, the handover says what ran and why the rest couldn't
+  // (the person may have declined them), so a stop with no new UI edit since the ask stays silent, in this turn or
+  // the next. Blocks also count per user turn: edits after a block can't loop the turn past two.
   let block = false;
   update((l) => {
     const prior = input.stop_hook_active ? (l.blocks || 0) : 0;
-    block = missing.length > 0 && prior < 2;
+    const fresh = (l.lastEdit || 0) > (l.askedFor || 0);
+    block = missing.length > 0 && fresh && prior < 2;
     l.blocks = block ? prior + 1 : 0;
+    if (block) l.askedFor = l.lastEdit;
     if (block && missing.some((m) => m.includes("mcp__wwjd__log"))) l.logAsked = l.lastEdit;
   });
   if (!block) process.exit(0);

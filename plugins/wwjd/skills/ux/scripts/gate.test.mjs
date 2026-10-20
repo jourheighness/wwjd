@@ -111,11 +111,14 @@ test("stop: Strictness 4 adds a dark shot and a runtime report", () => {
   p.file(".wwjd/shots/card-390-light.png", "png", 5);
   p.file(".wwjd/shots/card-1440-light.png", "png", 5);
   p.file(".wwjd/fit.json", JSON.stringify({ findings: [] }), 5);
-  assert.match(p.run("stop", { stop_hook_active: false }).reason, /dark/);
+  const r = p.run("stop", { stop_hook_active: false });
+  assert.match(r.reason, /dark/);
+  assert.match(r.reason, /runtime/);
+  const done = () => Object.fromEntries(p.run("status", {}).checks.map((c) => [c.key, c.done]));
   p.file(".wwjd/shots/card-390-dark.png", "png", 5);
-  assert.match(p.run("stop", { stop_hook_active: false }).reason, /runtime/);
+  assert.deepEqual([done().dark, done().runtime], [true, false]);
   p.file(".wwjd/runtime.json", "{}", 5);
-  assert.equal(p.run("stop", { stop_hook_active: false }), null);
+  assert.equal(done().runtime, true);
 });
 
 test("stop: Strictness 5 adds a wwjd-critic run after the last edit", () => {
@@ -125,20 +128,26 @@ test("stop: Strictness 5 adds a wwjd-critic run after the last edit", () => {
   p.file(".wwjd/fit.json", JSON.stringify({ findings: [] }), 5);
   p.file(".wwjd/runtime.json", "{}", 5);
   assert.match(p.run("stop", { stop_hook_active: false }).reason, /critic/);
+  const critic = () => p.run("status", {}).checks.find((c) => c.key === "critic").done;
   const read = new Date(Date.now() + 5000).toISOString();
   appendFileSync(p.transcript, JSON.stringify({ timestamp: read, message: { content: [{ type: "tool_result", content: "5 Strict: adds the wwjd-critic agent" }] } }) + "\n");
-  assert.match(p.run("stop", { stop_hook_active: false }).reason, /critic/);
+  assert.equal(critic(), false);
   const later = new Date(Date.now() + 5000).toISOString();
   appendFileSync(p.transcript, JSON.stringify({ timestamp: later, message: { content: [{ type: "tool_use", name: "Agent", input: { subagent_type: "wwjd:wwjd-critic" } }] } }) + "\n");
+  assert.equal(critic(), true);
   assert.equal(p.run("stop", { stop_hook_active: false }), null);
 });
 
-test("stop: blocks at most twice in a row, then lets the turn end", () => {
+test("stop: asks once per run of edits; with no new edit it stays silent, in this turn and the next", () => {
   const p = project(2);
   p.edit("card.html");
   assert.equal(p.run("stop", { stop_hook_active: false }).decision, "block");
-  assert.equal(p.run("stop", { stop_hook_active: true }).decision, "block");
+  // the agent says why the checks can't run (or the person declined them): no re-prompt loop
   assert.equal(p.run("stop", { stop_hook_active: true }), null);
+  assert.equal(p.run("stop", { stop_hook_active: false }), null);
+  assert.equal(p.run("stop", { stop_hook_active: false }), null);
+  p.edit("card.html");
+  assert.equal(p.run("stop", { stop_hook_active: false }).decision, "block");
 });
 
 test("post notes a wwjd-critic run, which satisfies Strictness 5", () => {
