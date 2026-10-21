@@ -51,7 +51,10 @@ declare module 'claude-code' {
       editing: string
       noteScope: NoteScope
       logVersion: number
-      showHandled: boolean
+      /** Which pane cards the person folded or opened, by key; absent keys use each card's default. */
+      folds: Record<string, boolean>
+      /** The decision row opened to show why, proof, Edit and Dismiss. */
+      openRow: string
       showSaves: boolean
       /** The last file the session wrote or edited: names the project whose log the agent writes. */
       lastEdited: string

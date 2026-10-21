@@ -139,7 +139,7 @@ async function pickSetting($: EngineInterface, which: keyof typeof SETTINGS, val
 export function card(ui: ReturnType<EngineInterface['ui']['resolve']>, key: string, content: JSX.Element, borderColor = 'subtle') {
   const { Box } = ui
   return (
-    <Box key={key} flexDirection="column" borderStyle="round" borderColor={borderColor} padding="md">
+    <Box key={key} flexDirection="column" borderStyle="round" borderColor={borderColor} paddingX="md" paddingY="sm">
       {content}
     </Box>
   )
@@ -161,6 +161,8 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
   // One stop: the picked one is the primary button, the rest dim.
   const stop = (key: string, label: string, isPicked: boolean, onPress: () => void) =>
     <Button key={key} label={label} variant={isPicked ? 'primary' : undefined} dimColor={!isPicked} onPress={onPress} />
+  // The pane's quiet card line on the desktop (sidebar.tsx LINE); the terminal's theme grey elsewhere
+  const line = e.surface === 'desktop' ? 'rgba(127, 127, 127, 0.28)' : 'subtle'
   const dialCard = (key: string, name: string, right: JSX.Element | null, does: string, stops: JSX.Element[]) => card(ui, key, (
     <Box flexDirection="column" gap="sm">
       <Box flexDirection="column" gap="xs">
@@ -172,7 +174,7 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
       </Box>
       <Box flexDirection="row" flexWrap="wrap" gap="xs">{stops}</Box>
     </Box>
-  ))
+  ), line)
 
   const scopeCard = dialCard('card-scope', 'Applies to', null, where === 'person'
       ? "Your plugin options. A project's .wwjd.json overrides them."
