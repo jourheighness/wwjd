@@ -380,3 +380,16 @@ test("Hooks setting: quiet never blocks (no start question, sheet or stop), off 
   writeFileSync(join(app, "package.json"), "{}");
   assert.equal(p.run("pre", write(join(app, "App.tsx")), { CLAUDE_PLUGIN_OPTION_HOOKMODE: "quiet" }), null);
 });
+
+test("stop: with a board and the setting on, a handover asks to add the round; an ArtifactData write to it counts; off asks nothing", () => {
+  const p = project(2);
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, board: "https://claude.ai/artifact/AbC123" }));
+  p.edit("card.html");
+  const keys = (extra) => p.run("status", {}, extra).checks.map((c) => c.key);
+  assert.ok(keys({}).includes("board"));
+  assert.ok(!keys({ CLAUDE_PLUGIN_OPTION_BOARDMODE: "off" }).includes("board"));
+  appendFileSync(p.transcript, JSON.stringify({ timestamp: new Date(Date.now() + 5000).toISOString(), message: { content: [{ type: "tool_use", name: "ArtifactData", input: { action: "batch", url: "https://claude.ai/artifact/AbC123" } }] } }) + "\n");
+  assert.equal(p.run("status", {}).checks.find((c) => c.key === "board").done, true);
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, board: "https://claude.ai/artifact/AbC123", boardMode: "off" }));
+  assert.ok(!keys({}).includes("board"));
+});

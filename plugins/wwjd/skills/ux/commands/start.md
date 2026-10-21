@@ -6,7 +6,7 @@ For `scratch`, or UI without baseline files. An existing design system wins: rea
 wwjd owns the design side, so a new product never starts as code by default. One AskUserQuestion batch, each with a default:
 - **How to begin:** lettered variants in an Artifact first (default; `explore.md`, ~3 directions for a whole product), or straight to build.
 - **The look:** a board of options (`wwjd:look` §2, default for Look 4–5) or quick mode.
-- **A project board:** one shareable Artifact that collects directions, decisions, screenshots and handovers (`references/board.md`); default yes.
+- **A project board** (only while the Project board setting is on): one shareable Artifact that collects directions, decisions, screenshots and handovers (`references/board.md`); default yes.
 - **Anything the brief leaves open** that would change the variants: register, the one job of the first screen, the benchmark product.
 
 Record the answer in `.wwjd.json`: `"start": "variants"` or `"build"`, plus `"register"`, and `"board"` (the comparison Artifact's link) once it exists; the sidebar shows it as Board. The pre hook holds the first UI file of a new project until `.wwjd.json` exists. Steps 1–5 follow; each is skippable, and showing work never waits on them.

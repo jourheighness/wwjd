@@ -66,7 +66,7 @@ Six dials tune how wwjd designs, never the floor: **Look** (plain ↔ expressive
   ```
   Never preview URLs or hosts: use the `WWJD_PREVIEW` env var or an untracked `AGENTS.local.md`.
   A new project (a repo or package with no `.wwjd.json` and no UI yet) asks first how to begin: variants in an Artifact, or build. The pre hook holds its first UI file until `.wwjd.json` records `"start"`.
-- **Project board:** one shareable Artifact per project (`skills/ux/kit/board.html`, linked as `"board"` in `.wwjd.json`) that collects directions, decisions, screenshots and handovers; each handover adds to it (`skills/ux/references/board.md`).
+- **Project board:** one shareable Artifact per project (`skills/ux/kit/board.html`, linked as `"board"` in `.wwjd.json`) that collects directions, decisions, screenshots and handovers; each handover adds to it (`skills/ux/references/board.md`). On or off under `/wwjd` → Settings → Project board (the `boardmode` option, or `"boardMode"` in `.wwjd.json`).
 - **`.wwjd-baseline.json`** (committed): `wwjd.mjs check --baseline` writes it. The hook and `check --new` then report only errors and new warnings, and re-running `--baseline` only lowers counts. Delete it to accept new debt on purpose.
 - **`.wwjd/`** (gitignored): screenshots, references, look.json.
 - **One-off exceptions:** a trailing `wwjd-ignore: <reason>` comment on the line.

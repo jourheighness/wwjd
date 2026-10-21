@@ -70,3 +70,12 @@ export function hooksMode(start = process.cwd()) {
   if (f) { try { const m = norm(JSON.parse(readFileSync(f, "utf8")).hooks); if (m) return m; } catch { /* bad file: the option stands */ } }
   return norm(process.env.CLAUDE_PLUGIN_OPTION_HOOKMODE) || norm(process.env.WWJD_HOOKS) || "on";
 }
+
+/** The Project board setting: "on" (a new project offers a board; each handover adds its round) or "off" (Claude never
+ * creates or updates one). The nearest .wwjd.json "boardMode" > the plugin option > WWJD_BOARD > "on". */
+export function boardMode(start = process.cwd()) {
+  const norm = (v) => { const x = String(v ?? "").trim().toLowerCase(); return x === "off" || x === "false" || x === "0" ? "off" : x === "on" || x === "true" || x === "1" ? "on" : null; };
+  const f = nearestConfig(start);
+  if (f) { try { const m = norm(JSON.parse(readFileSync(f, "utf8")).boardMode); if (m) return m; } catch { /* bad file: the option stands */ } }
+  return norm(process.env.CLAUDE_PLUGIN_OPTION_BOARDMODE) || norm(process.env.WWJD_BOARD) || "on";
+}

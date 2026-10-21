@@ -30,7 +30,7 @@ import { join, extname, resolve, relative, dirname, basename, sep } from "node:p
 import { homedir } from "node:os";
 import { DIALS, stopOf, valueOf, isDefault, isGated } from "./dials-spec.mjs";
 import { noteEdit } from "./ledger.mjs";
-import { STORY, TEST, UI_EXT, hooksMode, nearestConfig } from "./paths.mjs";
+import { STORY, TEST, UI_EXT, boardMode, hooksMode, nearestConfig } from "./paths.mjs";
 
 const [major, minor] = process.versions.node.split(".").map(Number);
 if (major < 20 || (major === 20 && minor < 10)) { console.error("wwjd needs Node 20.10 or newer"); process.exit(2); }
@@ -459,6 +459,9 @@ if (cmd === "status") {
     console.log(`legacy: ${[].concat(cfg.legacy || []).join(", ") || "none"}  (never imitate)`);
     console.log(isGated(dd.strictness) ? "grade gate: before building an over-budget surface, write .wwjd/grade/<surface>.json, run grade.mjs on it and answer its sheet" : "grade light: grade over-budget surfaces in your head; the handover lists what moved and where");
     console.log(dialLine());
+    const bm = boardMode(startDir);
+    console.log(bm === "off" ? "board: off (don't create or update a project board)"
+      : cfg.board ? `board: on, ${cfg.board} (each handover adds its round: references/board.md)` : "board: on, none yet (a new project offers one at start §0: references/board.md)");
     console.log(`read: ${read.join("; ")}`);
   }
   process.exit(0);

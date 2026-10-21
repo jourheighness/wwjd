@@ -23,7 +23,7 @@ import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isGated } from "./dials-spec.mjs";
 import { isUI, noteEdit, openLedger } from "./ledger.mjs";
-import { artifactRoot, gitRoot, hasUI, hooksMode, nearestConfig, projectOf } from "./paths.mjs";
+import { artifactRoot, boardMode, gitRoot, hasUI, hooksMode, nearestConfig, projectOf } from "./paths.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const RENDER = join(HERE, "render.mjs");
@@ -90,6 +90,25 @@ function criticSince(since) {
   return false;
 }
 
+// Whether the board (an Artifact link in .wwjd.json "board") got an ArtifactData write after `since`, from the transcript.
+function boardSince(url, since) {
+  const id = /artifact\/([\w-]+)/.exec(url)?.[1];
+  if (!id) return false;
+  try {
+    for (const line of readFileSync(input.transcript_path, "utf8").split("\n")) {
+      if (!line.includes(id) || !line.includes("ArtifactData")) continue;
+      try {
+        const row = JSON.parse(line);
+        const blocks = Array.isArray(row.message?.content) ? row.message.content : [];
+        const wrote = blocks.some((b) => b.type === "tool_use" && b.name === "ArtifactData" && String(b.input?.url || "").includes(id)
+          && ["set", "update", "batch", "delete", "str_replace"].includes(b.input?.action));
+        if (wrote && Date.parse(row.timestamp) > since) return true;
+      } catch { /* partial line */ }
+    }
+  } catch { /* no transcript */ }
+  return false;
+}
+
 // What to point render.mjs at: an edited .html page itself; for source files, the running page.
 function shotTarget(ledger) {
   if (ledger.lastFile && extname(ledger.lastFile) === ".html") return ledger.lastFile;
@@ -147,6 +166,11 @@ function checks(ledger, s) {
   // Asked once per run of edits: an agent that made no unasked choice says so in the handover and may stop.
   if (s >= 2) out.push({ key: "log", label: "List the choices Claude made", what: "Claude writes down what it decided without asking you, so you can approve or change each one here.", done: (ledger.logAsked || 0) >= since || loggedSince(ledger.start || 0, ledger),
     how: "the design assumptions and choices you made without being told: one mcp__wwjd__log call each (surface, kind, one-line text, why, proof: the shot path, the page URL or the Artifact link that shows it); none? say so in the handover" });
+  // The project board (references/board.md), when the setting is on and the project has one
+  const boardUrl = typeof config.board === "string" && /^https:\/\//.test(config.board) ? config.board : null;
+  if (s >= 2 && boardUrl && boardMode(ledger.lastFile ? dirname(ledger.lastFile) : cwd) === "on") out.push({ key: "board", label: "Add this round to the board",
+    what: "Claude adds this round's decisions, screenshots and checks to the shared project board.", done: boardSince(boardUrl, since),
+    how: `add this round to the project board ${boardUrl} in one ArtifactData batch (references/board.md); the Project board setting turns this off` });
   if (s >= 5) out.push({ key: "critic", label: "Get a second opinion", what: "A separate reviewer looks at the result with fresh eyes and lists what to fix.", done: criticSince(since), how: "a cold review: run the wwjd:wwjd-critic agent on what you built" });
   return out;
 }

@@ -14,6 +14,14 @@ export const PANE = 'wwjd'
 const scope = atom({ plugin: 'wwjd', key: 'scope' } as const, 'person')
 const project = atom({ plugin: 'wwjd', key: 'project' } as const, {})
 const projectHooks = atom({ plugin: 'wwjd', key: 'projectHooks' } as const, '')
+const projectBoard = atom({ plugin: 'wwjd', key: 'projectBoard' } as const, '')
+
+// The Project board setting (skills/ux/scripts/paths.mjs boardMode): on or off.
+const BOARD = [
+  ['on', 'On', 'A new project offers a shareable board, and each handover adds its decisions, screenshots and checks to it.'],
+  ['off', 'Off', 'Claude never creates or updates a project board. The panel works as before.'],
+] as const
+const boardOf = (v: unknown) => (BOARD.some(([k]) => k === v) ? (v as string) : '')
 
 // The Hooks setting (skills/ux/scripts/paths.mjs hooksMode): on, quiet (never blocks) or off.
 const HOOKS = [
@@ -91,6 +99,27 @@ export async function loadProjectDials($: EngineInterface) {
   const { json = {} } = await readProject($)
   await update($, project, () => (json.dials && typeof json.dials === 'object' ? (json.dials as Record<string, string | number>) : {}))
   await update($, projectHooks, () => hooksOf(json.hooks))
+  await update($, projectBoard, () => boardOf(json.boardMode))
+}
+
+// A Project board pick: the plugin option for you, .wwjd.json "boardMode" for the project; '' hands it back to yours.
+async function pickBoard($: EngineInterface, value: string) {
+  if ((await read($, scope)) === 'person') {
+    const { deny } = await $.config.set({ key: 'wwjd.boardmode', value })
+    if (deny) $.ui.toast(`Not saved: ${deny}`)
+    else await $.env.set('WWJD_BOARD', value)
+    return
+  }
+  const { file, json, error } = await readProject($)
+  if (error !== undefined) {
+    $.ui.toast(`Not saved: ${file.split('/').slice(-2).join('/')}: ${error}. Fix it, then pick again.`)
+    return
+  }
+  const next: Record<string, unknown> = { ...json }
+  if (value) next.boardMode = value
+  else delete next.boardMode
+  await $.fs.write(file, JSON.stringify(next, null, 2) + '\n')
+  await update($, projectBoard, () => value)
 }
 
 // A Hooks pick: the plugin option for you, .wwjd.json "hooks" for the project; '' hands the project back to yours.
@@ -169,6 +198,17 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
     HOOKS.find(([k]) => k === hooksAt)?.[2] ?? '',
     HOOKS.map(([k, label]) => stop(`hooks:${k}`, label, k === hooksAt && !(where === 'project' && !hooksOwn), () => pickHooks($, k))))
 
+  // Project board: the same card shape, two stops
+  const projBoard = (await read($, projectBoard)) as string
+  const myBoard = boardOf(options.boardmode) || 'on'
+  const boardOwn = where === 'project' && projBoard !== ''
+  const boardAt = boardOwn ? projBoard : myBoard
+  const boardCard = dialCard('card-board', 'Project board',
+    boardOwn ? <Button key="board:reset" plain dimColor label="Use mine" onPress={() => pickBoard($, '')} />
+      : where === 'project' ? <Text dimColor>yours</Text> : null,
+    BOARD.find(([k]) => k === boardAt)?.[2] ?? '',
+    BOARD.map(([k, label]) => stop(`board:${k}`, label, k === boardAt && !(where === 'project' && !boardOwn), () => pickBoard($, k))))
+
   const dialCards = DIALS.map(dial => {
     const { at, isOwn, isInherited } = state(dial)
     const right = isOwn
@@ -182,6 +222,7 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
     <Box flexDirection="column" gap="sm">
       {scopeCard}
       {hooksCard}
+      {boardCard}
       {dialCards}
     </Box>
   )

@@ -2,6 +2,9 @@
 
 One Artifact per project where everything wwjd produced is collected: the directions explored, the decisions Claude made without asking, the screenshots it looked at, and what each handover checked or skipped. It is the shareable twin of the `/wwjd` sidebar: anyone the person shares the link with reads it without the app, and a comment on a decision reaches Claude.
 
+## The setting
+**Project board**, on (default) or off: `/wwjd` → Settings, for you (the `boardmode` plugin option) or for this project (`"boardMode": "off"` in `.wwjd.json`, which wins). `wwjd.mjs status` prints it. Off: never create, seed or update a board, and don't offer one at start. On, with a `board` in `.wwjd.json`: the stop hook asks once per run of edits to add the round, and an `ArtifactData` write to the board counts.
+
 ## Make it (once per project)
 - Publish `kit/board.html` as a new Artifact with `capabilities: {db: {rules: [{path: "", read: "view", write: "admin"}]}, assets: {}, comments: {composer_only: true}}` and icon `board`. Viewers read; only editors (and Claude) write.
 - Put its link in `.wwjd.json` as `"board"`: the sidebar's Open board button and every session after this one find it there.

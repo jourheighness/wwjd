@@ -40,6 +40,8 @@ declare module 'claude-code' {
       project: Record<string, string | number>
       /** The project's .wwjd.json "hooks" (on, quiet, off), '' when it has none. */
       projectHooks: string
+      /** The project's .wwjd.json "boardMode" (on, off), '' when it has none. */
+      projectBoard: string
       gate: Gate | null
       isActive: boolean
       view: 'log' | 'settings'
