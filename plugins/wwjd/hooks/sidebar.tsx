@@ -62,6 +62,8 @@ async function artifactRoot($: EngineInterface, file?: string): Promise<string> 
 // Where the sidebar reads, keeps and changes: the root the log tool last wrote to, else the one it would write to now.
 const shownRoot = async ($: EngineInterface) => (await read($, logRoot)) || artifactRoot($)
 const logFile = (root: string) => `${root}/.wwjd/decisions.jsonl`
+// The pane's last read of disk (see the render), at a log version; a file edit clears it.
+let snap: { ver: number; root: string; board: string | null; dirs: Direction[]; all: Entry[] } | null = null
 
 async function readLog($: EngineInterface, root: string): Promise<Entry[]> {
   try {
@@ -372,6 +374,7 @@ export const register: Register = (on, options) => {
       if (fp) {
         const cwd = await $.session.cwd()
         const at = fp.startsWith('/') ? fp : `${cwd}/${fp}`
+        snap = null
         if ((await read($, lastEdited)) !== at) await update($, lastEdited, () => at) // no redraw for the same file
       }
       return result
@@ -406,12 +409,20 @@ export const register: Register = (on, options) => {
       )
     }
 
-    await read($, logVersion)
+    const ver = await read($, logVersion)
     const Link = ui.Link
     const isHandledShown = await read($, showHandled)
-    const root = await shownRoot($).catch(() => '')
-    const board = root ? await boardUrl($, root).catch(() => null) : null
-    const dirs = root ? await directions($, root).catch(() => [] as Direction[]) : []
+    // What the pane reads from disk, cached: a click first moves the focus ring, which redraws the pane, and a slow
+    // redraw replaces the button under the click (the press then needs a second click). A log write bumps the version;
+    // any file edit clears it (the board link and directions are files Claude writes).
+    if (!snap || snap.ver !== ver) {
+      const root = await shownRoot($).catch(() => '')
+      snap = { ver, root,
+        board: root ? await boardUrl($, root).catch(() => null) : null,
+        dirs: root ? await directions($, root).catch(() => [] as Direction[]) : [],
+        all: root ? await readLog($, root).catch(() => [] as Entry[]) : [] }
+    }
+    const { root, board, dirs } = snap
     // What Strictness still wants after the last UI edit, from the same gate state the hooks enforce: Blocking cards.
     const g = await read($, gate)
     const due = g?.hasEdits
@@ -420,7 +431,7 @@ export const register: Register = (on, options) => {
           ...g.checks.filter(c => !c.done).map(c => ({ key: c.key, text: c.label.charAt(0).toUpperCase() + c.label.slice(1), what: c.what ?? '', fix: 'Run it', ask: `run this check before handover: ${c.label}. ${c.how}` })),
         ]
       : []
-    const all = root ? await readLog($, root).catch(() => [] as Entry[]) : []
+    const all = snap.all
     const entries = all.filter(x => !settled(x)).slice(-SHOWN)
     const handled = all.filter(settled).slice(-SHOWN).reverse()
     const open = await read($, editing)
