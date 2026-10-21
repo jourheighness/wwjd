@@ -21,7 +21,7 @@ const PATHS = {
 } as const
 export type IconName = keyof typeof PATHS
 
-export const TONE = { error: '#E5484D' } as const
+export const TONE = { error: '#E5484D', dim: '#8F8D88' } as const
 
 /** The SVG document for one icon: plain (follows light and dark) or in one colour. */
 export const iconSource = (name: IconName, color?: string) =>

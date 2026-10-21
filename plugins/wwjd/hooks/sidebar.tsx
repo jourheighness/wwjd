@@ -463,25 +463,25 @@ export const register: Register = (on, options) => {
     const Input = 'Input' in ui ? ui.Input : null
     // Icons where the surface draws Svg (icons.ts); the terminal keeps text marks.
     const Svg = 'Svg' in ui ? ui.Svg : null
-    const icon = (name: IconName, alt: string, color?: string) => (Svg ? <Svg source={iconSource(name, color)} alt={alt} width={14} height={14} /> : null)
+    // Each icon in a box that never shrinks: an Svg beside a native button otherwise collapses to nothing.
+    const icon = (name: IconName, alt: string, color?: string) => (Svg ? <Box flexShrink={0}><Svg source={iconSource(name, color)} alt={alt} width={14} height={14} /></Box> : null)
     const inApp = e.surface === 'desktop'
-    // A plain desktop button insets its label by 4px; text and action rows take the same inset, so every line in a card
-    // starts on one edge, the header's title included.
-    const inset = (key: string, el: JSX.Element | null) => (el && inApp ? <Box key={`in:${key}`} paddingLeft={4}>{el}</Box> : el)
     const folds = (await read($, foldsAtom)) as Record<string, boolean>
     const row1 = await read($, openRow)
 
     // The pane is cards, as Claude's own sidebar draws them: a quiet rounded border, a title with a chevron that folds
     // it, a dim count on the right, then rows of an icon and a line. Colour only for what needs you (Not done yet).
-    // Every card folds: the chevron sits in the rows' icon column, so the title starts where the rows' lines start.
+    // Every card folds: a dim chevron right after the title, as Claude's sidebar draws it.
     const panel = (key: string, title: string, meta: string, body: (JSX.Element | null)[], opts: { isOpen?: boolean } = {}) => {
       const isOpen = folds[key] ?? opts.isOpen ?? true
       return (
         <Box key={`panel:${key}`} flexDirection="column" gap="md" borderStyle="round" borderColor={inApp ? LINE : 'subtle'} paddingX="md" paddingTop="md" paddingBottom="lg">
           <Box flexDirection="row" justifyContent="space-between" alignItems="center" gap="sm">
-            <Box flexDirection="row" alignItems="center" gap="sm" flexShrink={1}>
-              {icon(isOpen ? 'down' : 'right', isOpen ? 'Fold' : 'Open')}
-              <Button key={`fold:${key}`} plain label={Svg ? title : `${isOpen ? '▾' : '▸'} ${title}`} onPress={() => update($, foldsAtom, f => ({ ...(f as Record<string, boolean>), [key]: !isOpen }))} />
+            <Box flexDirection="row" alignItems="center" gap="xs" flexShrink={1}>
+              <Box flexShrink={1}>
+                <Button key={`fold:${key}`} plain label={Svg ? title : `${title} ${isOpen ? '▾' : '▸'}`} onPress={() => update($, foldsAtom, f => ({ ...(f as Record<string, boolean>), [key]: !isOpen }))} />
+              </Box>
+              {icon(isOpen ? 'down' : 'right', isOpen ? 'Fold' : 'Open', TONE.dim)}
             </Box>
             {meta ? <Text size="footnote" dimColor tabular>{meta}</Text> : null}
           </Box>
@@ -496,11 +496,11 @@ export const register: Register = (on, options) => {
         <Box flexDirection="column" flexGrow={1} flexShrink={1} gap="xs">{content}</Box>
       </Box>
     )
-    const note = (key: string, text: string) => inset(key, <Text key={key} size="footnote" wrap="wrap" dimColor>{text}</Text>)
+    const note = (key: string, text: string) => <Text key={key} size="footnote" wrap="wrap" dimColor>{text}</Text>
     const action = (key: string, label: string, onPress: () => unknown, kind: 'primary' | 'plain' | 'dim' = 'plain') =>
       <Button key={key} label={label} variant={kind === 'primary' ? 'primary' : undefined} dimColor={kind === 'dim'} onPress={() => { void onPress() }} />
     const actions = (key: string, list: (JSX.Element | null)[]) =>
-      inset(`actions:${key}`, <Box key={`actions:${key}`} flexDirection="row" flexWrap="wrap" gap="xs" alignItems="center">{list}</Box>)
+      <Box key={`actions:${key}`} flexDirection="row" flexWrap="wrap" gap="xs" alignItems="center">{list}</Box>
     // A line that opens what it is about: in the app on the desktop (openProof), a link elsewhere.
     const opener = (key: string, label: string, p: Proof | null, toast?: string) => !p
       ? <Text key={key} wrap="wrap">{label}</Text>
@@ -544,7 +544,7 @@ export const register: Register = (on, options) => {
       ...(isAllSaves ? saves : saves.slice(0, SAVES)).map(x => {
         const p = (x.proof ?? []).map(y => toProof(y, root)).find((y): y is Proof => y !== null) ?? null
         return row(`save:${x.id}`, mark('save'), [
-          inset(`save-text:${x.id}`, <Text key={`save-text:${x.id}`} wrap="wrap">{`Kept Claude from ${x.text}`}</Text>),
+          <Text key={`save-text:${x.id}`} wrap="wrap">{`Kept Claude from ${x.text}`}</Text>,
           x.rule || p ? actions(`save:${x.id}`, [x.rule ? <Text key={`rule:${x.id}`} size="footnote" dimColor>{x.rule}</Text> : null, p ? opener(`save:${x.id}`, 'Open', p) : null]) : null,
         ])
       }),
@@ -552,7 +552,7 @@ export const register: Register = (on, options) => {
     ]
 
     const dueRows = due.map(d => row(`due:${d.key}`, mark('blocking'), [
-      inset(`due-text:${d.key}`, <Text key={`due-text:${d.key}`} wrap="wrap">{d.text}</Text>),
+      <Text key={`due-text:${d.key}`} wrap="wrap">{d.text}</Text>,
       actions(d.key, [
         action(`fix:${d.key}`, d.fix, () => sendFix($, `${d.fix} · ${d.text}`, d.ask), 'primary'),
         d.key === 'sheet' ? null : action(`skip:${d.key}`, 'Skip', () => skipCheck($, root, d.key, d.text)),
@@ -565,7 +565,7 @@ export const register: Register = (on, options) => {
       const isOpen = row1 === x.id || open === x.id
       const label = titleOf(x)
       const line = <Button key={`row:${x.id}`} plain label={label} onPress={() => update($, openRow, r => (r === x.id ? '' : x.id))} />
-      const whole = label !== x.text ? inset(`text:${x.id}`, <Text key={`text:${x.id}`} wrap="wrap">{x.text}</Text>) : null
+      const whole = label !== x.text ? <Text key={`text:${x.id}`} wrap="wrap">{x.text}</Text> : null
       if (open === x.id) {
         return row(x.id, mark(x.kind), [line, whole,
           x.why ? note(`why:${x.id}`, `Why: ${x.why}`) : null,
@@ -604,7 +604,7 @@ export const register: Register = (on, options) => {
     const decided = groups.flatMap(([name, xs]) => [groups.length > 1 ? note(`group:${name}`, name) : null, ...xs.map(decisionRow)])
 
     const handledRows = handled.map(x => row(`handled:${x.id}`, mark(x.kind), [
-      inset(`handled-text:${x.id}`, <Text key={`handled-text:${x.id}`} size="footnote" wrap="wrap" dimColor>{titleOf(x)}</Text>),
+      <Text key={`handled-text:${x.id}`} size="footnote" wrap="wrap" dimColor>{titleOf(x)}</Text>,
       x.correction ? note(`changed:${x.id}`, `Changed to: ${x.correction.note}`) : null,
       x.kept ? <Button key={`reopen:${x.id}`} plain dimColor label="Reopen" onPress={() => setKept($, x.id, false)} /> : null,
     ]))
