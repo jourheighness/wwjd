@@ -13,6 +13,7 @@
 //          A Design canvas board (.dc.html) asks for no shots, fit or runtime: it renders only in its canvas.
 //          Blocks at most twice per user turn, so a check that can't be done never traps the turn.
 //   status the same state as JSON, for the wwjd status band (hooks/status.tsx): stdin { session_id, cwd }.
+// The Hooks setting (paths.mjs hooksMode): "quiet" never blocks (no pre, no stop), "off" runs nothing.
 // Artifacts (.wwjd/) live at the nearest ancestor with .wwjd.json or .wwjd/, else the git root (paths.mjs): of the file
 // being written or last edited when a session in one folder works on another project, else of cwd.
 // Tests, fixtures and stories are not UI work here. The ledger: ledger.mjs. A wwjd-critic run is read from the transcript.
@@ -22,7 +23,7 @@ import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isGated } from "./dials-spec.mjs";
 import { isUI, noteEdit, openLedger } from "./ledger.mjs";
-import { artifactRoot, gitRoot, hasUI, nearestConfig, projectOf } from "./paths.mjs";
+import { artifactRoot, gitRoot, hasUI, hooksMode, nearestConfig, projectOf } from "./paths.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const RENDER = join(HERE, "render.mjs");
@@ -34,6 +35,12 @@ const cwd = input.cwd || process.cwd();
 
 // Cheap exits first: no ledger, config or git for calls the gate does not care about.
 const fp = input.tool_input?.file_path;
+// The Hooks setting (paths.mjs hooksMode): quiet keeps the edit note and drops every block; off drops the gate too.
+const hooks = hooksMode(mode === "pre" && fp ? dirname(resolve(cwd, fp)) : cwd);
+if (hooks === "off" || (hooks === "quiet" && (mode === "pre" || mode === "stop"))) {
+  if (mode === "status") { console.log(JSON.stringify({ strictness: 0, hooks, hasEdits: false, lastFile: null, sheet: { needed: false, file: null, due: false }, checks: [] })); }
+  process.exit(0);
+}
 if (mode === "pre" && (input.tool_name !== "Write" || !isUI(fp) || existsSync(resolve(cwd, fp)))) process.exit(0);
 if (mode === "post") { noteEdit(input); process.exit(0); }
 

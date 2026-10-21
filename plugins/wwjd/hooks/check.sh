@@ -2,7 +2,9 @@
 # PostToolUse: one node process per UI edit: note it for the Strictness gate, then lint it with wwjd.mjs check --new.
 # Reports errors plus warnings that are new against .wwjd-baseline.json (errors only without one),
 # at most 5 lines, as context for the agent. Silent for clean files, non-UI files and missing node.
-# Lint off for one project: WWJD_HOOK_CHECK=0 (the gate's note still happens).
+# Lint off for one project: WWJD_HOOK_CHECK=0 (the gate's note still happens). Hooks setting off: nothing runs
+# (the plugin option here; a project's .wwjd.json "hooks" is read by wwjd.mjs).
+[ "${CLAUDE_PLUGIN_OPTION_HOOKMODE:-}" = "off" ] && exit 0
 input=$(cat)
 # Non-UI paths leave before node starts: most edits are not UI files.
 re='"file_path"[[:space:]]*:[[:space:]]*"([^"]*)"'

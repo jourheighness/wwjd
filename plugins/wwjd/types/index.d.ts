@@ -3,6 +3,8 @@ export type Scope = 'person' | 'project'
 /** What `gate.mjs status` prints: the Strictness dial, the grade sheet and the checks before handover. */
 export type Gate = {
   strictness: number
+  /** The Hooks setting when it is not "on": quiet or off; the gate then reports nothing due. */
+  hooks?: string
   hasEdits: boolean
   lastFile: string | null
   /** due: the pre gate refused a new UI file this session and no sheet was written since. */
@@ -32,6 +34,8 @@ declare module 'claude-code' {
     wwjd: {
       scope: Scope
       project: Record<string, string | number>
+      /** The project's .wwjd.json "hooks" (on, quiet, off), '' when it has none. */
+      projectHooks: string
       gate: Gate | null
       isActive: boolean
       view: 'log' | 'settings'

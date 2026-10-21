@@ -114,3 +114,38 @@ test('a .wwjd.json that does not parse is never overwritten by a pick', async ($
   expect(files['/p/.wwjd.json']).toBe(broken)
   expect(toasts.at(-1)).toMatch(/Not saved: .*not valid JSON/)
 })
+
+test('Hooks: a pick goes to the plugin option for you, to .wwjd.json "hooks" for the project, and Use mine removes it', async ($, on) => {
+  mock.store(on)
+  mock.env(on, { HOME: '/home/j' })
+  const sets: unknown[] = []
+  const files: Record<string, string> = { '/p/.wwjd.json': '{}\n' }
+  on('config.set', (_$, e) => {
+    sets.push([e.key, e.value])
+    return { value: e.value }
+  })
+  on('session.cwd', () => ({ value: '/p' }))
+  on('fs.exists', (_$, e) => ({ value: e.path in files }))
+  on('fs.read', (_$, e) => {
+    const text = files[e.path]
+    if (text === undefined) throw new Error('missing')
+    return { value: text }
+  })
+  on('fs.write', (_$, e) => {
+    files[e.path] = e.text
+    return { value: undefined }
+  })
+  on('ui.open', () => opened)
+  await $.command.run({ command: 'wwjd' } as never)
+  const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'terminal', ...PANE, props })
+  await ui.press({ key: 'to-settings' })
+  expect(await ui.find({ type: 'Text', text: 'Hooks' })).toBeDefined()
+  await ui.press({ key: 'hooks:quiet' })
+  expect(sets).toEqual([['wwjd.hookmode', 'quiet']])
+  await ui.press({ key: 'scope:1' })
+  await ui.press({ key: 'hooks:off' })
+  expect(JSON.parse(files['/p/.wwjd.json'] ?? '{}').hooks).toBe('off')
+  await ui.press({ key: 'hooks:reset' })
+  expect(JSON.parse(files['/p/.wwjd.json'] ?? '{}').hooks).toBeUndefined()
+  await ui.unmount()
+})

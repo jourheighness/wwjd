@@ -1,7 +1,7 @@
 // paths.mjs: where wwjd's scripts find a project's config and artifacts, and which files count as UI. No deps, Node 20.10+.
 // gate.mjs, render.mjs and wwjd.mjs share it, so the gate reads what render writes and lints what the hook checks.
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, extname, join, resolve } from "node:path";
 
@@ -60,4 +60,13 @@ export function hasUI(root) {
     return false;
   };
   return walk(root, 0);
+}
+
+/** The Hooks setting: "on" (route, lint, gates), "quiet" (route and lint, nothing blocks) or "off" (no wwjd hooks).
+ * The nearest .wwjd.json "hooks" > the plugin option > WWJD_HOOKS > "on". The sidebar's Settings sets both. */
+export function hooksMode(start = process.cwd()) {
+  const norm = (v) => { const x = String(v ?? "").trim().toLowerCase(); return x === "off" || x === "false" || x === "0" ? "off" : x === "quiet" ? "quiet" : x === "on" || x === "true" || x === "1" ? "on" : null; };
+  const f = nearestConfig(start);
+  if (f) { try { const m = norm(JSON.parse(readFileSync(f, "utf8")).hooks); if (m) return m; } catch { /* bad file: the option stands */ } }
+  return norm(process.env.CLAUDE_PLUGIN_OPTION_HOOKMODE) || norm(process.env.WWJD_HOOKS) || "on";
 }

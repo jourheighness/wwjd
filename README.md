@@ -59,7 +59,7 @@ Six dials tune how wwjd designs, never the floor: **Look** (plain ↔ expressive
 ## Per project
 - **`.wwjd.json`** (committed, repo-relative paths only):
   ```json
-  { "start": "variants", "board": "https://claude.ai/artifact/…", "register": "operate", "locale": ["sv", "en"],
+  { "start": "variants", "board": "https://claude.ai/artifact/…", "hooks": "on", "register": "operate", "locale": ["sv", "en"],
     "kitDirs": ["packages/ui"], "dials": { "creativity": 4 },
     "golden": ["src/pages/Orders.tsx"], "legacy": ["src/old/**"],
     "storybook": "pnpm storybook", "rules": { "gradient": "off" } }
@@ -69,6 +69,7 @@ Six dials tune how wwjd designs, never the floor: **Look** (plain ↔ expressive
 - **`.wwjd-baseline.json`** (committed): `wwjd.mjs check --baseline` writes it. The hook and `check --new` then report only errors and new warnings, and re-running `--baseline` only lowers counts. Delete it to accept new debt on purpose.
 - **`.wwjd/`** (gitignored): screenshots, references, look.json.
 - **One-off exceptions:** a trailing `wwjd-ignore: <reason>` comment on the line.
+- **Hooks on, quiet or off:** `/wwjd` → Settings → Hooks, for you (the `hookmode` plugin option) or for this project (`"hooks": "quiet"` in `.wwjd.json`, which wins). On routes, lints and gates; quiet routes and lints but never blocks; off runs no wwjd hooks (the skills still work when called).
 - **Lint hook off for a project:** `WWJD_HOOK_CHECK=0` (the Strictness gate still sees the edit).
 
 ## Decisions and corrections

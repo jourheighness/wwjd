@@ -1,12 +1,19 @@
 {
   "name": "wwjd",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "description": "What Would Johannes Do: opinionated UI/UX rules and workflow. Three skills (wwjd:ux for structure, behaviour and copy; wwjd:look for the look; wwjd:motion for motion), a cold critic agent on request, a prompt hook that routes UI work, and an auto-lint hook after UI edits.",
   "author": {
     "name": "Johannes Carlsten"
   },
   "skills": "./skills/",
   "userConfig": {
+    "hookmode": {
+      "type": "string",
+      "title": "Hooks: on, quiet or off",
+      "description": "on: routes UI prompts, lints edits and gates handovers (default). quiet: routes and lints, never blocks. off: no wwjd hooks. A project's .wwjd.json \"hooks\" wins.",
+      "options": ["on", "quiet", "off"],
+      "default": "on"
+    },
     "creativity": {
       "type": "number",
       "title": "Look: plain ↔ expressive",

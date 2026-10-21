@@ -30,7 +30,7 @@ import { join, extname, resolve, relative, dirname, basename, sep } from "node:p
 import { homedir } from "node:os";
 import { DIALS, stopOf, valueOf, isDefault, isGated } from "./dials-spec.mjs";
 import { noteEdit } from "./ledger.mjs";
-import { STORY, TEST, UI_EXT, nearestConfig } from "./paths.mjs";
+import { STORY, TEST, UI_EXT, hooksMode, nearestConfig } from "./paths.mjs";
 
 const [major, minor] = process.versions.node.split(".").map(Number);
 if (major < 20 || (major === 20 && minor < 10)) { console.error("wwjd needs Node 20.10 or newer"); process.exit(2); }
@@ -64,6 +64,7 @@ let hookCwd = null;
 if (opt.hook) {
   let input = {};
   try { input = JSON.parse(readFileSync(0, "utf8") || "{}"); } catch { process.exit(0); }
+  if (hooksMode(input.cwd || process.cwd()) === "off") process.exit(0);
   try { noteEdit(input); } catch { /* the lint still runs */ } // one process per edit: the gate's note and the lint
   if (process.env.WWJD_HOOK_CHECK === "0") process.exit(0);
   const fp = input.tool_input?.file_path || input.tool_input?.notebook_path;

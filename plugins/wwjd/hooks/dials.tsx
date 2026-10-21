@@ -1,5 +1,5 @@
-// The Settings view of the wwjd sidebar (sidebar.tsx): one card per dial, for you (the plugin options) or for this
-// project (.wwjd.json "dials"). A card names the dial and what its current stop does, then the five stops as a row of
+// The Settings view of the wwjd sidebar (sidebar.tsx): a Hooks card (on, quiet, off) and one card per dial, for you
+// (the plugin options) or for this project (.wwjd.json "hooks" and "dials"). A card names the dial and what its current stop does, then the five stops as a row of
 // buttons (native on the desktop, [ ] on the terminal), the picked one primary, so Tab, Enter and the pointer all work.
 // The stops and what each does come from skills/ux/scripts/dials-spec.mjs. Scripts read WWJD_DIALS, then .wwjd.json.
 import { atom, read, update } from 'claude-code'
@@ -13,6 +13,15 @@ export const PANE = 'wwjd'
 
 const scope = atom({ plugin: 'wwjd', key: 'scope' } as const, 'person')
 const project = atom({ plugin: 'wwjd', key: 'project' } as const, {})
+const projectHooks = atom({ plugin: 'wwjd', key: 'projectHooks' } as const, '')
+
+// The Hooks setting (skills/ux/scripts/paths.mjs hooksMode): on, quiet (never blocks) or off.
+const HOOKS = [
+  ['on', 'On', 'Routes UI prompts to the skills, lints each UI edit and holds the handover until the checks ran.'],
+  ['quiet', 'Quiet', 'Routes and lints, never blocks: no start question, grade sheet or handover checks.'],
+  ['off', 'Off', 'No wwjd hooks run. The skills still work when you call them.'],
+] as const
+const hooksOf = (v: unknown) => (HOOKS.some(([k]) => k === v) ? (v as string) : '')
 
 const dialOf = (key: string) => DIALS.find(d => d.key === key) as Dial | undefined
 const mine = (options: PluginOptions, dial: Dial) => stopOf(dial, options[dial.key] ?? dial.default)
@@ -77,10 +86,30 @@ async function pick($: EngineInterface, key: string, stop: number) {
   await update($, project, () => dials)
 }
 
-/** The project's dials into state, before the sidebar opens. */
+/** The project's dials and Hooks setting into state, before the sidebar opens. */
 export async function loadProjectDials($: EngineInterface) {
   const { json = {} } = await readProject($)
   await update($, project, () => (json.dials && typeof json.dials === 'object' ? (json.dials as Record<string, string | number>) : {}))
+  await update($, projectHooks, () => hooksOf(json.hooks))
+}
+
+// A Hooks pick: the plugin option for you, .wwjd.json "hooks" for the project; '' hands the project back to yours.
+async function pickHooks($: EngineInterface, value: string) {
+  if ((await read($, scope)) === 'person') {
+    const { deny } = await $.config.set({ key: 'wwjd.hookmode', value })
+    if (deny) $.ui.toast(`Not saved: ${deny}`)
+    return
+  }
+  const { file, json, error } = await readProject($)
+  if (error !== undefined) {
+    $.ui.toast(`Not saved: ${file.split('/').slice(-2).join('/')}: ${error}. Fix it, then pick again.`)
+    return
+  }
+  const next: Record<string, unknown> = { ...json }
+  if (value) next.hooks = value
+  else delete next.hooks
+  await $.fs.write(file, JSON.stringify(next, null, 2) + '\n')
+  await update($, projectHooks, () => value)
 }
 
 /** The sidebar's one card: a rounded border around its content (sidebar.tsx draws decisions with it). A desktop button
@@ -129,6 +158,17 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
     (['You, every project', 'This project'] as const).map((label, i) =>
       stop(`scope:${i}`, label, (where === 'person' ? 0 : 1) === i, () => update($, scope, () => (i === 0 ? 'person' : 'project') as Scope))))
 
+  // Hooks: the same card shape as a dial, three stops
+  const projHooks = (await read($, projectHooks)) as string
+  const myHooks = hooksOf(options.hookmode) || 'on'
+  const hooksOwn = where === 'project' && projHooks !== ''
+  const hooksAt = hooksOwn ? projHooks : myHooks
+  const hooksCard = dialCard('card-hooks', 'Hooks',
+    hooksOwn ? <Button key="hooks:reset" plain dimColor label="Use mine" onPress={() => pickHooks($, '')} />
+      : where === 'project' ? <Text dimColor>yours</Text> : null,
+    HOOKS.find(([k]) => k === hooksAt)?.[2] ?? '',
+    HOOKS.map(([k, label]) => stop(`hooks:${k}`, label, k === hooksAt && !(where === 'project' && !hooksOwn), () => pickHooks($, k))))
+
   const dialCards = DIALS.map(dial => {
     const { at, isOwn, isInherited } = state(dial)
     const right = isOwn
@@ -141,6 +181,7 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
   return (
     <Box flexDirection="column" gap="sm">
       {scopeCard}
+      {hooksCard}
       {dialCards}
     </Box>
   )

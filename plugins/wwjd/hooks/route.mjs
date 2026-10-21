@@ -9,9 +9,11 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import { DIALS, isDefault, stopOf } from "../skills/ux/scripts/dials-spec.mjs";
+import { hooksMode } from "../skills/ux/scripts/paths.mjs";
 
 let input = {};
 try { input = JSON.parse(readFileSync(0, "utf8") || "{}"); } catch { process.exit(0); }
+if (hooksMode(input.cwd || process.cwd()) === "off") process.exit(0); // the Hooks setting
 const prompt = String(input.prompt ?? "");
 // Not the person typing: another agent's hand-back, a task or system notification, a slash command's caveat.
 if (/^\s*(<(agent-message|task-notification|system-reminder|local-command-caveat)|\[SYSTEM NOTIFICATION|Another Claude session sent a message)/.test(prompt)) process.exit(0);

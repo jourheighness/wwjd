@@ -364,3 +364,19 @@ test("stop: a Design canvas board (.dc.html) asks for no shots or fit, only the 
   assert.doesNotMatch(r.reason, /render\.mjs/);
   assert.deepEqual(p.run("status", {}).checks.map((c) => c.key), ["log"]);
 });
+
+test("Hooks setting: quiet never blocks (no start question, sheet or stop), off runs nothing; .wwjd.json beats the option", () => {
+  const p = project(4);
+  p.edit("card.html");
+  assert.equal(p.run("stop", { stop_hook_active: false }, { CLAUDE_PLUGIN_OPTION_HOOKMODE: "quiet" }), null);
+  assert.equal(p.run("pre", write(join(p.root, "new.html")), { CLAUDE_PLUGIN_OPTION_HOOKMODE: "quiet" }), null);
+  assert.deepEqual(p.run("status", {}, { CLAUDE_PLUGIN_OPTION_HOOKMODE: "off" }).checks, []);
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 4 }, hooks: "on" }));
+  assert.equal(p.run("pre", write(join(p.root, "new.html")), { CLAUDE_PLUGIN_OPTION_HOOKMODE: "off" }).hookSpecificOutput.permissionDecision, "deny");
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 4 }, hooks: "off" }));
+  assert.equal(p.run("pre", write(join(p.root, "new.html"))), null);
+  const app = mkdtempSync(join(tmpdir(), "wwjd-new-"));
+  execFileSync("git", ["init", "-q", app]);
+  writeFileSync(join(app, "package.json"), "{}");
+  assert.equal(p.run("pre", write(join(app, "App.tsx")), { CLAUDE_PLUGIN_OPTION_HOOKMODE: "quiet" }), null);
+});
