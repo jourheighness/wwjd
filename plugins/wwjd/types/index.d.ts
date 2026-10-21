@@ -27,7 +27,8 @@ export type Entry = {
   /** The task it belongs to ("Signup flow"); the sidebar groups by it, else by surface. */
   task?: string
   /** What it is about: screenshot or file paths (a file may end in :line), live dev-server URLs, artifact links. */
-  proof?: string[]
+  /** "Name | target" strings, or typed { kind, name, url | path, board, line } (hooks/sidebar.tsx Proof). */
+  proof?: (string | { kind?: string; name?: string; url?: string; path?: string; board?: string; line?: number })[]
   correction?: { note: string; scope: NoteScope; file: string; at: string }
   kept?: { at: string }
 }

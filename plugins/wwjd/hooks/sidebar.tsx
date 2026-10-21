@@ -147,49 +147,80 @@ async function boardUrl($: EngineInterface): Promise<string | null> {
   }
 }
 
-// A proof as a link: a live dev-server URL is a way to try the state, an image a screenshot, anything else a file or
-// a page. Paths resolve from the project root; a file's :line stays in the label.
+// A proof: what shows a decision, typed so the button says what it opens and opens it in the right place.
+//   variant     one design of several on a board (an Artifact canvas): opens the board, the toast names the variant
+//   artifact    an Artifact of its own: opens in the Artifact pane
+//   page        a running page (a dev server): opens in the built-in browser
+//   screenshot  an image: opens in the Files pane
+//   file        a source file, optionally at a line: opens in the Files pane there
+//   link        any other web page: the built-in browser
+// The log takes these as objects ({ kind, name, url | path, board, line }) or as strings ("Name | target"), whose kind is
+// read from the target. Paths resolve from the project root.
+export type ProofKind = 'variant' | 'artifact' | 'page' | 'screenshot' | 'file' | 'link'
+export type Proof = { kind: ProofKind; target: string; name?: string; board?: string; line?: number }
+const KINDS: ProofKind[] = ['variant', 'artifact', 'page', 'screenshot', 'file', 'link']
 const LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|[^/]+\.localhost|[^/]+\.test)(:\d+)?(\/|$)/
-export function proofLink(proof: string, root: string): { href: string; label: string } {
-  // "Name | target" names it: "Variant A · Deck | https://claude.ai/artifact/…" reads "Variant A · Deck".
-  const named = /^(.+?)\s+\|\s+(\S+)$/.exec(proof)
-  if (named) return { ...proofLink(named[2] ?? '', root), label: named[1] ?? '' }
-  const p = proof
-  if (/^https?:\/\//.test(p)) {
-    if (LOCAL.test(p)) return { href: p, label: `Try it: ${p.replace(/^https?:\/\/[^/]+/, '') || '/'}` }
-    if (/claude\.ai\/(code\/)?artifact\//.test(p)) return { href: p, label: 'Open Artifact' }
-    return { href: p, label: `Open ${p.replace(/^https?:\/\//, '').split('/')[0]}` }
+const ARTIFACT = /claude\.ai\/(code\/)?artifact\//
+const IMAGE = /\.(png|jpe?g|webp|gif|avif)$/i
+const abs = (path: string, root: string) => (path.startsWith('/') ? path : `${root}/${path}`)
+
+export function toProof(raw: unknown, root: string): Proof | null {
+  if (raw && typeof raw === 'object') {
+    const o = raw as Record<string, unknown>
+    const target = [o.url, o.path, o.target].find((v): v is string => typeof v === 'string' && v.trim() !== '')
+    if (!target) return null
+    const guessed = toProof(target, root)
+    const kind = KINDS.includes(o.kind as ProofKind) ? (o.kind as ProofKind) : guessed?.kind ?? 'link'
+    return { kind, target: guessed?.target ?? target, ...(typeof o.name === 'string' && o.name ? { name: o.name } : {}),
+      ...(typeof o.board === 'string' && o.board ? { board: o.board } : {}),
+      ...(typeof o.line === 'number' ? { line: o.line } : guessed?.line ? { line: guessed.line } : {}) }
   }
-  const [path = p, line] = p.split(/:(?=\d+$)/)
-  const abs = path.startsWith('/') ? path : `${root}/${path}`
-  const name = abs.split('/').pop() ?? abs
-  if (/\.(png|jpe?g|webp|gif)$/i.test(name)) return { href: `file://${abs}`, label: `Screenshot: ${name.replace(/\.\w+$/, '')}` }
-  return { href: `file://${abs}`, label: `File: ${name}${line ? `:${line}` : ''}` }
+  if (typeof raw !== 'string' || !raw.trim()) return null
+  const named = /^(.+?)\s+\|\s+(\S+)$/.exec(raw.trim())
+  const name = named?.[1]
+  const t = named?.[2] ?? raw.trim()
+  const withName = (x: Proof): Proof => (name ? { ...x, name } : x)
+  if (/^https?:\/\//.test(t)) return withName({ kind: ARTIFACT.test(t) ? 'artifact' : LOCAL.test(t) ? 'page' : 'link', target: t })
+  const m = /^(.*?):(\d+)$/.exec(t)
+  const path = abs(m ? m[1] ?? t : t, root)
+  return withName({ kind: IMAGE.test(path) ? 'screenshot' : 'file', target: path, ...(m ? { line: Number(m[2]) } : {}) })
 }
 
-// Opens a proof inside the desktop app: an Artifact in its pane, a web page in the built-in browser, a file in the
-// Files pane (at its line). Each goes through the tool the model would call, permission check included; when a tool
-// is missing or refuses, the system opener stands in, so a press never does nothing.
-async function openProof($: EngineInterface, proof: string, root: string) {
-  const p = /^(.+?)\s+\|\s+(\S+)$/.exec(proof)?.[2] ?? proof
-  const { href } = proofLink(p, root)
-  const tries: Record<string, unknown>[] = /claude\.ai\/(code\/)?artifact\//.test(href)
-    ? [{ tool: 'Artifact', action: 'open', url: href }]
-    : /^https?:/.test(href)
-      ? [{ tool: 'mcp__Claude_Browser__navigate', url: href }]
-      : (() => {
-          const line = /:(\d+)$/.exec(p)?.[1]
-          return [{ tool: 'mcp__ccd_view__show_pane', pane: 'file', path: href.replace(/^file:\/\//, ''), ...(line ? { line: Number(line) } : {}) }]
-        })()
-  for (const call of tries) {
-    try {
-      const r = (await $.tool.call(call as never)) as { isError?: boolean } | undefined
-      if (!r?.isError) return
-    } catch { /* no such tool here: next */ }
+const base = (path: string) => path.split('/').pop() ?? path
+/** What the button says. `board` is the project's board link, so the board reads as "Open board". */
+export function proofLabel(p: Proof, board: string | null): string {
+  switch (p.kind) {
+    case 'variant': return p.name ?? p.board ?? 'Variant'
+    case 'artifact': return p.target === board ? 'Open board' : `Open ${p.name ?? 'Artifact'}`
+    case 'page': return `Try it: ${p.name ?? (p.target.replace(/^https?:\/\/[^/]+/, '') || '/')}`
+    case 'screenshot': return `Screenshot: ${p.name ?? base(p.target).replace(/\.\w+$/, '')}`
+    case 'file': return `File: ${p.name ?? base(p.target)}${p.line ? `:${p.line}` : ''}`
+    case 'link': return `Open ${p.name ?? p.target.replace(/^https?:\/\//, '').split('/')[0]}`
   }
-  const target = href.replace(/^file:\/\//, '')
-  const run = await $.process.run(['open', target]).catch(() => null)
-  if (!run || run.exitCode !== 0) await $.process.run(['xdg-open', target]).catch(() => undefined)
+}
+/** The address a link uses where the surface opens it itself (the terminal). */
+export const proofHref = (p: Proof) => (/^https?:\/\//.test(p.target) ? p.target : `file://${p.target}`)
+
+// Opens a proof inside the desktop app through the tool the model would call (permission check included). A refusal
+// or a missing tool falls through to the system opener; either way a toast says what happened, never silence.
+async function openProof($: EngineInterface, p: Proof, what: string, note?: string) {
+  const call: Record<string, unknown> =
+    p.kind === 'variant' || p.kind === 'artifact' ? { tool: 'Artifact', action: 'open', url: p.target }
+      : p.kind === 'page' || p.kind === 'link' ? { tool: 'mcp__Claude_Browser__navigate', url: p.target }
+        : { tool: 'mcp__ccd_view__show_pane', pane: 'file', path: p.target, ...(p.line ? { line: p.line } : {}) }
+  let why = ''
+  try {
+    const r = (await $.tool.call(call as never)) as { deny?: string; isError?: boolean; text?: string } | undefined
+    if (r && !r.deny && !r.isError) { if (note) $.ui.toast(note); return }
+    why = r?.deny ?? r?.text ?? 'refused'
+  } catch (err) {
+    why = err instanceof Error ? err.message : String(err)
+  }
+  for (const opener of ['open', 'xdg-open']) {
+    const run = await $.process.run([opener, p.target]).catch(() => null)
+    if (run && run.exitCode === 0) { $.ui.toast(`Opened ${what} outside the app${note ? ` · ${note}` : ''}`); return }
+  }
+  $.ui.toast(`Couldn't open ${what}${why ? `: ${why.split('\n')[0]?.slice(0, 120)}` : ''}`)
 }
 
 // A problem's fix: one message to the agent, nothing run behind the person's back.
@@ -235,7 +266,10 @@ export const register: Register = (on, options) => {
           why: { type: 'string', description: 'One short reason in plain words, no jargon ("the card was too crowded to scan")' },
           path: { type: 'string', description: 'A file this is about, when the project being edited is not the session\'s folder; the entry goes to that project\'s log' },
           task: { type: 'string', description: 'The task this belongs to, the same words for every entry of it ("Signup flow", "Sidebar log")' },
-          proof: { type: 'array', items: { type: 'string' }, description: 'What shows it: a screenshot or file path (file:line), the dev-server URL, an artifact link. Name it with "Name | target" ("Variant A · Deck | https://claude.ai/artifact/…"), else the link is labelled by its kind' },
+          proof: { type: 'array', description: 'What shows it, one entry per thing to open. An object { kind, name, url or path, board, line }: kind variant (one design on a board canvas: url is the board, name the variant, board its frame), artifact (an Artifact of its own), page (a running dev-server URL), screenshot (an image path), file (a source path, with line), link (other web page). Or a string "Name | target", whose kind is read from the target. Name every entry the way the person would ("Variant A · Deck")',
+            items: { anyOf: [{ type: 'string' }, { type: 'object', properties: {
+              kind: { type: 'string', enum: ['variant', 'artifact', 'page', 'screenshot', 'file', 'link'] }, name: { type: 'string' },
+              url: { type: 'string' }, path: { type: 'string' }, board: { type: 'string' }, line: { type: 'number' } } }] } },
         },
       },
     })
@@ -254,7 +288,17 @@ export const register: Register = (on, options) => {
     if (typeof x.surface !== 'string' || typeof x.text !== 'string' || (x.kind !== 'assumption' && x.kind !== 'choice')) {
       return { deny: 'Needs surface, kind (assumption or choice) and text.' }
     }
-    const proof = Array.isArray(x.proof) ? x.proof.filter((p): p is string => typeof p === 'string' && p.trim() !== '' && p.length <= 2048).map(p => p.trim()).slice(0, 6) : []
+    // Strings as given; typed objects kept to their known fields. At most 8, each short.
+    const ok = (v: unknown) => typeof v === 'string' && v.trim() !== '' && v.length <= 2048
+    const proof = (Array.isArray(x.proof) ? x.proof : []).flatMap((p): (string | Record<string, unknown>)[] => {
+      if (ok(p)) return [(p as string).trim()]
+      if (!p || typeof p !== 'object') return []
+      const o = p as Record<string, unknown>
+      const out: Record<string, unknown> = {}
+      for (const k of ['kind', 'name', 'url', 'path', 'board']) if (ok(o[k])) out[k] = (o[k] as string).trim()
+      if (typeof o.line === 'number' && o.line > 0) out.line = Math.floor(o.line)
+      return out.url || out.path ? [out] : []
+    }).slice(0, 8)
     const entry = {
       surface: x.surface.trim(), kind: x.kind as Entry['kind'], text: x.text.trim(),
       ...(typeof x.why === 'string' && x.why.trim() ? { why: x.why.trim() } : {}),
@@ -355,16 +399,31 @@ export const register: Register = (on, options) => {
       <Box key={`actions:${key}`} flexDirection="row" flexWrap="wrap" gap="xs" marginTop="xs">{list}</Box>
     // Desktop: buttons that open inside the app (openProof); other surfaces: links.
     const inApp = e.surface === 'desktop'
-    const proofs = (key: string, list: string[] | undefined) => list?.length ? (
-      <Box key={`proof:${key}`} flexDirection="row" flexWrap="wrap" gap="sm">
-        {list.map((p, i) => {
-          const l = proofLink(p, root)
-          return inApp
-            ? <Button key={`proof:${key}:${i}`} plain label={l.label} onPress={() => { void openProof($, p, root) }} />
-            : <Text key={`proof:${key}:${i}`}><Link href={l.href} label={l.label} /></Text>
-        })}
-      </Box>
-    ) : null
+    // One button per place: proofs that open the same thing merge ("Open board: A · Deck, C · Park times"), so no two
+    // buttons look different and do the same. A variant opens its board; the toast names which board to look at.
+    const proofs = (key: string, list: unknown[] | undefined) => {
+      const ps = (list ?? []).map(x => toProof(x, root)).filter((x): x is Proof => x !== null)
+      if (!ps.length) return null
+      const groups = new Map<string, Proof[]>()
+      for (const p of ps) {
+        const k = `${p.kind === 'variant' ? 'artifact' : p.kind}:${p.target}:${p.line ?? ''}`
+        groups.set(k, [...(groups.get(k) ?? []), p])
+      }
+      const items = [...groups.values()].map(g => {
+        const first = g[0] as Proof
+        const variants = g.filter(p => p.kind === 'variant').map(p => proofLabel(p, board))
+        const label = variants.length ? `${first.target === board ? 'Open board' : 'Open'}: ${variants.join(', ')}` : proofLabel(first, board)
+        const note = variants.length ? `Opened the board · look for ${variants.join(', ')}` : undefined
+        return { p: first, label, note }
+      })
+      return (
+        <Box key={`proof:${key}`} flexDirection="row" flexWrap="wrap" gap="sm">
+          {items.map((it, i) => inApp
+            ? <Button key={`proof:${key}:${i}`} plain label={it.label} onPress={() => { void openProof($, it.p, it.label, it.note) }} />
+            : <Text key={`proof:${key}:${i}`}><Link href={proofHref(it.p)} label={it.label} /></Text>)}
+        </Box>
+      )
+    }
     const mark = (kind: Entry['kind'] | 'blocking') => kind === 'blocking'
       ? <Text color="error" bold>✕</Text>
       : kind === 'assumption' ? <Text color="suggestion" bold>?</Text> : <Text dimColor bold>·</Text>
@@ -443,7 +502,7 @@ export const register: Register = (on, options) => {
         <Box flexDirection="row" alignItems="center" gap="sm">
           <Box flexGrow={1}><Text bold>wwjd</Text></Box>
           {board ? (inApp
-            ? <Button key="board" plain label="Open board" onPress={() => { void openProof($, board, root) }} />
+            ? <Button key="board" plain label="Open board" onPress={() => { void openProof($, { kind: 'artifact', target: board }, 'the board') }} />
             : <Text><Link href={board} label="Open board" /></Text>) : null}
           <Button key="to-settings" plain dimColor label="Settings" onPress={() => update($, view, () => 'settings')} />
         </Box>

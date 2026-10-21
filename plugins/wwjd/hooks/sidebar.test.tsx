@@ -136,40 +136,52 @@ test('the log lands in the project being edited, not the session folder; the sid
   expect(await ui.find({ type: 'Text', text: 'In the session folder' })).toBeUndefined()
 })
 
-test('cards group by task with a surface label inside; proof opens in the app on desktop, as links elsewhere; the board comes from .wwjd.json', async ($, on) => {
+test('typed proofs: each kind says what it opens and opens in its place; variants on one board merge; a refusal says so', async ($, on) => {
   mock.store(on)
-  const opened: unknown[] = []
-  on('tool.call', { tool: 'Artifact' }, ((_$: unknown, e: { url: string }) => { opened.push(['Artifact', e.url]); return { result: {} } }) as never)
-  on('tool.call', { tool: 'mcp__ccd_view__show_pane' }, ((_$: unknown, e: { path: string; line?: number }) => { opened.push(['file', e.path, e.line]); return { result: {} } }) as never)
   const files: Record<string, string> = { '/p/.wwjd.json': JSON.stringify({ board: 'https://claude.ai/artifact/abc' }) }
+  const opened: unknown[] = []
+  const toasts: string[] = []
   disk(on as never, files)
   on('ui.open', () => ({ value: { isPlaced: true } }) as never)
-  await $.tool.call({ tool: 'mcp__wwjd__log', task: 'Signup flow', surface: 'Email step', kind: 'assumption', text: 'Work email only',
-    proof: ['http://localhost:5173/signup?step=email', '.wwjd/shots/signup-390-light.png', 'src/Signup.tsx:42', 'Variant B · Nearby | https://claude.ai/artifact/xyz'] } as never)
-  await $.tool.call({ tool: 'mcp__wwjd__log', task: 'Signup flow', surface: 'Password step', kind: 'choice', text: 'Rules shown before typing' } as never)
-  await $.tool.call({ tool: 'mcp__wwjd__log', surface: 'Board', kind: 'choice', text: 'Columns by status' } as never)
+  on('ui.toast', ((_$: unknown, e: { text: string }) => { toasts.push(e.text); return { value: undefined } }) as never)
+  on('tool.call', { tool: 'Artifact' }, ((_$: unknown, e: { url: string }) => { opened.push(['Artifact', e.url]); return { result: {} } }) as never)
+  on('tool.call', { tool: 'mcp__ccd_view__show_pane' }, ((_$: unknown, e: { path: string; line?: number }) => { opened.push(['file', e.path, e.line]); return { result: {} } }) as never)
+  on('tool.call', { tool: 'mcp__Claude_Browser__navigate' }, (() => ({ deny: 'not allowed here' })) as never)
+  on('process.run', () => ({ value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }) as never)
+  await $.tool.call({ tool: 'mcp__wwjd__log', task: 'Signup flow', surface: 'Email step', kind: 'assumption', text: 'Assumed a work email',
+    proof: [
+      { kind: 'variant', name: 'A · Deck', url: 'https://claude.ai/artifact/abc', board: 'Main.dc.html' },
+      { kind: 'variant', name: 'C · Park times', url: 'https://claude.ai/artifact/abc' },
+      { kind: 'artifact', name: 'Copy deck', url: 'https://claude.ai/artifact/xyz' },
+      { kind: 'page', url: 'http://localhost:5173/signup?step=email' },
+      '.wwjd/shots/signup-390-light.png',
+      'src/Signup.tsx:42',
+    ] } as never)
+  await $.tool.call({ tool: 'mcp__wwjd__log', task: 'Signup flow', surface: 'Password step', kind: 'choice', text: 'Showed the rules before typing' } as never)
   await $.command.run({ command: 'wwjd' } as never)
   const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })
   expect(await ui.find({ type: 'Text', text: 'Signup flow' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: 'Email step' })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: 'Board' })).toBeDefined()
+  const [id] = ids(files)
+  expect(await ui.find({ type: 'Button', label: 'Open board: A · Deck, C · Park times' })).toBeDefined()
+  expect(await ui.find({ type: 'Button', label: 'Open Copy deck' })).toBeDefined()
   expect(await ui.find({ type: 'Button', label: 'Try it: /signup?step=email' })).toBeDefined()
   expect(await ui.find({ type: 'Button', label: 'Screenshot: signup-390-light' })).toBeDefined()
   expect(await ui.find({ type: 'Button', label: 'File: Signup.tsx:42' })).toBeDefined()
+  await ui.press({ key: `proof:${id}:0` })
+  expect(opened.at(-1)).toEqual(['Artifact', 'https://claude.ai/artifact/abc'])
+  expect(toasts.at(-1)).toBe('Opened the board · look for A · Deck, C · Park times')
+  await ui.press({ key: `proof:${id}:4` })
+  expect(opened.at(-1)).toEqual(['file', '/p/src/Signup.tsx', 42])
+  await ui.press({ key: `proof:${id}:2` })
+  expect(toasts.at(-1)).toBe("Couldn't open Try it: /signup?step=email: not allowed here")
   await ui.press({ key: 'board' })
   expect(opened.at(-1)).toEqual(['Artifact', 'https://claude.ai/artifact/abc'])
-  const [firstId] = ids(files)
-  await ui.press({ key: `proof:${firstId}:2` })
-  expect(opened.at(-1)).toEqual(['file', '/p/src/Signup.tsx', 42])
-  expect(await ui.find({ type: 'Button', label: 'Variant B · Nearby' })).toBeDefined()
-  await ui.press({ key: `proof:${firstId}:3` })
-  expect(opened.at(-1)).toEqual(['Artifact', 'https://claude.ai/artifact/xyz'])
   const term = await $.ui.mount({ plugin: 'wwjd', surface: 'terminal', ...PANE, props })
   expect(await term.find({ type: 'Link', label: 'Screenshot: signup-390-light', href: 'file:///p/.wwjd/shots/signup-390-light.png' })).toBeDefined()
   expect(await term.find({ type: 'Link', label: 'Open board', href: 'https://claude.ai/artifact/abc' })).toBeDefined()
   // The mark sits top left on the first line, never centred against a wrapped text; actions hang under the text.
-  const [first] = ids(files)
-  const lead = await ui.find({ key: `lead:${first}` }) as unknown as { props: { alignItems?: string } } | undefined
+  const lead = await ui.find({ key: `lead:${id}` }) as unknown as { props: { alignItems?: string } } | undefined
   expect(lead?.props.alignItems).toBe('flex-start')
-  expect(await ui.find({ key: `actions:${first}` })).toBeDefined()
+  expect(await ui.find({ key: `actions:${id}` })).toBeDefined()
 })
