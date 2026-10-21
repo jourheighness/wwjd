@@ -150,12 +150,12 @@ figure.shot .tag { font-variant-numeric: tabular-nums; color: var(--ink-3); }
   const empty = (box, text) => { box.replaceChildren(el('p', 'empty', text)); };
   const count = (id, n) => { $(id).textContent = n ? String(n) : ''; };
 
-  const db = await claude.use('db');
+  const db = typeof claude !== 'undefined' && claude.use ? await claude.use('db') : null;
   if (!db) {
     for (const id of ['directions-list', 'decisions-list', 'shots-list', 'handovers-list']) empty($(id), 'This board can\'t load its data in this view.');
     return;
   }
-  const comments = await claude.use('comments');
+  const comments = await claude.use('comments').catch(() => null);
 
   db.doc('meta/project').onSnapshot((s) => {
     const m = s.data() || {};
