@@ -2,6 +2,7 @@
 name: ux
 description: 'UI/UX design rules and workflow (What Would Johannes Do). ALWAYS use before building, changing, simplifying or reviewing any user-facing UI: screens, pages, panels, components, layouts, settings, tables, forms, dashboards, landing pages, docs sites, chat panels, checkout, dark mode, styling, UI copy, empty and error states, in any stack. Also sets up a UI baseline (DESIGN.md, PRODUCT.md, kit). Not for build config, CSS tooling errors, API docs, schemas, migrations or data analysis.'
 when_to_use: '"redesign this", "clean up the settings page", "this looks busy", "make it bolder", "review this screen", a UI screenshot.'
+compatibility: scripts need Node 20.10+, no dependencies; render.mjs needs Playwright.
 ---
 
 # What Would Johannes Do
@@ -12,7 +13,6 @@ wwjd owns the design side: how a product looks, flows and reads is decided here,
 - Essentials in tooltips (Floor: never).
 - Static mocks for an interaction concept: make them clickable.
 - Inline Undo in a row or field: undo lives in the toast. A settings toggle gets neither; it just applies.
-- "Checked" with no shot of focus, hover, both themes.
 - One home read as deleting the setting: it keeps its row.
 
 ## 0. Entry (once per session)
@@ -23,7 +23,7 @@ wwjd owns the design side: how a product looks, flows and reads is decided here,
 
 | Situation | Do (`commands/<verb>.md`) |
 |---|---|
-| `scratch`, "make me a...", a new project | `start` §0 first: ask how to begin (variants in an Artifact, default; or build), then `wwjd:look`, then what they chose. The pre hook holds the first UI file until `.wwjd.json` records it |
+| `scratch`, "make me a...", a new project | `start` (§0 asks how to begin first), then what they chose |
 | add a component or screen; messy screen in scope | `build` |
 | "busy", "simplify", "clean up" | `simplify` |
 | "review", "what's wrong", screenshot | `review` |
@@ -48,7 +48,7 @@ Floor > project DESIGN.md + decision log > taste file (yours) > dials > wwjd (mo
 
 **Layout.** Content on column edges; surface and padding hang in the gutter. Start-aligned, one left edge. No cards in cards; no lone item on its own row. **The identifier never disappears:** wraps, never ellipsis.
 
-**Actions.** One primary + one secondary per region, the rest in ⋯, a hover toolbar or detail. **Action stays with its context.** **One target, one behaviour.** Only pressable looks pressable. **One home per state:** one control and one mark; elsewhere shows it, never repeats it. Default, not asking; undo, not "are you sure"; undo is a toast, never inline.
+**Actions.** One primary + one secondary per region, the rest in ⋯, a hover toolbar or detail. **Action stays with its context.** **One target, one behaviour.** Only pressable looks pressable. **One home per state:** one control and one mark; elsewhere shows it, never repeats it. Default, not asking; undo, not "are you sure".
 
 **Stable under the hand.** State changes only on intent, and touch only what changed: same box and height. Scroll and focus move only on action; overlays never cover the work.
 
@@ -61,9 +61,9 @@ Persuade: landing, hero, pricing · Showcase: portfolio, case study · Editorial
 
 ## 5. Loop
 - **Show** the smallest renderable slice with realistic data; hand over the link and what changed at once.
-- **Log as you go:** each assumption and each choice nobody asked for: one `mcp__wwjd__log` call, in the past tense and plain words, with typed `proof` the sidebar opens in the app: `variant` (a design on a board: url, name), `artifact`, `page` (a running URL), `screenshot`, `file` (with line). No tool: one line `{"surface","kind","text","why","proof"}` in `.wwjd/decisions.jsonl`.
-- **Board:** when the Project board setting is on (`wwjd.mjs status` prints it) and `.wwjd.json` names a `board`, each handover adds its round in one batch (`references/board.md`); a new project offers one at `start` §0. Off: never create or update one.
-- **Checks** per the Strictness dial (`references/dials.md`); hooks enforce them. Shoot every new state (focus, hover, editing, open popover) zoomed, both themes, before any "checked"; a check that could not run is reported as not run. A Design canvas board (`.dc.html`) renders only in its canvas: no shots or fit; say it was looked at there. Handover lists each `TODO(api)`.
+- **Log as you go:** each assumption and each choice nobody asked for: one `mcp__wwjd__log` call, in the past tense and plain words, with typed `proof` (kinds in the tool). No tool: one line `{"surface","kind","text","why","proof"}` in `.wwjd/decisions.jsonl`.
+- **Board:** on with a `board` in `.wwjd.json` (status says): each handover adds its round (`references/board.md`).
+- **Checks** per the Strictness dial (`references/dials.md`); hooks enforce them unless Hooks is quiet or off; the checks are owed either way. Shoot every new state (focus, hover, editing, open popover) zoomed, both themes, before any "checked"; a check that could not run is reported as not run. A Design canvas (`.dc.html`) renders only in its canvas: no shots or fit; say it was looked at there. Handover lists each `TODO(api)`.
 - **React:** change only what was named. Same correction twice: 3 structurally different options or one question with a default.
 
 ## 6. Corrections become rules

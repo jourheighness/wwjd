@@ -24,7 +24,7 @@ plugins/wwjd/
                     grade.mjs (the grade gate: a sheet per over-budget surface)
   skills/look/            the look
   skills/motion/          motion
-  agents/wwjd-critic.md   cold review, on request only
+  agents/wwjd-critic.md   cold review, on request or at Strictness 5
   hooks/                  route.mjs (points UI prompts at wwjd:ux, plus look or motion) · check.sh (one process per UI edit: notes it
                           for the gate, lints it) · gate.mjs via hooks.json (a new project asks how to begin; from Strictness 4 a grade
                           sheet before a new UI file; checks before the turn ends) ·
@@ -59,13 +59,13 @@ Six dials tune how wwjd designs, never the floor: **Look** (plain ↔ expressive
 ## Per project
 - **`.wwjd.json`** (committed, repo-relative paths only):
   ```json
-  { "start": "variants", "board": "https://claude.ai/artifact/…", "hooks": "on", "register": "operate", "locale": ["sv", "en"],
+  { "start": "variants", "board": "https://claude.ai/artifact/…", "hooks": "on", "boardMode": "on", "register": "operate", "locale": ["sv", "en"],
     "kitDirs": ["packages/ui"], "dials": { "creativity": 4 },
     "golden": ["src/pages/Orders.tsx"], "legacy": ["src/old/**"],
     "storybook": "pnpm storybook", "rules": { "gradient": "off" } }
   ```
   Never preview URLs or hosts: use the `WWJD_PREVIEW` env var or an untracked `AGENTS.local.md`.
-  A new project (a repo or package with no `.wwjd.json` and no UI yet) asks first how to begin: variants in an Artifact, or build. The pre hook holds its first UI file until `.wwjd.json` records `"start"`.
+  A new project (a repo or package with no `.wwjd.json` and no UI yet) asks first how to begin: variants in an Artifact, or build. The pre hook holds its first UI file until the project has a `.wwjd.json`.
 - **Project board:** one shareable Artifact per project (`skills/ux/kit/board.html`, linked as `"board"` in `.wwjd.json`) that collects directions, decisions, screenshots and handovers; each handover adds to it (`skills/ux/references/board.md`). On or off under `/wwjd` → Settings → Project board (the `boardmode` option, or `"boardMode"` in `.wwjd.json`).
 - **`.wwjd-baseline.json`** (committed): `wwjd.mjs check --baseline` writes it. The hook and `check --new` then report only errors and new warnings, and re-running `--baseline` only lowers counts. Delete it to accept new debt on purpose.
 - **`.wwjd/`** (gitignored): screenshots, references, look.json.

@@ -4,6 +4,8 @@ The owner's words, used literally. A drawer is not a rail.
 
 | Term | Meaning |
 |---|---|
+| Project board | The shareable Artifact per project (`board.md`), linked as `"board"` in `.wwjd.json` |
+| Canvas | A Design canvas file (`.dc.html`); it renders only there, so no shots |
 | Register | The job a surface does (Persuade, Operate…), chosen per surface, not per product |
 | Surface | A page, screen or pane being worked on |
 | Region | A unit with its own action hierarchy: card, row, toolbar, dialog, page header, pane |

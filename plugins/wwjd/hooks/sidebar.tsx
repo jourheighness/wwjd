@@ -9,11 +9,12 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { Entry, NoteScope, Scope } from '../types'
-import { PANE, card, exportDials, loadProjectDials, settingsView } from './dials'
+import { PANE, card, exportDials, loadProjectDials, setProjectRoot, settingsView } from './dials'
 
 const view = atom({ plugin: 'wwjd', key: 'view' } as const, 'log')
 const editing = atom({ plugin: 'wwjd', key: 'editing' } as const, '')
-const draft = atom({ plugin: 'wwjd', key: 'draft' } as const, '')
+// The correction being typed: kept out of state, so a keystroke never redraws the pane (a redraw mid-typing drops keys).
+let draftText = ''
 const noteScope = atom({ plugin: 'wwjd', key: 'noteScope' } as const, 'once')
 const gate = atom({ plugin: 'wwjd', key: 'gate' } as const, null)
 const logVersion = atom({ plugin: 'wwjd', key: 'logVersion' } as const, 0)
@@ -104,8 +105,8 @@ async function target($: EngineInterface, where: Scope, root: string): Promise<{
 }
 
 async function correct($: EngineInterface, id: string) {
-  const note = (await read($, draft)).trim()
-  if (!note) return
+  const note = draftText.trim()
+  if (!note) { $.ui.toast('Write what it should be first'); return }
   const where = (await read($, noteScope)) as NoteScope
   const root = await shownRoot($)
   const { file, head } = where === 'once' ? { file: '', head: '' } : await target($, where, root)
@@ -126,7 +127,7 @@ async function correct($: EngineInterface, id: string) {
   })
   if (!entry) return
   await update($, editing, () => '')
-  await update($, draft, () => '')
+  draftText = ''
   await update($, logVersion, n => (n ?? 0) + 1)
   await $.session.append({ message: { type: 'user', content: [{ type: 'text', text:
     `Design correction from the wwjd sidebar (${where === 'once' ? 'just this time, not saved as a rule' : `${where === 'person' ? 'every project' : 'this project'}; saved to ${file}`}): ` +
@@ -139,10 +140,10 @@ const settled = (x: Entry) => Boolean(x.correction || x.kept)
 // The project's board artifact, when .wwjd.json names one ("board"): the same link every session.
 // The directions explored, from .wwjd/directions.json (written with the board; local, never committed):
 // [{ name, url, board?, note? }]. Directions that share one canvas open it with one button.
-type Direction = { name: string; url: string; board?: string; note?: string }
-async function directions($: EngineInterface): Promise<Direction[]> {
+type Direction = { name: string; url: string; board?: string }
+async function directions($: EngineInterface, root: string): Promise<Direction[]> {
   try {
-    const raw = JSON.parse(await $.fs.read(`${await shownRoot($)}/.wwjd/directions.json`)) as unknown
+    const raw = JSON.parse(await $.fs.read(`${root}/.wwjd/directions.json`)) as unknown
     return (Array.isArray(raw) ? raw : []).flatMap((d): Direction[] => {
       const o = (d ?? {}) as Record<string, unknown>
       return typeof o.name === 'string' && typeof o.url === 'string' && /^https:\/\//.test(o.url)
@@ -153,8 +154,8 @@ async function directions($: EngineInterface): Promise<Direction[]> {
   }
 }
 
-async function boardUrl($: EngineInterface): Promise<string | null> {
-  const f = `${await shownRoot($)}/.wwjd.json`
+async function boardUrl($: EngineInterface, root: string): Promise<string | null> {
+  const f = `${root}/.wwjd.json`
   try {
     const url = (JSON.parse(await $.fs.read(f)) as { board?: unknown }).board
     return typeof url === 'string' && /^https:\/\//.test(url) ? url : null
@@ -172,15 +173,15 @@ async function boardUrl($: EngineInterface): Promise<string | null> {
 //   link        any other web page: the built-in browser
 // The log takes these as objects ({ kind, name, url | path, board, line }) or as strings ("Name | target"), whose kind is
 // read from the target. Paths resolve from the project root.
-export type ProofKind = 'variant' | 'artifact' | 'page' | 'screenshot' | 'file' | 'link'
-export type Proof = { kind: ProofKind; target: string; name?: string; board?: string; line?: number }
+type ProofKind = 'variant' | 'artifact' | 'page' | 'screenshot' | 'file' | 'link'
+type Proof = { kind: ProofKind; target: string; name?: string; board?: string; line?: number }
 const KINDS: ProofKind[] = ['variant', 'artifact', 'page', 'screenshot', 'file', 'link']
 const LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|[^/]+\.localhost|[^/]+\.test)(:\d+)?(\/|$)/
 const ARTIFACT = /claude\.ai\/(code\/)?artifact\//
 const IMAGE = /\.(png|jpe?g|webp|gif|avif)$/i
 const abs = (path: string, root: string) => (path.startsWith('/') ? path : `${root}/${path}`)
 
-export function toProof(raw: unknown, root: string): Proof | null {
+function toProof(raw: unknown, root: string): Proof | null {
   if (raw && typeof raw === 'object') {
     const o = raw as Record<string, unknown>
     const target = [o.url, o.path, o.target].find((v): v is string => typeof v === 'string' && v.trim() !== '')
@@ -204,7 +205,7 @@ export function toProof(raw: unknown, root: string): Proof | null {
 
 const base = (path: string) => path.split('/').pop() ?? path
 /** What the button says. `board` is the project's board link, so the board reads as "Open board". */
-export function proofLabel(p: Proof, board: string | null): string {
+function proofLabel(p: Proof, board: string | null): string {
   switch (p.kind) {
     case 'variant': return p.name ?? p.board ?? 'Variant'
     case 'artifact': return p.target === board ? 'Open board' : `Open ${p.name ?? 'Artifact'}`
@@ -215,7 +216,7 @@ export function proofLabel(p: Proof, board: string | null): string {
   }
 }
 /** The address a link uses where the surface opens it itself (the terminal). */
-export const proofHref = (p: Proof) => (/^https?:\/\//.test(p.target) ? p.target : `file://${p.target}`)
+const proofHref = (p: Proof) => (/^https?:\/\//.test(p.target) ? p.target : `file://${p.target}`)
 
 // Opens a proof inside the desktop app through the tool the model would call (permission check included). A refusal
 // or a missing tool falls through to the system opener; either way a toast says what happened, never silence.
@@ -244,6 +245,20 @@ async function openProof($: EngineInterface, p: Proof, what: string, note?: stri
     if (run && run.exitCode === 0) { $.ui.toast(`Opened ${what} outside the app${note ? ` · ${note}` : ''}`); return }
   }
   $.ui.toast(`Couldn't open ${what}${why ? `: ${why.split('\n')[0]?.slice(0, 120)}` : ''}`)
+}
+
+// Skip: the gate counts the check as done until the next edit (.wwjd/skipped.json), the card leaves at once, and Claude
+// is told so it says so in the handover.
+async function skipCheck($: EngineInterface, root: string, key: string, text: string) {
+  if (root) {
+    const file = `${root}/.wwjd/skipped.json`
+    let map: Record<string, number> = {}
+    try { map = JSON.parse(await $.fs.read(file)) as Record<string, number> } catch { /* first skip */ }
+    map[key] = await $.clock.now()
+    await $.fs.write(file, JSON.stringify(map) + '\n').catch(() => undefined)
+  }
+  await update($, gate, g => (g ? { ...g, checks: g.checks.map(c => (c.key === key ? { ...c, done: true } : c)) } : g))
+  await sendFix($, `Skipped · ${text}`, `skip "${text}" this time; don't run it, and say in your handover that I asked you to skip it.`)
 }
 
 // A problem's fix: one message to the agent, nothing run behind the person's back.
@@ -330,8 +345,10 @@ export const register: Register = (on, options) => {
     }
     const now = await $.clock.now()
     const root = await artifactRoot($, typeof x.path === 'string' && x.path.trim() ? x.path.trim() : undefined)
+    let first = false
     const id = await serial(async () => {
       const entries = await readLog($, root)
+      first = entries.length === 0
       const id = newId(now, new Set(entries.map(y => y.id)))
       entries.push({ id, at: new Date(now).toISOString(), ...entry })
       await writeLog($, root, entries)
@@ -339,11 +356,11 @@ export const register: Register = (on, options) => {
     })
     await update($, logRoot, () => root)
     await update($, logVersion, n => (n ?? 0) + 1)
-    // The log is the sidebar's reason to exist: it opens on the first entry (an open pane is left as it is).
-    await $.ui.open({ id: PANE, title: 'wwjd' }).catch(() => undefined)
+    // The log is the sidebar's reason to exist: it opens on a project's first entry, unless the person closed it.
+    if (first && (await $.store.get('isPinned')) !== false) await $.ui.open({ id: PANE, title: 'wwjd' }).catch(() => undefined)
     // An MCP tool answers with text (or content blocks); an object fails the host's output schema.
     return { result: `Logged ${id}.` }
-  })
+  }).catch(() => ({ deny: 'Could not save to the decision log.' }))
 
   // The last file the session edited names the project being worked on (see artifactRoot).
   // One matched hook per edit tool: the module's one unmatched tool.call hook is status.tsx's.
@@ -363,6 +380,7 @@ export const register: Register = (on, options) => {
 
   on('command.run', { command: 'wwjd' }, async $ => {
     await $.store.set('isPinned', true)
+    setProjectRoot(await shownRoot($).catch(() => '')) // Settings' "This project" is the project being edited
     await loadProjectDials($)
     await $.ui.open({ id: PANE, title: 'wwjd', focus: true, closeOnEscape: true })
     return { text: 'wwjd sidebar open.' }
@@ -392,8 +410,8 @@ export const register: Register = (on, options) => {
     const Link = ui.Link
     const isHandledShown = await read($, showHandled)
     const root = await shownRoot($).catch(() => '')
-    const board = await boardUrl($).catch(() => null)
-    const dirs = await directions($).catch(() => [] as Direction[])
+    const board = root ? await boardUrl($, root).catch(() => null) : null
+    const dirs = root ? await directions($, root).catch(() => [] as Direction[]) : []
     // What Strictness still wants after the last UI edit, from the same gate state the hooks enforce: Blocking cards.
     const g = await read($, gate)
     const due = g?.hasEdits
@@ -402,12 +420,11 @@ export const register: Register = (on, options) => {
           ...g.checks.filter(c => !c.done).map(c => ({ key: c.key, text: c.label.charAt(0).toUpperCase() + c.label.slice(1), what: c.what ?? '', fix: 'Run it', ask: `run this check before handover: ${c.label}. ${c.how}` })),
         ]
       : []
-    const all = await shownRoot($).then(root => readLog($, root), () => [] as Entry[])
+    const all = root ? await readLog($, root).catch(() => [] as Entry[]) : []
     const entries = all.filter(x => !settled(x)).slice(-SHOWN)
     const handled = all.filter(settled).slice(-SHOWN).reverse()
     const open = await read($, editing)
     const where = await read($, noteScope)
-    const note = await read($, draft)
     const Input = 'Input' in ui ? ui.Input : null
 
     // Tasks (else surfaces) in order of their latest entry, newest first; entries in each oldest first.
@@ -470,7 +487,7 @@ export const register: Register = (on, options) => {
       card(ui, `due-card:${d.key}`, lead(d.key, 'blocking', d.text, [d.what], [
         actions(d.key, [
           action(`fix:${d.key}`, d.fix, () => sendFix($, `${d.fix} · ${d.text}`, d.ask), 'primary'),
-          action(`skip:${d.key}`, 'Skip', () => sendFix($, `Skipped · ${d.text}`, `skip "${d.text}" this time; don't run it, and say in your handover that I asked you to skip it.`)),
+          ...(d.key === 'sheet' ? [] : [action(`skip:${d.key}`, 'Skip', () => skipCheck($, root, d.key, d.text))]),
         ]),
       ]), 'error')
 
@@ -482,8 +499,8 @@ export const register: Register = (on, options) => {
         return card(ui, `card:${x.id}`, lead(x.id, x.kind, x.text, [why], [
           <Text key={`ask:${x.id}`} wrap="wrap">What should it be instead? Claude redoes it in the current work.</Text>,
           Input ? (
-            <Input key={`note:${x.id}`} placeholder="For example: keep the comment count, but smaller" value={note} autoFocus
-              onInput={v => update($, draft, () => v)} onSubmit={v => update($, draft, () => v).then(() => correct($, x.id))} />
+            <Input key={`note:${x.id}`} placeholder="For example: keep the comment count, but smaller" autoFocus
+              onInput={v => { draftText = v }} onSubmit={v => { draftText = v; void correct($, x.id) }} />
           ) : null,
           <Box key={`scope:${x.id}`} flexDirection="row" flexWrap="wrap" gap="xs" alignItems="center">
             <Text dimColor>Remember it</Text>
@@ -503,7 +520,7 @@ export const register: Register = (on, options) => {
       return card(ui, `card:${x.id}`, lead(x.id, x.kind, x.text, [status, why], [
         proofs(x.id, x.proof),
         actions(x.id, [
-          action(`change:${x.id}`, guess ? 'Correct…' : 'Edit…', () => update($, draft, () => '').then(() => update($, noteScope, () => 'once')).then(() => update($, editing, () => x.id))),
+          ...(Input ? [action(`change:${x.id}`, guess ? 'Correct…' : 'Edit…', () => { draftText = ''; return update($, noteScope, () => 'once').then(() => update($, editing, () => x.id)) })] : []),
         ]),
       ], dismiss))
     }
@@ -528,7 +545,7 @@ export const register: Register = (on, options) => {
           {board ? (inApp
             ? <Button key="board" plain label="Open board" onPress={() => { void openProof($, { kind: 'artifact', target: board }, 'the board') }} />
             : <Text><Link href={board} label="Open board" /></Text>) : null}
-          <Button key="to-settings" plain dimColor label="Settings" onPress={() => update($, view, () => 'settings')} />
+          <Button key="to-settings" plain dimColor label="Settings" onPress={() => { setProjectRoot(root); void loadProjectDials($).then(() => update($, view, () => 'settings')) }} />
         </Box>
         {dirs.length ? (
           <Box key="directions" flexDirection="column" gap="xs">
@@ -536,7 +553,8 @@ export const register: Register = (on, options) => {
             {[...dirs.reduce((m, d) => m.set(d.url, [...(m.get(d.url) ?? []), d]), new Map<string, Direction[]>()).entries()].map(([url, ds], i) => {
               const names = ds.map(d => d.name).join(', ')
               const label = ds.length > 1 ? 'Open canvas' : ds[0]?.name ?? 'Open'
-              const press = () => { void openProof($, { kind: ds.length > 1 ? 'artifact' : 'variant', target: url, name: label }, label, ds.length > 1 ? undefined : `Opened the canvas · look for ${names}`) }
+              const onCanvas = ds.length === 1 && Boolean(ds[0]?.board)
+              const press = () => { void openProof($, { kind: onCanvas ? 'variant' : 'artifact', target: url, name: label }, label, onCanvas ? `Opened the canvas · look for ${names}` : undefined) }
               return (
                 <Box key={`dir:${i}`} flexDirection="row" flexWrap="wrap" gap="sm" alignItems="center">
                   {ds.length > 1 ? <Text wrap="wrap" dimColor>{names}</Text> : null}

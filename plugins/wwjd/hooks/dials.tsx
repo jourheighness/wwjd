@@ -1,5 +1,5 @@
-// The Settings view of the wwjd sidebar (sidebar.tsx): a Hooks card (on, quiet, off) and one card per dial, for you
-// (the plugin options) or for this project (.wwjd.json "hooks" and "dials"). A card names the dial and what its current stop does, then the five stops as a row of
+// The Settings view of the wwjd sidebar (sidebar.tsx): Hooks (on, quiet, off), Project board (on, off) and one card per
+// dial, for you (the plugin options) or for this project (.wwjd.json "hooks", "boardMode" and "dials"). A card names the dial and what its current stop does, then the five stops as a row of
 // buttons (native on the desktop, [ ] on the terminal), the picked one primary, so Tab, Enter and the pointer all work.
 // The stops and what each does come from skills/ux/scripts/dials-spec.mjs. Scripts read WWJD_DIALS, then .wwjd.json.
 import { atom, read, update } from 'claude-code'
@@ -19,14 +19,14 @@ const projectBoard = atom({ plugin: 'wwjd', key: 'projectBoard' } as const, '')
 // The Project board setting (skills/ux/scripts/paths.mjs boardMode): on or off.
 const BOARD = [
   ['on', 'On', 'A new project offers a shareable board, and each handover adds its decisions, screenshots and checks to it.'],
-  ['off', 'Off', 'Claude never creates or updates a project board. The panel works as before.'],
+  ['off', 'Off', 'No board. Everything stays in this panel.'],
 ] as const
 const boardOf = (v: unknown) => (BOARD.some(([k]) => k === v) ? (v as string) : '')
 
 // The Hooks setting (skills/ux/scripts/paths.mjs hooksMode): on, quiet (never blocks) or off.
 const HOOKS = [
-  ['on', 'On', 'Routes UI prompts to the skills, lints each UI edit and holds the handover until the checks ran.'],
-  ['quiet', 'Quiet', 'Routes and lints, never blocks: no start question, grade sheet or handover checks.'],
+  ['on', 'On', 'wwjd joins in on UI work, checks each change, and makes sure the checks ran before Claude says it is done.'],
+  ['quiet', 'Quiet', 'wwjd joins in and checks each change, but never stops Claude to ask for more.'],
   ['off', 'Off', 'No wwjd hooks run. The skills still work when you call them.'],
 ] as const
 const hooksOf = (v: unknown) => (HOOKS.some(([k]) => k === v) ? (v as string) : '')
@@ -35,12 +35,15 @@ const dialOf = (key: string) => DIALS.find(d => d.key === key) as Dial | undefin
 const mine = (options: PluginOptions, dial: Dial) => stopOf(dial, options[dial.key] ?? dial.default)
 
 // The project's .wwjd.json: the nearest one up from the working directory, else a new one there.
+// The project's root comes from the sidebar (the project being edited, the same one the log and board read).
+let projectRoot = ''
+export function setProjectRoot(root: string) { projectRoot = root }
 async function projectFile($: EngineInterface): Promise<string> {
-  const cwd = await $.session.cwd()
-  for (let d = cwd; ; ) {
+  const start = projectRoot || (await $.session.cwd())
+  for (let d = start; ; ) {
     if (await $.fs.exists(`${d}/.wwjd.json`)) return `${d}/.wwjd.json`
     const up = d.replace(/\/[^/]+$/, '')
-    if (!up || up === d) return `${cwd}/.wwjd.json`
+    if (!up || up === d) return `${start}/.wwjd.json`
     d = up
   }
 }
@@ -94,7 +97,7 @@ async function pick($: EngineInterface, key: string, stop: number) {
   await update($, project, () => dials)
 }
 
-/** The project's dials and Hooks setting into state, before the sidebar opens. */
+/** The project's dials, Hooks and Project board settings into state, before Settings shows. */
 export async function loadProjectDials($: EngineInterface) {
   const { json = {} } = await readProject($)
   await update($, project, () => (json.dials && typeof json.dials === 'object' ? (json.dials as Record<string, string | number>) : {}))
@@ -127,6 +130,7 @@ async function pickHooks($: EngineInterface, value: string) {
   if ((await read($, scope)) === 'person') {
     const { deny } = await $.config.set({ key: 'wwjd.hookmode', value })
     if (deny) $.ui.toast(`Not saved: ${deny}`)
+    else await $.env.set('WWJD_HOOKS', value)
     return
   }
   const { file, json, error } = await readProject($)
@@ -194,7 +198,7 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
   const hooksAt = hooksOwn ? projHooks : myHooks
   const hooksCard = dialCard('card-hooks', 'Hooks',
     hooksOwn ? <Button key="hooks:reset" plain dimColor label="Use mine" onPress={() => pickHooks($, '')} />
-      : where === 'project' ? <Text dimColor>yours</Text> : null,
+      : where === 'project' ? <Text dimColor>Same as yours</Text> : null,
     HOOKS.find(([k]) => k === hooksAt)?.[2] ?? '',
     HOOKS.map(([k, label]) => stop(`hooks:${k}`, label, k === hooksAt && !(where === 'project' && !hooksOwn), () => pickHooks($, k))))
 
@@ -205,7 +209,7 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
   const boardAt = boardOwn ? projBoard : myBoard
   const boardCard = dialCard('card-board', 'Project board',
     boardOwn ? <Button key="board:reset" plain dimColor label="Use mine" onPress={() => pickBoard($, '')} />
-      : where === 'project' ? <Text dimColor>yours</Text> : null,
+      : where === 'project' ? <Text dimColor>Same as yours</Text> : null,
     BOARD.find(([k]) => k === boardAt)?.[2] ?? '',
     BOARD.map(([k, label]) => stop(`board:${k}`, label, k === boardAt && !(where === 'project' && !boardOwn), () => pickBoard($, k))))
 
@@ -213,7 +217,7 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
     const { at, isOwn, isInherited } = state(dial)
     const right = isOwn
       ? <Button key={`${dial.key}:reset`} plain dimColor label="Use mine" onPress={() => pick($, dial.key, -1)} />
-      : isInherited ? <Text dimColor>yours</Text> : null
+      : isInherited ? <Text dimColor>Same as yours</Text> : null
     return dialCard(`card-${dial.key}`, dial.name, right, dial.stops[at]?.[1] ?? '',
       dial.stops.map(([name], i) => stop(`${dial.key}:${i}`, name, i === at && !isInherited, () => pick($, dial.key, i))))
   })

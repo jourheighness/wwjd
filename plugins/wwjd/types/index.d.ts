@@ -46,7 +46,6 @@ declare module 'claude-code' {
       isActive: boolean
       view: 'log' | 'settings'
       editing: string
-      draft: string
       noteScope: NoteScope
       logVersion: number
       showHandled: boolean

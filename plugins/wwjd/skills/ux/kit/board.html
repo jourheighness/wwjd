@@ -21,6 +21,7 @@
   --line: #2d3136; --fill: #262a2f; --pen: #ff7a63; --pen-tint: #3a211c; --ok: #7cc6a0; --ok-tint: #1d2f26; color-scheme: dark }
 
 * { box-sizing: border-box; }
+html { background: var(--bg); }
 body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--text); -webkit-font-smoothing: antialiased; }
 .wrap { max-width: 980px; margin: 0 auto; padding-block: 40px 96px;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -34,9 +35,9 @@ h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.02; letter-spacing: -.02e
 .summary { color: var(--ink-2); max-width: 62ch; margin: 0; }
 .meta { color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; }
 
-nav.index { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; display: flex; gap: 4px; flex-wrap: wrap;
-  margin: 0 -8px; padding: 10px 8px; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(6px); }
-nav.index a { text-decoration: none; padding: 6px 10px; border-radius: 999px; color: var(--ink-2); font-weight: 500; font-size: 14px; }
+nav.index { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; display: flex; gap: 4px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+  margin: 0 -8px; padding: 10px 8px; background: var(--bg); border-bottom: 1px solid var(--line); }
+nav.index a { white-space: nowrap; text-decoration: none; padding: 6px 10px; border-radius: 999px; color: var(--ink-2); font-weight: 500; font-size: 14px; }
 nav.index a:hover { background: var(--fill); color: var(--ink); }
 nav.index .n { color: var(--ink-3); font-variant-numeric: tabular-nums; margin-left: 4px; }
 
@@ -74,7 +75,7 @@ a.dir:hover { border-color: var(--ink-3); }
 .dec { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 4px 12px; padding: 14px 16px; border-top: 1px solid var(--line); }
 .group.flat .dec { padding-inline: 0; }
 .group > h3 + .dec { border-top: 0; }
-.dec .mark { font: 700 14px/22px var(--display); text-align: center; color: var(--ink-3); }
+.dec .mark { font: 700 14px/22px var(--display); text-align: center; color: var(--ink-3); } /* wwjd-ignore: a one-glyph mark centred in its 22px column */
 .dec[data-kind="assumption"] .mark { color: var(--pen); }
 .dec .body { display: grid; gap: 4px; min-width: 0; }
 .dec .what { font-weight: 500; }
@@ -176,7 +177,8 @@ details.past .inner { padding: 0 16px 16px; display: grid; gap: 14px; }
   const comments = await claude.use('comments').catch(() => null);
 
   // State from capped live queries; the round sections render together whenever one changes.
-  const state = { handovers: [], decisions: [], meta: {} };
+  // handovers and decisions start unknown, so the page keeps "Loading…" instead of flashing empty states
+  const state = { handovers: null, decisions: null, open: null, meta: {} };
 
   db.doc('meta/project').onSnapshot((s) => {
     state.meta = s.data() || {};
@@ -253,6 +255,7 @@ details.past .inner { padding: 0 16px 16px; display: grid; gap: 14px; }
   };
 
   function renderRounds() {
+    if (!state.handovers || !state.decisions || !state.open) return;
     const [latest, ...past] = state.handovers;
     const inRound = (id) => state.decisions.filter((x) => x.round === id).sort((a, b) => String(a.at).localeCompare(String(b.at)));
     const lb = $('latest-box');
@@ -264,7 +267,7 @@ details.past .inner { padding: 0 16px 16px; display: grid; gap: 14px; }
       if (ds.length) card.append(el('span', 'label', `Decided this round · ${ds.length}`), ...grouped(ds, false, true));
       lb.replaceChildren(card);
     }
-    const open = state.decisions.filter((x) => (x.status || 'open') === 'open').sort((a, b) => String(a.at).localeCompare(String(b.at)));
+    const open = [...state.open].sort((a, b) => String(a.at).localeCompare(String(b.at)));
     count('n-open', open.length);
     if (!open.length) empty($('open-list'), state.decisions.length ? 'Nothing open: every decision has been settled.' : 'No decisions yet.');
     else $('open-list').replaceChildren(...grouped(open, true, false));
@@ -277,8 +280,9 @@ details.past .inner { padding: 0 16px 16px; display: grid; gap: 14px; }
         const sum = el('summary');
         const ds = inRound(h.id);
         const checks = Array.isArray(h.checks) ? h.checks : [];
-        const notDone = checks.filter((c) => c.status !== 'done').length;
-        sum.append(el('span', 'title', h.title || 'Handover'), el('span', 'sum', `${fmt(h.at)} · ${checks.length} checks${notDone ? `, ${notDone} not done` : ''} · ${ds.length} decisions`));
+        const notRun = checks.filter((c) => c.status === 'not run').length;
+        const n = (k, one, many) => `${k} ${k === 1 ? one : many}`;
+        sum.append(el('span', 'title', h.title || 'Handover'), el('span', 'sum', `${fmt(h.at)} · ${n(checks.length, 'check', 'checks')}${notRun ? `, ${notRun} not run` : ''} · ${n(ds.length, 'decision', 'decisions')}`));
         const inner = el('div', 'inner');
         inner.append(el('span', 'label', 'Checks'), checkList(checks));
         if (ds.length) inner.append(el('span', 'label', 'Decided'), ...grouped(ds, false, true));
@@ -295,6 +299,12 @@ details.past .inner { padding: 0 16px 16px; display: grid; gap: 14px; }
     state.handovers = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
     renderRounds();
   }, () => empty($('latest-box'), 'Couldn\'t load handovers.'));
+
+  // Open decisions on their own query, so a long history never pushes one out of view
+  db.collection('decisions').where('status', '==', 'open').limit(1000).onSnapshot((snap) => {
+    state.open = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
+    renderRounds();
+  }, () => empty($('open-list'), 'Couldn\'t load decisions.'));
 
   db.collection('decisions').orderBy('at', 'desc').limit(400).onSnapshot((snap) => {
     state.decisions = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));

@@ -23,7 +23,7 @@ import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isGated } from "./dials-spec.mjs";
 import { isUI, noteEdit, openLedger } from "./ledger.mjs";
-import { artifactRoot, boardMode, gitRoot, hasUI, hooksMode, nearestConfig, projectOf } from "./paths.mjs";
+import { MARKUP, artifactRoot, boardMode, hasUI, hooksMode, nearestConfig, projectOf } from "./paths.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const RENDER = join(HERE, "render.mjs");
@@ -35,12 +35,6 @@ const cwd = input.cwd || process.cwd();
 
 // Cheap exits first: no ledger, config or git for calls the gate does not care about.
 const fp = input.tool_input?.file_path;
-// The Hooks setting (paths.mjs hooksMode): quiet keeps the edit note and drops every block; off drops the gate too.
-const hooks = hooksMode(mode === "pre" && fp ? dirname(resolve(cwd, fp)) : cwd);
-if (hooks === "off" || (hooks === "quiet" && (mode === "pre" || mode === "stop"))) {
-  if (mode === "status") { console.log(JSON.stringify({ strictness: 0, hooks, hasEdits: false, lastFile: null, sheet: { needed: false, file: null, due: false }, checks: [] })); }
-  process.exit(0);
-}
 if (mode === "pre" && (input.tool_name !== "Write" || !isUI(fp) || existsSync(resolve(cwd, fp)))) process.exit(0);
 if (mode === "post") { noteEdit(input); process.exit(0); }
 
@@ -48,18 +42,25 @@ const { read: readLedger, update, ensured } = openLedger(input);
 const say = (o) => { console.log(JSON.stringify(o)); process.exit(0); };
 
 // ── project ──
-// The project's config: the file being written's (pre), else cwd's. A session in one repo may edit another.
-const fileDir = mode === "pre" && fp ? dirname(resolve(cwd, fp)) : null;
+// The project is the file being written's (pre), else the last edited file's, else cwd's: a session in one repo may
+// edit another, and its settings, board and dials are that project's.
+const fileDir = mode === "pre" ? dirname(resolve(cwd, fp)) : null;
+const lastFile = mode === "pre" ? null : readLedger().lastFile;
+const projectDir = fileDir || (lastFile ? dirname(lastFile) : cwd);
+// The Hooks setting (paths.mjs hooksMode): quiet keeps the edit note and drops every block; off drops the gate too.
+const hooks = hooksMode(projectDir);
+if (hooks === "off" || (hooks === "quiet" && (mode === "pre" || mode === "stop"))) {
+  if (mode === "status") console.log(JSON.stringify({ strictness: 0, hooks, hasEdits: false, lastFile: null, sheet: { needed: false, file: null, due: false }, checks: [] }));
+  process.exit(0);
+}
 const fileConfig = fileDir ? nearestConfig(fileDir) : null;
-const configFile = fileConfig || nearestConfig(cwd);
+const configFile = nearestConfig(projectDir) || nearestConfig(cwd);
 const config = (() => { try { return configFile ? JSON.parse(readFileSync(configFile, "utf8")) : {}; } catch { return {}; } })();
+// Strictness: the project's .wwjd.json > the plugin option > WWJD_DIALS > 3; anything not 1–5 falls through.
 function strictness() {
-  const v = config.dials?.strictness;
-  if (v !== undefined) return Number(v);
-  const opt = process.env.CLAUDE_PLUGIN_OPTION_STRICTNESS;
-  if (opt) return Number(opt);
-  const m = /(?:^|\s)strictness=(\d)/.exec(process.env.WWJD_DIALS || "");
-  return m ? Number(m[1]) : 3;
+  const ok = (v) => { const n = Math.round(Number(v)); return n >= 1 && n <= 5 ? n : null; };
+  return ok(config.dials?.strictness) ?? ok(process.env.CLAUDE_PLUGIN_OPTION_STRICTNESS)
+    ?? ok(/(?:^|\s)strictness=(\d)/.exec(process.env.WWJD_DIALS || "")?.[1]) ?? 3;
 }
 let rootMemo = null;
 const root = () => (rootMemo ??= artifactRoot(cwd));
@@ -74,55 +75,55 @@ function sheet(ledger, dirs = [root()]) {
   return fresh.sort((a, b) => mtime(b) - mtime(a))[0]?.split("/").pop() ?? null;
 }
 
-// Whether a wwjd-critic agent ran after `since`, from the transcript.
-function criticSince(since) {
+// What the transcript says happened after `since`: a wwjd-critic run, an ArtifactData write to the board. One pass,
+// read only when a check needs it.
+let seenMemo = null;
+function seenSince(since, boardId) {
+  if (seenMemo) return seenMemo;
+  // The status band has no transcript path: it passes what it saw (hooks/status.tsx), as times.
+  if (input.seen) return (seenMemo = { critic: (input.seen.critic || 0) > since, board: Boolean(boardId) && (input.seen.board?.[boardId] || 0) > since });
+  const seen = { critic: false, board: false };
   try {
     for (const line of readFileSync(input.transcript_path, "utf8").split("\n")) {
-      if (!line.includes("wwjd-critic")) continue;
+      const critic = line.includes("wwjd-critic"), board = boardId && line.includes(boardId) && line.includes("ArtifactData");
+      if (!critic && !board) continue;
       try {
         const row = JSON.parse(line);
-        const blocks = Array.isArray(row.message?.content) ? row.message.content : [];
-        const called = blocks.some((b) => b.type === "tool_use" && /wwjd-critic/.test(String(b.input?.subagent_type || "")));
-        if (called && Date.parse(row.timestamp) > since) return true;
+        if (!(Date.parse(row.timestamp) > since)) continue;
+        for (const b of Array.isArray(row.message?.content) ? row.message.content : []) {
+          if (b.type !== "tool_use") continue;
+          if (/wwjd-critic/.test(String(b.input?.subagent_type || ""))) seen.critic = true;
+          if (boardId && b.name === "ArtifactData" && String(b.input?.url || "").includes(boardId)
+            && ["set", "update", "batch", "delete", "str_replace"].includes(b.input?.action)) seen.board = true;
+        }
       } catch { /* partial line */ }
     }
   } catch { /* no transcript */ }
-  return false;
-}
-
-// Whether the board (an Artifact link in .wwjd.json "board") got an ArtifactData write after `since`, from the transcript.
-function boardSince(url, since) {
-  const id = /artifact\/([\w-]+)/.exec(url)?.[1];
-  if (!id) return false;
-  try {
-    for (const line of readFileSync(input.transcript_path, "utf8").split("\n")) {
-      if (!line.includes(id) || !line.includes("ArtifactData")) continue;
-      try {
-        const row = JSON.parse(line);
-        const blocks = Array.isArray(row.message?.content) ? row.message.content : [];
-        const wrote = blocks.some((b) => b.type === "tool_use" && b.name === "ArtifactData" && String(b.input?.url || "").includes(id)
-          && ["set", "update", "batch", "delete", "str_replace"].includes(b.input?.action));
-        if (wrote && Date.parse(row.timestamp) > since) return true;
-      } catch { /* partial line */ }
-    }
-  } catch { /* no transcript */ }
-  return false;
+  return (seenMemo = seen);
 }
 
 // What to point render.mjs at: an edited .html page itself; for source files, the running page.
 function shotTarget(ledger) {
-  if (ledger.lastFile && extname(ledger.lastFile) === ".html") return ledger.lastFile;
+  if (ledger.lastPage && extname(ledger.lastPage) === ".html") return ledger.lastPage;
   return process.env.WWJD_PREVIEW || (typeof config.preview === "string" && config.preview) || "<your running page URL>";
 }
 
-// The checks Strictness `s` asks for after the last UI edit, each with whether it is done and how to do it.
-// Whether the sidebar's log (.wwjd/decisions.jsonl) gained an entry after `since`: at the session's root, or at the
-// root of the last edited file (the log tool writes to the project being edited, hooks/sidebar.tsx).
 // Where checks may have left their reports: the session's root and the edited file's project root (a page served over
 // http is shot from wherever the server runs, a session in one repo edits another).
-const roots = (ledger) => [...new Set([root(), ...(ledger.lastFile ? [artifactRoot(dirname(ledger.lastFile))] : [])])];
+const editedMemo = new Map();
+const editedRoot = (ledger) => (ledger.lastFile ? (editedMemo.has(ledger.lastFile) ? editedMemo.get(ledger.lastFile)
+  : editedMemo.set(ledger.lastFile, artifactRoot(dirname(ledger.lastFile))).get(ledger.lastFile)) : root());
+const roots = (ledger) => [...new Set([root(), editedRoot(ledger)])];
 // An edit whose file is gone (a build fragment, deleted again) asks for no checks.
 const editPending = (ledger) => Boolean(ledger.lastEdit) && !(ledger.lastFile && !existsSync(ledger.lastFile));
+// Checks the person skipped in the sidebar (.wwjd/skipped.json, { key: time }): done for this run of edits.
+function skippedAt(ledger) {
+  const out = {};
+  for (const r of roots(ledger)) { try { Object.assign(out, JSON.parse(readFileSync(join(r, ".wwjd", "skipped.json"), "utf8"))); } catch { /* none */ } }
+  return out;
+}
+
+// Whether the sidebar's log (.wwjd/decisions.jsonl) gained an entry after `since`, in either root.
 function loggedSince(since, ledger) {
   return roots(ledger).some((r) => {
     try {
@@ -133,45 +134,53 @@ function loggedSince(since, ledger) {
   });
 }
 
+// The checks Strictness `s` asks for after the last UI edit, each with whether it is done and how to do it.
+const q = (v) => JSON.stringify(String(v)); // a path with spaces stays one argument
 function checks(ledger, s) {
   const since = ledger.lastEdit || 0;
   // Reports go to the edited project: render.mjs --root when it is not the session's own
-  const edited = ledger.lastFile ? artifactRoot(dirname(ledger.lastFile)) : root();
-  const at = edited !== root() ? ` --root ${edited}` : "";
-  const fresh = roots(ledger).flatMap((r) => { const dir = join(r, ".wwjd", "shots"); return existsSync(dir) ? readdirSync(dir).filter((f) => mtime(join(dir, f)) > since) : []; });
+  const edited = editedRoot(ledger);
+  const at = edited !== root() ? ` --root ${q(edited)}` : "";
+  // Render checks look at the last page edit; a session that only touched Design canvases (.dc.html) gets none, since
+  // a canvas renders only inside its own runtime (the handover says it was looked at there).
+  const pageSince = ledger.lastPageEdit || 0;
+  const board = !ledger.lastPageEdit;
+  const fresh = roots(ledger).flatMap((r) => { const dir = join(r, ".wwjd", "shots"); return existsSync(dir) ? readdirSync(dir).filter((f) => mtime(join(dir, f)) > pageSince) : []; });
   const unavailable = fresh.includes("UNAVAILABLE");
   const pngs = fresh.filter((f) => f.endsWith(".png"));
   const widths = new Set(pngs.map((f) => /-(\d+)-(?:light|dark)\.png$/.exec(f)?.[1]).filter(Boolean));
-  const target = shotTarget(ledger);
-  // A Design canvas board (.dc.html) renders only inside its canvas runtime: shots and fit would measure raw
-  // template text, so they are skipped and the handover says it was looked at in the canvas.
-  const board = /\.dc\.html$/.test(ledger.lastFile || "");
+  const raw = shotTarget(ledger);
+  const target = raw.startsWith("<") ? raw : q(raw);
+  const R = q(RENDER);
   const out = [];
   if (s >= 2 && !board) out.push(s >= 3
-    ? { key: "shots", label: "Look at it on desktop and phone", what: "Claude takes screenshots at both sizes and looks at them before saying the work is done.", done: unavailable || widths.size >= 2, how: `screenshots at desktop and phone width: node ${RENDER} shoot ${target} --theme light${at}` }
-    : { key: "shots", label: "Look at it", what: "Claude takes a screenshot and looks at it before saying the work is done.", done: unavailable || pngs.length > 0, how: `a screenshot: node ${RENDER} shoot ${target} --one${at}, then look at it` });
+    ? { key: "shots", label: "Look at it on desktop and phone", what: "Claude takes screenshots at both sizes and looks at them before saying the work is done.", done: unavailable || widths.size >= 2, how: `screenshots at desktop and phone width: node ${R} shoot ${target} --theme light${at}` }
+    : { key: "shots", label: "Look at it", what: "Claude takes a screenshot and looks at it before saying the work is done.", done: unavailable || pngs.length > 0, how: `a screenshot: node ${R} shoot ${target} --one${at}, then look at it` });
   if (s >= 3 && !board) {
     // Fit runs at 320–720px and must come back clean: wrapping, clipping and lone items are layout bugs, not taste.
     let fit = null;
-    const fitFile = roots(ledger).map((r) => join(r, ".wwjd", "fit.json")).filter((f) => mtime(f) > since).sort((a, b) => mtime(b) - mtime(a))[0];
+    const fitFile = roots(ledger).map((r) => join(r, ".wwjd", "fit.json")).filter((f) => mtime(f) > pageSince).sort((a, b) => mtime(b) - mtime(a))[0];
     try { fit = fitFile ? JSON.parse(readFileSync(fitFile, "utf8")) : null; } catch { /* unreadable: not done */ }
     const errs = fit ? fit.findings.filter((f) => f.severity === "error").map((f) => `${f.width}px ${f.rule}: ${f.what}`) : [];
     out.push({ key: "fit", label: errs.length ? "Fix layout on small screens" : "Check layout on small screens", what: errs.length ? `${new Set(errs).size} layout ${new Set(errs).size === 1 ? "problem" : "problems"} on phone-width screens (something clips, overflows or wraps badly). Claude fixes them before handing over.` : "Claude opens the page at phone widths and checks that nothing clips, overflows or wraps badly.", done: unavailable || (fit !== null && errs.length === 0),
-      how: errs.length ? `fix the fit errors, then rerun fit: ${[...new Set(errs)].slice(0, 4).join("; ")}` : `the fit check: node ${RENDER} fit ${target} --widths 320,480,720${at}` });
+      how: errs.length ? `fix the fit errors, then rerun fit: ${[...new Set(errs)].slice(0, 4).join("; ")}` : `the fit check: node ${R} fit ${target} --widths 320,480,720${at}` });
   }
   if (s >= 4 && !board) {
-    out.push({ key: "dark", label: "Look at it in dark mode", what: "Claude takes a dark-mode screenshot and checks that colours and contrast still work.", done: unavailable || pngs.some((f) => f.includes("-dark.")), how: `a dark-mode shot: node ${RENDER} shoot ${target} --theme dark${at}` });
-    out.push({ key: "runtime", label: "Test it in a real browser", what: "Claude runs the page and checks for clipped text, small tap targets, hidden focus, layout jumps and broken images.", done: unavailable || roots(ledger).some((r) => mtime(join(r, ".wwjd", "runtime.json")) > since), how: `the runtime checks: node ${RENDER} runtime ${target}${at}` });
+    out.push({ key: "dark", label: "Look at it in dark mode", what: "Claude takes a dark-mode screenshot and checks that colours and contrast still work.", done: unavailable || pngs.some((f) => f.includes("-dark.")), how: `a dark-mode shot: node ${R} shoot ${target} --theme dark${at}` });
+    out.push({ key: "runtime", label: "Test it in a real browser", what: "Claude runs the page and checks for clipped text, small tap targets, hidden focus, layout jumps and broken images.", done: unavailable || roots(ledger).some((r) => mtime(join(r, ".wwjd", "runtime.json")) > pageSince), how: `the runtime checks: node ${R} runtime ${target}${at}` });
   }
   // Asked once per run of edits: an agent that made no unasked choice says so in the handover and may stop.
   if (s >= 2) out.push({ key: "log", label: "List the choices Claude made", what: "Claude writes down what it decided without asking you, so you can approve or change each one here.", done: (ledger.logAsked || 0) >= since || loggedSince(ledger.start || 0, ledger),
     how: "the design assumptions and choices you made without being told: one mcp__wwjd__log call each (surface, kind, one-line text, why, proof: the shot path, the page URL or the Artifact link that shows it); none? say so in the handover" });
   // The project board (references/board.md), when the setting is on and the project has one
   const boardUrl = typeof config.board === "string" && /^https:\/\//.test(config.board) ? config.board : null;
-  if (s >= 2 && boardUrl && boardMode(ledger.lastFile ? dirname(ledger.lastFile) : cwd) === "on") out.push({ key: "board", label: "Add this round to the board",
-    what: "Claude adds this round's decisions, screenshots and checks to the shared project board.", done: boardSince(boardUrl, since),
+  const boardId = boardUrl ? /artifact\/([\w-]+)/.exec(boardUrl)?.[1] : null;
+  if (s >= 2 && boardId && boardMode(projectDir) === "on") out.push({ key: "board", label: "Add this round to the board",
+    what: "Claude adds this round's decisions, screenshots and checks to the shared project board.", done: seenSince(since, boardId).board,
     how: `add this round to the project board ${boardUrl} in one ArtifactData batch (references/board.md); the Project board setting turns this off` });
-  if (s >= 5) out.push({ key: "critic", label: "Get a second opinion", what: "A separate reviewer looks at the result with fresh eyes and lists what to fix.", done: criticSince(since), how: "a cold review: run the wwjd:wwjd-critic agent on what you built" });
+  if (s >= 5) out.push({ key: "critic", label: "Get a second opinion", what: "A separate reviewer looks at the result with fresh eyes and lists what to fix.", done: seenSince(since, boardId).critic, how: "a cold review: run the wwjd:wwjd-critic agent on what you built" });
+  const skipped = skippedAt(ledger);
+  for (const c of out) if ((skipped[c.key] || 0) > since) Object.assign(c, { done: true, skipped: true });
   return out;
 }
 
@@ -181,21 +190,30 @@ if (mode === "status") {
   const file = isGated(s) ? sheet(ledger, roots(ledger)) : null;
   // due: the pre gate refused a new UI file this session and no sheet has been written since.
   say({ strictness: s, hasEdits: editPending(ledger), lastFile: ledger.lastFile || null,
-    sheet: { needed: isGated(s), file, due: isGated(s) && Boolean(ledger.denied) && !file }, checks: checks(ledger, s) });
+    sheet: { needed: isGated(s), file, due: isGated(s) && Boolean(ledger.denied) && !file }, checks: editPending(ledger) ? checks(ledger, s) : [] });
 }
 
 if (mode === "pre") {
-  const project = projectOf(fp, cwd);
+  // The project is the nearest package (a monorepo's new app is its own project), else the artifact root.
+  const project = (() => {
+    const top = projectOf(fp, cwd);
+    for (let d = fileDir; d !== dirname(d); d = dirname(d)) {
+      if (existsSync(join(d, "package.json"))) return d;
+      if (existsSync(join(d, ".git")) || existsSync(join(d, ".wwjd.json"))) break;
+    }
+    return top;
+  })();
   // A new project (a repo or package with no .wwjd.json and no UI yet): the person decides how it starts, before any UI
   // file is written. Loose files outside a project (an Artifact page in a scratchpad, the variants themselves) pass.
-  const isProject = existsSync(join(project, "package.json")) || Boolean(gitRoot(project));
-  if (!fileConfig && isProject && !hasUI(project)) {
+  const isProject = existsSync(join(project, "package.json")) || existsSync(join(project, ".git"));
+  const isMarkup = MARKUP.has(extname(fp)) && !/(^|\/)(docs?|emails?)\//.test(fp);
+  if (!fileConfig && isMarkup && isProject && !hasUI(project)) {
     say({ hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason:
       `wwjd: ${project} is a new project, and wwjd owns its design side. Before the first UI file, ask the start question ` +
       `(skills/ux/commands/start.md §0) in one AskUserQuestion batch, each with a default: how to begin (lettered variants ` +
       `in an Artifact first, recommended; or straight to build), how many directions, and the look (a board of options, ` +
       `or quick mode). Then write ${join(project, ".wwjd.json")} with "start": "variants" or "build" (plus "register" and, ` +
-      `once the comparison Artifact exists, "board": its link), and do what they chose before writing ${fp}.` } });
+      `once a project board exists, "board": its link, references/board.md), and do what they chose before writing ${fp}.` } });
   }
   const s = strictness();
   if (!isGated(s)) process.exit(0);

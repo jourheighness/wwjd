@@ -1,6 +1,6 @@
 # explore: options for something new
 
-For anything that doesn't exist yet, "show me options", or a redesign of what exists (§5). Small fixes skip it. Structure only: the look comes from `wwjd:look` (3 look variants); here ~5 structure variants (the count Strictness 5 means).
+For anything that doesn't exist yet, "show me options", or a redesign of what exists (§5). Small fixes skip it. Structure only: the look comes from `wwjd:look` (3 look variants); here ~5 structure variants (the count Strictness 5 means). A whole new product: ~3 directions.
 
 ## 1. Research before drawing
 - **The best current examples of this exact job:** real products at the top of this register and category, not the domain's dated look. A few named references, each with the move to steal; verified facts apart from inference.

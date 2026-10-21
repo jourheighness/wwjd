@@ -45,7 +45,7 @@ Six dials tune how wwjd designs, never what is correct. Each runs between two na
 - Nudge words: warmer, friendlier / terser, drier.
 
 ## Strictness: fast ↔ strict (`strictness`)
-How hard the agent is on its own work: grading before it builds, checks after. Hooks enforce it (`scripts/gate.mjs`): from 4, a new UI file waits for a grade sheet written this session; from 2, the turn can't end until the checks below exist, newer than the last UI edit (`.wwjd/shots/UNAVAILABLE` stands in when no renderer can run; a Design canvas board needs none), and asks once per run of edits for the unasked design choices to be logged (`mcp__wwjd__log`; they show in the `/wwjd` sidebar).
+How hard the agent is on its own work: grading before it builds, checks after. Hooks enforce it (`scripts/gate.mjs`) unless Hooks is quiet or off; the checks are owed either way: from 4, a new UI file waits for a grade sheet written this session; from 2, the turn can't end until the checks below exist, newer than the last UI edit (`.wwjd/shots/UNAVAILABLE` stands in when no renderer can run; a Design canvas needs none), and asks once per run of edits for the unasked design choices to be logged (`mcp__wwjd__log`; they show in the `/wwjd` sidebar).
 - **1 Fast:** Over-budget surfaces graded in your head; after: lint only.
 - **2 Light:** Over-budget surfaces graded in your head; after: lint and one desktop screenshot.
 - **3 Standard (default):** Over-budget surfaces graded in your head; after: lint, screenshots at desktop and phone width and a clean fit check.

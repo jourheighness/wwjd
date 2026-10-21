@@ -10,10 +10,12 @@ import type { Gate } from '../types'
 const gate = atom({ plugin: 'wwjd', key: 'gate' } as const, null)
 const isActive = atom({ plugin: 'wwjd', key: 'isActive' } as const, false)
 
-// What can change the gate's state: UI edits, the critic, and the Bash runs of render.mjs and grade.mjs.
-const WATCHED = new Set(['Write', 'Edit', 'MultiEdit', 'Agent', 'Task'])
-const changesGate = (e: { tool: string; command?: unknown }) =>
-  WATCHED.has(e.tool) || (e.tool === 'Bash' && /\b(render|grade)\.mjs\b/.test(String(e.command ?? '')))
+// What can change the gate's state: UI edits, the critic, a board write, and the Bash runs of render.mjs and grade.mjs.
+const EDITS = new Set(['Write', 'Edit', 'MultiEdit'])
+const UI = /\.(tsx|jsx|vue|svelte|astro|html|mdx|css|scss)$/
+const changesGate = (e: { tool: string; command?: unknown; file_path?: unknown }) =>
+  (EDITS.has(e.tool) && UI.test(String(e.file_path ?? ''))) || e.tool === 'Agent' || e.tool === 'Task' ||
+  e.tool === 'ArtifactData' || (e.tool === 'Bash' && /\b(render|grade)\.mjs\b/.test(String(e.command ?? '')))
 
 // The dials as the scripts see them: the plugin options, then the nearest .wwjd.json.
 async function dials($: EngineInterface, options: PluginOptions): Promise<Record<string, number>> {
@@ -36,10 +38,19 @@ async function dials($: EngineInterface, options: PluginOptions): Promise<Record
   return out
 }
 
+// What the gate can't read without the transcript: when a wwjd-critic ran and when each board was written (by id).
+const seen: { critic: number; board: Record<string, number> } = { critic: 0, board: {} }
+async function note($: EngineInterface, e: { tool: string; subagent_type?: unknown; action?: unknown; url?: unknown }) {
+  if ((e.tool === 'Agent' || e.tool === 'Task') && /wwjd-critic/.test(String(e.subagent_type ?? ''))) seen.critic = await $.clock.now()
+  const id = /artifact\/([\w-]+)/.exec(String(e.url ?? ''))?.[1]
+  if (e.tool === 'ArtifactData' && id && ['set', 'update', 'batch', 'delete', 'str_replace'].includes(String(e.action))) seen.board[id] = await $.clock.now()
+}
+
 async function refresh($: EngineInterface, options: PluginOptions) {
   const d = await dials($, options)
-  const env = { WWJD_DIALS: Object.entries(d).map(([k, v]) => `${k}=${v}`).join(' ') }
-  const stdin = JSON.stringify({ session_id: await $.session.id(), cwd: await $.session.cwd() })
+  const env = { WWJD_DIALS: Object.entries(d).map(([k, v]) => `${k}=${v}`).join(' '),
+    WWJD_HOOKS: String(options.hookmode ?? 'on'), WWJD_BOARD: String(options.boardmode ?? 'on') }
+  const stdin = JSON.stringify({ session_id: await $.session.id(), cwd: await $.session.cwd(), seen })
   const run = await $.process.run(['node', `${$.plugin.root}/skills/ux/scripts/gate.mjs`, 'status'], { stdin, env, timeoutMs: 5000 })
   let next: Gate | null = null
   try { next = JSON.parse(run.stdout) as Gate } catch { /* node missing or the script failed: keep quiet */ }
@@ -55,11 +66,12 @@ export const register: Register = (on, options) => {
   // Nothing runs until a wwjd skill is used this session; after that, only calls that can change the gate refresh it.
   on('tool.call', async ($, e, next) => {
     const result = await next(e)
+    await note($, e as { tool: string })
     const skill = e.tool === 'Skill' ? String((e as { skill?: unknown }).skill ?? '') : ''
     if (/^wwjd(:|$)/.test(skill)) {
       await update($, isActive, () => true)
       await refresh($, options)
-    } else if ((await read($, isActive)) && changesGate(e as { tool: string; command?: unknown })) {
+    } else if ((await read($, isActive)) && changesGate(e as { tool: string; command?: unknown; file_path?: unknown })) {
       await refresh($, options)
     }
     return result

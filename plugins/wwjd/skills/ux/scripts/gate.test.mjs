@@ -85,7 +85,7 @@ test("stop: Strictness 1 never blocks; 2 wants a shot newer than the last UI edi
   p.edit("card.html");
   const r = p.run("stop", { stop_hook_active: false });
   assert.equal(r.decision, "block");
-  assert.match(r.reason, /render\.mjs shoot/);
+  assert.match(r.reason, /render\.mjs"? shoot/);
   p.file(".wwjd/shots/card-390-light.png", "png", 5);
   assert.equal(p.run("stop", { stop_hook_active: false }), null);
 });
@@ -222,13 +222,13 @@ test("artifacts live at the nearest folder with .wwjd.json, as render.mjs writes
 test("shot commands point at an edited page, else the preview URL, never a source file", () => {
   const p = project(2);
   p.edit("card.html");
-  assert.match(p.run("stop", { stop_hook_active: false }).reason, /shoot \S*card\.html/);
+  assert.match(p.run("stop", { stop_hook_active: false }).reason, /shoot "?\S*card\.html/);
   p.edit("src/Card.tsx");
   const how = (extra) => p.run("status", {}, extra).checks[0].how;
   assert.match(how({}), /shoot <your running page URL>/);
-  assert.match(how({ WWJD_PREVIEW: "http://localhost:5173/board" }), /shoot http:\/\/localhost:5173\/board/);
+  assert.match(how({ WWJD_PREVIEW: "http://localhost:5173/board" }), /shoot "?http:\/\/localhost:5173\/board/);
   writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, preview: "http://localhost:3000" }));
-  assert.match(how({}), /shoot http:\/\/localhost:3000/);
+  assert.match(how({}), /shoot "?http:\/\/localhost:3000/);
 });
 
 test("status: the sheet is due only after the pre gate refused a new file", () => {
@@ -350,7 +350,7 @@ test("stop: render commands write to the edited project with --root when it is n
   writeFileSync(join(app, "Card.tsx"), "<div/>");
   p.run("post", { tool_name: "Write", tool_input: { file_path: join(app, "Card.tsx") } });
   const how = p.run("status", {}).checks.map((c) => c.how).join("\n");
-  assert.match(how, new RegExp(`shoot .* --root ${app.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+  assert.match(how, new RegExp(`shoot .* --root "?${app.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
   assert.match(how, /fit .* --root /);
   p.edit("card.html");
   assert.doesNotMatch(p.run("status", {}).checks.map((c) => c.how).join("\n"), /--root/);
@@ -392,4 +392,68 @@ test("stop: with a board and the setting on, a handover asks to add the round; a
   assert.equal(p.run("status", {}).checks.find((c) => c.key === "board").done, true);
   writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, board: "https://claude.ai/artifact/AbC123", boardMode: "off" }));
   assert.ok(!keys({}).includes("board"));
+});
+
+test("pre: no start question for styles, docs or emails in a repo with no front end", () => {
+  const p = project(1);
+  const api = mkdtempSync(join(tmpdir(), "wwjd-api-"));
+  execFileSync("git", ["init", "-q", api]);
+  writeFileSync(join(api, "package.json"), "{}");
+  for (const f of ["src/app.css", "docs/api.mdx", "docs/index.html", "emails/welcome.html"]) {
+    assert.equal(p.run("pre", write(join(api, f)), { CLAUDE_PLUGIN_OPTION_STRICTNESS: "1" }), null, f);
+  }
+});
+
+test("status: a session in one repo editing another uses that project's board and settings, not its own", () => {
+  const p = project(2);
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, board: "https://claude.ai/artifact/MINE1" }));
+  const app = mkdtempSync(join(tmpdir(), "wwjd-other-"));
+  writeFileSync(join(app, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, board: "https://claude.ai/artifact/THEIRS" }));
+  writeFileSync(join(app, "Card.tsx"), "<div/>");
+  p.run("post", { tool_name: "Write", tool_input: { file_path: join(app, "Card.tsx") } });
+  const how = p.run("status", {}).checks.find((c) => c.key === "board").how;
+  assert.match(how, /THEIRS/);
+  assert.doesNotMatch(how, /MINE1/);
+});
+
+test("stop: an app edit followed by a canvas edit still asks for the app's shots", () => {
+  const p = project(2);
+  p.edit("src/App.html");
+  p.edit("canvas/Main.dc.html");
+  assert.ok(p.run("status", {}).checks.some((c) => c.key === "shots"));
+});
+
+test("a check skipped in the sidebar (.wwjd/skipped.json) is done for this run of edits, and asked again after the next edit", () => {
+  const p = project(2);
+  p.edit("card.html");
+  p.file(".wwjd/skipped.json", JSON.stringify({ shots: Date.now() + 5000 }));
+  const shots = () => p.run("status", {}).checks.find((c) => c.key === "shots");
+  assert.equal(shots().done, true);
+  assert.equal(shots().skipped, true);
+  utimesSync(join(p.root, "card.html"), new Date(), new Date());
+  p.file(".wwjd/skipped.json", JSON.stringify({ shots: Date.now() - 60000 }));
+  p.edit("card.html");
+  assert.equal(shots().done, false);
+});
+
+test("status: what the status band saw (a board write, a critic run) counts without a transcript", () => {
+  const p = project(5);
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 5 }, board: "https://claude.ai/artifact/BRD1" }));
+  p.edit("card.html");
+  const later = Date.now() + 5000;
+  const c = p.run("status", { transcript_path: undefined, seen: { critic: later, board: { BRD1: later } } }).checks;
+  assert.equal(c.find((x) => x.key === "board").done, true);
+  assert.equal(c.find((x) => x.key === "critic").done, true);
+});
+
+test("pre: a new app in a monorepo that already has UI elsewhere gets the start question", () => {
+  const p = project(1);
+  const mono = mkdtempSync(join(tmpdir(), "wwjd-mono-"));
+  execFileSync("git", ["init", "-q", mono]);
+  mkdirSync(join(mono, "apps", "old", "src"), { recursive: true });
+  writeFileSync(join(mono, "apps", "old", "src", "Home.tsx"), "<div/>");
+  mkdirSync(join(mono, "apps", "new", "src"), { recursive: true });
+  writeFileSync(join(mono, "apps", "new", "package.json"), "{}");
+  const r = p.run("pre", write(join(mono, "apps", "new", "src", "App.tsx")));
+  assert.match(r.hookSpecificOutput.permissionDecisionReason, /start question/);
 });

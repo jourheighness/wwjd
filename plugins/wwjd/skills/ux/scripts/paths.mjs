@@ -44,7 +44,11 @@ export function projectOf(file, cwd = process.cwd()) {
   return artifactRoot(d);
 }
 
-const SKIP = new Set(["node_modules", "dist", "build", "out", ".next", ".git", ".wwjd", ".svelte-kit", ".astro", "coverage"]);
+export const SKIP = new Set(["node_modules", "dist", "build", "out", ".next", ".git", ".wwjd", ".svelte-kit", ".astro", "coverage"]);
+/** A path through a build, dependency or report folder: never UI work. */
+export const SKIP_DIR = new RegExp(`(^|/)(${[...SKIP].map((d) => d.replace(".", "\\.")).join("|")})(/|$)`);
+/** Markup files: what makes a project have a UI (the start question); styles and docs alone do not. */
+export const MARKUP = new Set([".tsx", ".jsx", ".vue", ".svelte", ".astro", ".html"]);
 /** Whether `root` already holds a UI file (tests, fixtures and stories aside). Bounded: a huge tree counts as "has UI". */
 export function hasUI(root) {
   let seen = 0;
@@ -62,20 +66,15 @@ export function hasUI(root) {
   return walk(root, 0);
 }
 
-/** The Hooks setting: "on" (route, lint, gates), "quiet" (route and lint, nothing blocks) or "off" (no wwjd hooks).
- * The nearest .wwjd.json "hooks" > the plugin option > WWJD_HOOKS > "on". The sidebar's Settings sets both. */
-export function hooksMode(start = process.cwd()) {
-  const norm = (v) => { const x = String(v ?? "").trim().toLowerCase(); return x === "off" || x === "false" || x === "0" ? "off" : x === "quiet" ? "quiet" : x === "on" || x === "true" || x === "1" ? "on" : null; };
+// A setting with a project override: the nearest .wwjd.json key > the plugin option (env) > a fallback env > the default.
+function setting(start, key, envs, allowed, fallback) {
+  const norm = (v) => { const x = String(v ?? "").trim().toLowerCase(); const m = { true: "on", 1: "on", false: "off", 0: "off" }[x] ?? x; return allowed.includes(m) ? m : null; };
   const f = nearestConfig(start);
-  if (f) { try { const m = norm(JSON.parse(readFileSync(f, "utf8")).hooks); if (m) return m; } catch { /* bad file: the option stands */ } }
-  return norm(process.env.CLAUDE_PLUGIN_OPTION_HOOKMODE) || norm(process.env.WWJD_HOOKS) || "on";
+  if (f) { try { const m = norm(JSON.parse(readFileSync(f, "utf8"))[key]); if (m) return m; } catch { /* bad file: the option stands */ } }
+  for (const e of envs) { const m = norm(process.env[e]); if (m) return m; }
+  return fallback;
 }
-
-/** The Project board setting: "on" (a new project offers a board; each handover adds its round) or "off" (Claude never
- * creates or updates one). The nearest .wwjd.json "boardMode" > the plugin option > WWJD_BOARD > "on". */
-export function boardMode(start = process.cwd()) {
-  const norm = (v) => { const x = String(v ?? "").trim().toLowerCase(); return x === "off" || x === "false" || x === "0" ? "off" : x === "on" || x === "true" || x === "1" ? "on" : null; };
-  const f = nearestConfig(start);
-  if (f) { try { const m = norm(JSON.parse(readFileSync(f, "utf8")).boardMode); if (m) return m; } catch { /* bad file: the option stands */ } }
-  return norm(process.env.CLAUDE_PLUGIN_OPTION_BOARDMODE) || norm(process.env.WWJD_BOARD) || "on";
-}
+/** The Hooks setting: "on" (route, lint, gates), "quiet" (route and lint, nothing blocks) or "off" (no wwjd hooks). */
+export const hooksMode = (start = process.cwd()) => setting(start, "hooks", ["CLAUDE_PLUGIN_OPTION_HOOKMODE", "WWJD_HOOKS"], ["on", "quiet", "off"], "on");
+/** The Project board setting: "on" (a new project offers a board; each handover adds its round) or "off". */
+export const boardMode = (start = process.cwd()) => setting(start, "boardMode", ["CLAUDE_PLUGIN_OPTION_BOARDMODE", "WWJD_BOARD"], ["on", "off"], "on");

@@ -135,6 +135,7 @@ test('Hooks: a pick goes to the plugin option for you, to .wwjd.json "hooks" for
     files[e.path] = e.text
     return { value: undefined }
   })
+  on('env.set', () => ({ value: undefined }))
   on('ui.open', () => opened)
   await $.command.run({ command: 'wwjd' } as never)
   const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'terminal', ...PANE, props })

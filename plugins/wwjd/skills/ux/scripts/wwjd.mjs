@@ -64,10 +64,11 @@ let hookCwd = null;
 if (opt.hook) {
   let input = {};
   try { input = JSON.parse(readFileSync(0, "utf8") || "{}"); } catch { process.exit(0); }
-  if (hooksMode(input.cwd || process.cwd()) === "off") process.exit(0);
+  const edited = input.tool_input?.file_path ? dirname(resolve(input.cwd || process.cwd(), input.tool_input.file_path)) : input.cwd || process.cwd();
+  if (hooksMode(edited) === "off") process.exit(0);
   try { noteEdit(input); } catch { /* the lint still runs */ } // one process per edit: the gate's note and the lint
   if (process.env.WWJD_HOOK_CHECK === "0") process.exit(0);
-  const fp = input.tool_input?.file_path || input.tool_input?.notebook_path;
+  const fp = input.tool_input?.file_path;
   if (!fp) process.exit(0);
   hookCwd = input.cwd || process.cwd();
   opt.paths = [resolve(hookCwd, fp)];

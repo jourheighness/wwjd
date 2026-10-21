@@ -4,9 +4,8 @@
 import { closeSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { extname, join, resolve } from "node:path";
-import { STORY, TEST, UI_EXT } from "./paths.mjs";
+import { SKIP_DIR, STORY, TEST, UI_EXT } from "./paths.mjs";
 
-const SKIP_DIR = /(^|\/)(node_modules|dist|build|out|\.next|\.git|\.wwjd)(\/|$)/;
 /** UI work for the gate: tests, fixtures, stories and build output are not. */
 export const isUI = (p) => typeof p === "string" && UI_EXT.has(extname(p)) && !SKIP_DIR.test(p) && !TEST.test(p) && !STORY.test(p);
 
@@ -51,6 +50,7 @@ export function noteEdit(input) {
   const fp = input.tool_input?.file_path;
   if (!["Write", "Edit", "MultiEdit"].includes(input.tool_name) || !isUI(fp)) return false;
   const now = Date.now(), at = resolve(input.cwd || process.cwd(), fp);
-  openLedger(input).update((l) => { l.lastEdit = now; l.lastFile = at; });
+  // A page edit (anything but a Design canvas, .dc.html) is what the render checks look at; a canvas edit never clears it.
+  openLedger(input).update((l) => { l.lastEdit = now; l.lastFile = at; if (!/\.dc\.html$/.test(at)) { l.lastPage = at; l.lastPageEdit = now; } });
   return true;
 }
