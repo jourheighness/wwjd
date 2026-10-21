@@ -212,3 +212,18 @@ test('directions from .wwjd/directions.json: several on one canvas share one Ope
   await ui.press({ key: 'dir:0:open' })
   expect(opened.at(-1)).toBe(url)
 })
+
+test('a save logs as "Johannes kept Claude from …": its own section, never a decision to settle', async ($, on) => {
+  mock.store(on)
+  const files: Record<string, string> = {}
+  disk(on as never, files)
+  on('ui.open', () => ({ value: { isPlaced: true } }) as never)
+  await $.tool.call({ tool: 'mcp__wwjd__log', surface: 'Price', kind: 'save', text: 'Kept Claude from putting the price in a tooltip', rule: 'Floor: tooltips' } as never)
+  const saved = JSON.parse((files['/p/.wwjd/decisions.jsonl'] ?? '').trim()) as { text: string; rule: string }
+  expect(saved.text).toBe('putting the price in a tooltip')
+  expect(saved.rule).toBe('Floor: tooltips')
+  await $.command.run({ command: 'wwjd' } as never)
+  const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })
+  expect(await ui.find({ type: 'Text', text: 'Johannes stepped in' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: 'Claude decided' })).toBeUndefined()
+})

@@ -22,6 +22,7 @@ const noteScope = atom({ plugin: 'wwjd', key: 'noteScope' } as const, 'once')
 const gate = atom({ plugin: 'wwjd', key: 'gate' } as const, null)
 const logVersion = atom({ plugin: 'wwjd', key: 'logVersion' } as const, 0)
 const showHandled = atom({ plugin: 'wwjd', key: 'showHandled' } as const, false)
+const showSaves = atom({ plugin: 'wwjd', key: 'showSaves' } as const, false)
 
 const TOOL = 'mcp__wwjd__log'
 const SHOWN = 60
@@ -304,9 +305,10 @@ export const register: Register = (on, options) => {
         required: ['surface', 'kind', 'text'],
         properties: {
           surface: { type: 'string', description: 'The component, screen or layout it is about, in product words ("Task card", "Settings page")' },
-          kind: { type: 'string', enum: ['assumption', 'choice'], description: 'assumption: a guess about product, data or intent; choice: a design call nobody asked for' },
+          kind: { type: 'string', enum: ['assumption', 'choice', 'save'], description: 'assumption: a guess about product, data or intent; choice: a design call nobody asked for; save: a wwjd rule changed what you were about to do (text: what it kept you from, as "putting the price in a tooltip"; rule: its name)' },
           text: { type: 'string', description: 'One line in the past tense, what you already did or assumed, in plain words a non-designer reads ("Dropped the comment count from the card", "Assumed people sign up with a work email")' },
           why: { type: 'string', description: 'One short reason in plain words, no jargon ("the card was too crowded to scan")' },
+          rule: { type: 'string', description: 'save only: the wwjd rule that stepped in, by its name ("Floor: tooltips", "One primary action")' },
           path: { type: 'string', description: 'A file this is about, when the project being edited is not the session\'s folder; the entry goes to that project\'s log' },
           task: { type: 'string', description: 'The task this belongs to, the same words for every entry of it ("Signup flow", "Sidebar log")' },
           proof: { type: 'array', description: 'What shows it, one entry per thing to open. An object { kind, name, url or path, board, line }: kind variant (one design on a board canvas: url is the board, name the variant, board its frame), artifact (an Artifact of its own), page (a running dev-server URL), screenshot (an image path), file (a source path, with line), link (other web page). Or a string "Name | target", whose kind is read from the target. Name every entry the way the person would ("Variant A · Deck")',
@@ -331,9 +333,9 @@ export const register: Register = (on, options) => {
   })
 
   on('tool.call', { tool: TOOL }, async ($, e) => {
-    const x = e as unknown as { surface?: unknown; kind?: unknown; text?: unknown; why?: unknown; path?: unknown; task?: unknown; proof?: unknown }
-    if (typeof x.surface !== 'string' || typeof x.text !== 'string' || (x.kind !== 'assumption' && x.kind !== 'choice')) {
-      return { deny: 'Needs surface, kind (assumption or choice) and text.' }
+    const x = e as unknown as { surface?: unknown; kind?: unknown; text?: unknown; why?: unknown; rule?: unknown; path?: unknown; task?: unknown; proof?: unknown }
+    if (typeof x.surface !== 'string' || typeof x.text !== 'string' || (x.kind !== 'assumption' && x.kind !== 'choice' && x.kind !== 'save')) {
+      return { deny: 'Needs surface, kind (assumption, choice or save) and text.' }
     }
     // Strings as given; typed objects kept to their known fields. At most 8, each short.
     const ok = (v: unknown) => typeof v === 'string' && v.trim() !== '' && v.length <= 2048
@@ -346,9 +348,12 @@ export const register: Register = (on, options) => {
       if (typeof o.line === 'number' && o.line > 0) out.line = Math.floor(o.line)
       return out.url || out.path ? [out] : []
     }).slice(0, 8)
+    // A save reads "Johannes kept Claude from <text>": the text is what was avoided, without that lead-in.
+    const text = x.kind === 'save' ? x.text.trim().replace(/^(johannes |wwjd )?(kept|stopped) claude from\s+/i, '').replace(/^[A-Z](?=[a-z])/, c => c.toLowerCase()) : x.text.trim()
     const entry = {
-      surface: x.surface.trim(), kind: x.kind as Entry['kind'], text: x.text.trim(),
+      surface: x.surface.trim(), kind: x.kind as Entry['kind'], text,
       ...(typeof x.why === 'string' && x.why.trim() ? { why: x.why.trim() } : {}),
+      ...(x.kind === 'save' && typeof x.rule === 'string' && x.rule.trim() ? { rule: x.rule.trim() } : {}),
       ...(typeof x.task === 'string' && x.task.trim() ? { task: x.task.trim() } : {}),
       ...(proof.length ? { proof } : {}),
     }
@@ -439,8 +444,11 @@ export const register: Register = (on, options) => {
         ]
       : []
     const all = snap.all
-    const entries = all.filter(x => !settled(x)).slice(-SHOWN)
-    const handled = all.filter(settled).slice(-SHOWN).reverse()
+    const entries = all.filter(x => x.kind !== 'save' && !settled(x)).slice(-SHOWN)
+    const handled = all.filter(x => x.kind !== 'save' && settled(x)).slice(-SHOWN).reverse()
+    // Saves, newest first: the times a wwjd rule changed what Claude was about to do. Flavor, no actions.
+    const saves = all.filter(x => x.kind === 'save').reverse()
+    const isAllSaves = await read($, showSaves)
     const open = await read($, editing)
     const where = await read($, noteScope)
     const Input = 'Input' in ui ? ui.Input : null
@@ -621,6 +629,12 @@ export const register: Register = (on, options) => {
         {due.length ? section('needs', 'alert', 'Not done yet', due.length, 'Claude does these before it says the work is finished. Run one now, or skip it.', due.map(blockingCard), TONE.error) : null}
         {dirs.length ? section('directions', 'compass', 'Directions', dirs.length, null, dirRows) : null}
         {groups.length ? section('decided', 'list', 'Claude decided', entries.length, "Already in the work. Dismiss what's fine with ✕, or edit it and Claude changes it.", decided) : null}
+        {saves.length ? section('saves', 'shield', 'Johannes stepped in', saves.length, null, [
+          ...(isAllSaves ? saves : saves.slice(0, 5)).map(x => (
+            <Text key={`save:${x.id}`} size="footnote" wrap="wrap"><Text dimColor>Johannes kept Claude from </Text>{x.text}{x.rule ? <Text dimColor> · {x.rule}</Text> : null}</Text>
+          )),
+          saves.length > 5 ? <Button key="saves-all" plain dimColor label={isAllSaves ? 'Show fewer' : `Show all ${saves.length}`} onPress={() => update($, showSaves, v => !v)} /> : null,
+        ]) : null}
         {!groups.length && !due.length ? <Text dimColor>{handled.length ? 'Nothing open.' : 'No decisions logged in this project yet.'}</Text> : null}
         {handled.length ? (
           <Box key="handled-list" flexDirection="column" gap="sm">

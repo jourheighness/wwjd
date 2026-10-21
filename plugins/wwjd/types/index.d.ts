@@ -16,14 +16,17 @@ export type Gate = {
 }
 
 /** One line of .wwjd/decisions.jsonl: a design assumption or choice the agent logged, and how the person settled it:
- *  kept as it is, or changed (the correction). Settled entries leave the open list for Handled. */
+ *  kept as it is, or changed (the correction). Settled entries leave the open list for Handled. A save is a wwjd rule
+ *  that changed what the agent was about to do: never settled, shown as "Johannes kept Claude from <text>". */
 export type Entry = {
   id: string
   at: string
   surface: string
-  kind: 'assumption' | 'choice'
+  kind: 'assumption' | 'choice' | 'save'
   text: string
   why?: string
+  /** A save's rule, by its wwjd name ("Floor: tooltips"). */
+  rule?: string
   /** The task it belongs to ("Signup flow"); the sidebar groups by it, else by surface. */
   task?: string
   /** What it is about: screenshot or file paths (a file may end in :line), live dev-server URLs, artifact links. */
@@ -49,6 +52,7 @@ declare module 'claude-code' {
       noteScope: NoteScope
       logVersion: number
       showHandled: boolean
+      showSaves: boolean
       /** The last file the session wrote or edited: names the project whose log the agent writes. */
       lastEdited: string
       /** The root whose .wwjd/decisions.jsonl the log tool last wrote; the sidebar reads it. */

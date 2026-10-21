@@ -61,7 +61,7 @@ Persuade: landing, hero, pricing · Showcase: portfolio, case study · Editorial
 
 ## 5. Loop
 - **Show** the smallest renderable slice with realistic data; hand over the link and what changed at once.
-- **Log as you go:** each assumption and each choice nobody asked for: one `mcp__wwjd__log` call, in the past tense and plain words, with typed `proof` (kinds in the tool). No tool: one line `{"surface","kind","text","why","proof"}` in `.wwjd/decisions.jsonl`.
+- **Log as you go:** each assumption and each choice nobody asked for: one `mcp__wwjd__log` call, in the past tense and plain words, with typed `proof` (kinds in the tool). When a wwjd rule changes what you were about to do, a `save`: what it kept you from ("putting the price in a tooltip") and the rule's name. No tool: one line `{"surface","kind","text","why","proof"}` in `.wwjd/decisions.jsonl`.
 - **Board:** on with a `board` in `.wwjd.json` (status says): each handover adds its round (`references/board.md`).
 - **Checks** per the Strictness dial (`references/dials.md`); hooks enforce them unless Hooks is quiet or off; the checks are owed either way. Hooks see Edit and Write: change UI files with those, never through Bash or a script. Shoot every new state (focus, hover, editing, open popover) zoomed, both themes, before any "checked"; a check that could not run is reported as not run. A Design canvas (`.dc.html`) renders only in its canvas: no shots or fit; say it was looked at there. Handover lists each `TODO(api)`.
 - **React:** change only what was named. Same correction twice: 3 structurally different options or one question with a default.

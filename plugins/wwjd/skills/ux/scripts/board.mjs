@@ -82,7 +82,7 @@ put("handovers", round, { at, n, title: opt.title, checks });
 const statusOf = (x) => (x.correction ? "changed" : x.kept ? "dismissed" : "open");
 const entries = (() => { try { return readFileSync(join(dir, "decisions.jsonl"), "utf8").split("\n").filter(Boolean).flatMap((l) => { try { return [JSON.parse(l)]; } catch { return []; } }); } catch { return []; } })();
 for (const x of entries) {
-  if (!x.id) continue;
+  if (!x.id || x.kind === "save") continue; // saves are the sidebar's flavor, not decisions
   const status = statusOf(x), change = x.correction?.note;
   if (!(x.id in state.sent)) {
     put("decisions", x.id, { at: x.at || at, round, task: x.task || "", surface: x.surface || "", kind: x.kind === "assumption" ? "assumption" : "choice",
