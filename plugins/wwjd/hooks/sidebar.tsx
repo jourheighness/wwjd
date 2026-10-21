@@ -137,6 +137,22 @@ async function correct($: EngineInterface, id: string) {
 const settled = (x: Entry) => Boolean(x.correction || x.kept)
 
 // The project's board artifact, when .wwjd.json names one ("board"): the same link every session.
+// The directions explored, from .wwjd/directions.json (written with the board; local, never committed):
+// [{ name, url, board?, note? }]. Directions that share one canvas open it with one button.
+type Direction = { name: string; url: string; board?: string; note?: string }
+async function directions($: EngineInterface): Promise<Direction[]> {
+  try {
+    const raw = JSON.parse(await $.fs.read(`${await shownRoot($)}/.wwjd/directions.json`)) as unknown
+    return (Array.isArray(raw) ? raw : []).flatMap((d): Direction[] => {
+      const o = (d ?? {}) as Record<string, unknown>
+      return typeof o.name === 'string' && typeof o.url === 'string' && /^https:\/\//.test(o.url)
+        ? [{ name: o.name, url: o.url, ...(typeof o.board === 'string' ? { board: o.board } : {}) }] : []
+    }).slice(0, 12)
+  } catch {
+    return []
+  }
+}
+
 async function boardUrl($: EngineInterface): Promise<string | null> {
   const f = `${await shownRoot($)}/.wwjd.json`
   try {
@@ -377,6 +393,7 @@ export const register: Register = (on, options) => {
     const isHandledShown = await read($, showHandled)
     const root = await shownRoot($).catch(() => '')
     const board = await boardUrl($).catch(() => null)
+    const dirs = await directions($).catch(() => [] as Direction[])
     // What Strictness still wants after the last UI edit, from the same gate state the hooks enforce: Blocking cards.
     const g = await read($, gate)
     const due = g?.hasEdits
@@ -513,6 +530,22 @@ export const register: Register = (on, options) => {
             : <Text><Link href={board} label="Open board" /></Text>) : null}
           <Button key="to-settings" plain dimColor label="Settings" onPress={() => update($, view, () => 'settings')} />
         </Box>
+        {dirs.length ? (
+          <Box key="directions" flexDirection="column" gap="xs">
+            <Text bold>Directions <Text dimColor>{String(dirs.length)}</Text></Text>
+            {[...dirs.reduce((m, d) => m.set(d.url, [...(m.get(d.url) ?? []), d]), new Map<string, Direction[]>()).entries()].map(([url, ds], i) => {
+              const names = ds.map(d => d.name).join(', ')
+              const label = ds.length > 1 ? 'Open canvas' : ds[0]?.name ?? 'Open'
+              const press = () => { void openProof($, { kind: ds.length > 1 ? 'artifact' : 'variant', target: url, name: label }, label, ds.length > 1 ? undefined : `Opened the canvas · look for ${names}`) }
+              return (
+                <Box key={`dir:${i}`} flexDirection="row" flexWrap="wrap" gap="sm" alignItems="center">
+                  {ds.length > 1 ? <Text wrap="wrap" dimColor>{names}</Text> : null}
+                  {inApp ? <Button key={`dir:${i}:open`} plain label={label} onPress={press} /> : <Text><Link href={url} label={label} /></Text>}
+                </Box>
+              )
+            })}
+          </Box>
+        ) : null}
         {due.length ? (
           <Box key="needs" flexDirection="column" gap="sm">
             <Box flexDirection="column">

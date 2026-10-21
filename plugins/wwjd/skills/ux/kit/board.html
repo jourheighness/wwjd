@@ -4,7 +4,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Albert+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: one reading column with a sticky section index; a project record, read top to bottom, then scanned. */
+/* Layout: one reading column, a sticky section index; what is true now first, history folded at the end. */
 :root {
   --bg: #f6f6f4; --surface: #ffffff; --ink: #1b1d20; --ink-2: #555a61; --ink-3: #6e737a;
   --line: #e2e3e0; --fill: #eeefec; --pen: #c8321f; --pen-tint: #fbe9e5; --ok: #2f6b4f; --ok-tint: #e5efe9;
@@ -44,30 +44,43 @@ section { padding-top: 40px; display: grid; gap: 16px; scroll-margin-top: 56px; 
 .sec-head { display: grid; gap: 4px; }
 h2 { font-size: 24px; letter-spacing: -.01em; font-weight: 600; }
 .sec-head p { margin: 0; color: var(--ink-2); max-width: 62ch; }
-.empty { padding: 20px; border: 1px dashed var(--line); border-radius: var(--r); color: var(--ink-2); }
+.empty { padding: 20px; border: 1px dashed var(--line); border-radius: var(--r); color: var(--ink-2); margin: 0; }
+.stack { display: grid; gap: 12px; }
 
-/* Directions: one tile per variant */
 .directions { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 12px; }
 .dir { display: grid; gap: 6px; align-content: start; padding: 16px; border-radius: var(--r); background: var(--surface);
   border: 1px solid var(--line); text-decoration: none; min-width: 0; }
-.dir:hover { border-color: var(--ink-3); }
+a.dir:hover { border-color: var(--ink-3); }
 .dir .letter { font: 700 28px/1 var(--display); color: var(--pen); }
 .dir .name { font: 600 16px/1.3 var(--display); }
 .dir .note { color: var(--ink-2); font-size: 14px; }
 .dir .go { color: var(--ink-3); font-size: 13px; margin-top: 4px; }
 
-/* Decisions: grouped by task, one row each */
-.group { display: grid; gap: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.round { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 14px; }
+.round .when { color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; }
+.round h3 { font-size: 19px; font-weight: 600; }
+.label { font: 600 12px/1 var(--text); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.checks li { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.cs { font-size: 12px; font-weight: 600; }
+.cs[data-s="done"] { color: var(--ok); } .cs[data-s="skipped"] { color: var(--ink-3); } .cs[data-s="not run"] { color: var(--pen); }
+.note { color: var(--ink-2); font-size: 14px; }
+
+.group { display: grid; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
 .group > h3 { font: 600 13px/1 var(--text); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); padding: 14px 16px 6px; }
+.group.flat { border: 0; border-radius: 0; background: none; }
+.group.flat > h3 { padding: 0 0 6px; }
 .dec { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 4px 12px; padding: 14px 16px; border-top: 1px solid var(--line); }
+.group.flat .dec { padding-inline: 0; }
 .group > h3 + .dec { border-top: 0; }
 .dec .mark { font: 700 14px/22px var(--display); text-align: center; color: var(--ink-3); }
 .dec[data-kind="assumption"] .mark { color: var(--pen); }
 .dec .body { display: grid; gap: 4px; min-width: 0; }
 .dec .what { font-weight: 500; }
-.dec .why, .dec .where { color: var(--ink-2); font-size: 14px; }
-.dec .where { color: var(--ink-3); }
-.dec .change { color: var(--ink); font-size: 14px; }
+.dec .why { color: var(--ink-2); font-size: 14px; }
+.dec .where { color: var(--ink-3); font-size: 14px; }
+.dec .change { font-size: 14px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--fill);
   font-size: 13px; text-decoration: none; color: var(--ink); }
@@ -82,7 +95,6 @@ button.comment { font: 500 13px/1 var(--text); color: var(--ink-2); background: 
   padding: 7px 10px; cursor: pointer; min-height: 32px; }
 button.comment:hover { color: var(--ink); border-color: var(--ink-3); }
 
-/* Screenshots: grouped by screen */
 .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 12px; }
 figure.shot { margin: 0; display: grid; gap: 6px; min-width: 0; }
 figure.shot a { display: block; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--fill); }
@@ -91,18 +103,17 @@ figure.shot figcaption { font-size: 13px; color: var(--ink-2); display: flex; ju
 figure.shot .tag { font-variant-numeric: tabular-nums; color: var(--ink-3); }
 .screen-name { font: 600 16px/1.3 var(--display); }
 
-/* Handovers: newest first */
-.handover { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 10px; }
-.handover .when { color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; }
-.handover h3 { font-size: 17px; font-weight: 600; }
-.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.checks li { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; align-items: baseline; }
-.cs { font-size: 12px; font-weight: 600; }
-.cs[data-s="done"] { color: var(--ok); } .cs[data-s="skipped"] { color: var(--ink-3); } .cs[data-s="not run"] { color: var(--pen); }
-.checks .note { color: var(--ink-2); font-size: 14px; }
-.loading { color: var(--ink-3); }
+details.past { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+details.past > summary { list-style: none; cursor: pointer; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; }
+details.past > summary::-webkit-details-marker { display: none; }
+details.past > summary::after { content: "+"; grid-row: 1 / span 2; grid-column: 2; align-self: center; font: 600 18px/1 var(--display); color: var(--ink-3); }
+details.past[open] > summary::after { content: "–"; }
+details.past .title { font: 600 16px/1.3 var(--display); }
+details.past .sum { color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; }
+details.past .inner { padding: 0 16px 16px; display: grid; gap: 14px; }
+.foot { color: var(--ink-3); font-size: 13px; margin: 0; }
+.loading { color: var(--ink-3); margin: 0; }
 @media (max-width: 560px) { .dec { grid-template-columns: 22px minmax(0, 1fr); } .side { grid-column: 2; justify-items: start; grid-auto-flow: column; } }
-@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 
 <div class="wrap">
@@ -115,29 +126,35 @@ figure.shot .tag { font-variant-numeric: tabular-nums; color: var(--ink-3); }
 
   <nav class="index" aria-label="Sections">
     <a href="#directions">Directions<span class="n" id="n-directions"></span></a>
-    <a href="#decisions">Decisions<span class="n" id="n-decisions"></span></a>
-    <a href="#screenshots">Screenshots<span class="n" id="n-screenshots"></span></a>
-    <a href="#handovers">Handovers<span class="n" id="n-handovers"></span></a>
+    <a href="#latest">Latest</a>
+    <a href="#open">Open decisions<span class="n" id="n-open"></span></a>
+    <a href="#screens">Screens<span class="n" id="n-screens"></span></a>
+    <a href="#history">History<span class="n" id="n-history"></span></a>
   </nav>
 
   <section id="directions" aria-labelledby="h-directions">
-    <div class="sec-head"><h2 id="h-directions">Directions</h2><p>The options Claude explored. Open one to see it on the canvas.</p></div>
+    <div class="sec-head"><h2 id="h-directions">Directions</h2><p>The options Claude explored. Each opens on its canvas in a new tab.</p></div>
     <div class="directions" id="directions-list"><p class="loading">Loading…</p></div>
   </section>
 
-  <section id="decisions" aria-labelledby="h-decisions">
-    <div class="sec-head"><h2 id="h-decisions">Decisions</h2><p>Choices and guesses Claude made without asking. Comment on one to change it; the comment reaches Claude.</p></div>
-    <div id="decisions-list" style="display:grid;gap:12px"><p class="loading">Loading…</p></div>
+  <section id="latest" aria-labelledby="h-latest">
+    <div class="sec-head"><h2 id="h-latest">Latest</h2><p>The most recent time Claude said the work was done: what it checked and decided.</p></div>
+    <div id="latest-box"><p class="loading">Loading…</p></div>
   </section>
 
-  <section id="screenshots" aria-labelledby="h-screenshots">
-    <div class="sec-head"><h2 id="h-screenshots">Screenshots</h2><p>What Claude looked at before handing over, by screen.</p></div>
-    <div id="shots-list" style="display:grid;gap:20px"><p class="loading">Loading…</p></div>
+  <section id="open" aria-labelledby="h-open">
+    <div class="sec-head"><h2 id="h-open">Open decisions</h2><p>Choices and guesses nobody has settled yet. Comment on one to change it; the comment reaches Claude.</p></div>
+    <div class="stack" id="open-list"><p class="loading">Loading…</p></div>
   </section>
 
-  <section id="handovers" aria-labelledby="h-handovers">
-    <div class="sec-head"><h2 id="h-handovers">Handovers</h2><p>Each time Claude said the work was done: what it checked, and what it skipped.</p></div>
-    <div id="handovers-list" style="display:grid;gap:12px"><p class="loading">Loading…</p></div>
+  <section id="screens" aria-labelledby="h-screens">
+    <div class="sec-head"><h2 id="h-screens">Screens</h2><p>How each screen looks now, from Claude's latest check. Older screenshots are replaced.</p></div>
+    <div class="stack" id="shots-list"><p class="loading">Loading…</p></div>
+  </section>
+
+  <section id="history" aria-labelledby="h-history">
+    <div class="sec-head"><h2 id="h-history">History</h2><p>Earlier handovers, newest first.</p></div>
+    <div class="stack" id="history-list"><p class="loading">Loading…</p></div>
   </section>
 </div>
 
@@ -147,98 +164,159 @@ figure.shot .tag { font-variant-numeric: tabular-nums; color: var(--ink-3); }
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
   const safeUrl = (u) => (typeof u === 'string' && /^(https:\/\/|\/_blob\/)/.test(u) ? u : null);
   const fmt = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); };
-  const empty = (box, text) => { box.replaceChildren(el('p', 'empty', text)); };
+  const empty = (box, text) => box.replaceChildren(el('p', 'empty', text));
   const count = (id, n) => { $(id).textContent = n ? String(n) : ''; };
+  const ext = (a, url) => { a.href = url; a.target = '_blank'; a.rel = 'noopener'; return a; };
 
   const db = typeof claude !== 'undefined' && claude.use ? await claude.use('db') : null;
   if (!db) {
-    for (const id of ['directions-list', 'decisions-list', 'shots-list', 'handovers-list']) empty($(id), 'This board can\'t load its data in this view.');
+    for (const id of ['directions-list', 'latest-box', 'open-list', 'shots-list', 'history-list']) empty($(id), 'This board can\'t load its data in this view.');
     return;
   }
   const comments = await claude.use('comments').catch(() => null);
 
+  // State from capped live queries; the round sections render together whenever one changes.
+  const state = { handovers: [], decisions: [], meta: {} };
+
   db.doc('meta/project').onSnapshot((s) => {
-    const m = s.data() || {};
+    state.meta = s.data() || {};
+    const m = state.meta;
     if (m.title) { $('title').textContent = m.title; document.title = `${m.title} · wwjd Board`; }
     if (m.summary) $('summary').textContent = m.summary;
     $('updated').textContent = m.updatedAt ? `Updated ${fmt(m.updatedAt)}` : '';
+    renderRounds();
   }, () => {});
 
-  db.collection('directions').orderBy('order').onSnapshot((snap) => {
+  db.collection('directions').orderBy('order').limit(24).onSnapshot((snap) => {
     const box = $('directions-list');
     count('n-directions', snap.docs.length);
     if (!snap.docs.length) return empty(box, 'No directions yet. They appear when Claude explores options before building.');
     box.replaceChildren(...snap.docs.map((d) => {
       const x = d.data() || {};
       const url = safeUrl(x.url);
-      const tile = el(url ? 'a' : 'div', 'dir');
-      if (url) { tile.href = url; tile.target = '_blank'; tile.rel = 'noopener'; }
+      const tile = url ? ext(el('a', 'dir'), url) : el('div', 'dir');
       const [letter, ...rest] = String(x.name || '').split(' · ');
       tile.append(el('span', 'letter', rest.length ? letter : ''), el('span', 'name', rest.length ? rest.join(' · ') : (x.name || 'Direction')));
       if (x.note) tile.append(el('span', 'note', x.note));
-      if (url) tile.append(el('span', 'go', x.board ? 'Open on the canvas ↗' : 'Open ↗'));
+      if (url) tile.append(el('span', 'go', 'Opens in a new tab ↗'));
       return tile;
     }));
   }, () => empty($('directions-list'), 'Couldn\'t load directions.'));
 
   const STATUS = { open: 'Open', dismissed: 'Dismissed', changed: 'Changed' };
-  db.collection('decisions').orderBy('at').onSnapshot((snap) => {
-    const box = $('decisions-list');
-    count('n-decisions', snap.docs.length);
-    if (!snap.docs.length) return empty(box, 'No decisions yet. Claude lists here what it decides without asking you.');
-    const groups = new Map();
-    for (const d of snap.docs) { const x = d.data() || {}; const k = x.task || 'Other'; groups.set(k, [...(groups.get(k) || []), { id: d.id, ...x }]); }
-    box.replaceChildren(...[...groups].map(([task, rows]) => {
-      const g = el('div', 'group');
-      g.append(el('h3', null, task));
-      for (const x of rows) {
-        const row = el('article', 'dec'); row.dataset.kind = x.kind === 'assumption' ? 'assumption' : 'choice';
-        row.append(el('span', 'mark', x.kind === 'assumption' ? '?' : '·'));
-        const body = el('div', 'body');
-        body.append(el('span', 'what', x.text || ''));
-        body.append(el('span', 'where', `${x.surface || ''}${x.kind === 'assumption' ? ' · Claude guessed this' : ' · Claude chose this'}`));
-        if (x.why) body.append(el('span', 'why', `Why: ${x.why}`));
-        if (x.status === 'changed' && x.change) body.append(el('span', 'change', `Changed to: ${x.change}`));
-        const proofs = Array.isArray(x.proofs) ? x.proofs : [];
-        if (proofs.length) {
-          const chips = el('div', 'chips');
-          for (const p of proofs) {
-            const url = safeUrl(p && p.url);
-            if (url) { const a = el('a', 'chip', p.name || 'Open'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; chips.append(a); }
-            else if (p && p.path) chips.append(el('span', 'chip path', p.name ? `${p.name} · ${p.path}` : p.path));
-          }
-          body.append(chips);
-        }
-        const side = el('div', 'side');
-        const s = STATUS[x.status] ? x.status : 'open';
-        const st = el('span', 'status', STATUS[s]); st.dataset.s = s; side.append(st);
-        if (comments) {
-          const b = el('button', 'comment', 'Comment'); b.type = 'button'; b.setAttribute('aria-label', `Comment on: ${x.text || 'this decision'}`);
-          b.addEventListener('click', () => { comments.openComposer({ element: row }).catch(() => {}); });
-          side.append(b);
-        }
-        row.append(body, side);
-        g.append(row);
+  const decisionRow = (x, withComment) => {
+    const row = el('article', 'dec'); row.dataset.kind = x.kind === 'assumption' ? 'assumption' : 'choice';
+    row.append(el('span', 'mark', x.kind === 'assumption' ? '?' : '·'));
+    const body = el('div', 'body');
+    body.append(el('span', 'what', x.text || ''), el('span', 'where', `${x.surface || ''} · ${x.kind === 'assumption' ? 'Claude guessed this' : 'Claude chose this'}`));
+    if (x.why) body.append(el('span', 'why', `Why: ${x.why}`));
+    if (x.status === 'changed' && x.change) body.append(el('span', 'change', `Changed to: ${x.change}`));
+    const proofs = Array.isArray(x.proofs) ? x.proofs : [];
+    if (proofs.length) {
+      const chips = el('div', 'chips');
+      for (const p of proofs) {
+        const url = safeUrl(p && p.url);
+        if (url) chips.append(ext(el('a', 'chip', `${p.name || 'Open'} ↗`), url));
+        else if (p && p.path) chips.append(el('span', 'chip path', p.name ? `${p.name} · ${p.path}` : p.path));
       }
+      body.append(chips);
+    }
+    const side = el('div', 'side');
+    const s = STATUS[x.status] ? x.status : 'open';
+    const st = el('span', 'status', STATUS[s]); st.dataset.s = s; side.append(st);
+    if (withComment && comments) {
+      const b = el('button', 'comment', 'Comment'); b.type = 'button'; b.setAttribute('aria-label', `Comment on: ${x.text || 'this decision'}`);
+      b.addEventListener('click', () => { comments.openComposer({ element: row }).catch(() => {}); });
+      side.append(b);
+    }
+    row.append(body, side);
+    return row;
+  };
+  const grouped = (rows, withComment, flat) => {
+    const groups = new Map();
+    for (const x of rows) { const k = x.task || 'Other'; groups.set(k, [...(groups.get(k) || []), x]); }
+    return [...groups].map(([task, xs]) => {
+      const g = el('div', flat ? 'group flat' : 'group');
+      g.append(el('h3', null, task), ...xs.map((x) => decisionRow(x, withComment)));
       return g;
-    }));
-  }, () => empty($('decisions-list'), 'Couldn\'t load decisions.'));
+    });
+  };
+  const checkList = (checks) => {
+    const list = el('ul', 'checks');
+    for (const c of Array.isArray(checks) ? checks : []) {
+      const s = ['done', 'skipped', 'not run'].includes(c.status) ? c.status : 'not run';
+      const cs = el('span', 'cs', s === 'done' ? 'Done' : s === 'skipped' ? 'Skipped' : 'Not run'); cs.dataset.s = s;
+      const t = el('span', null, c.label || ''); if (c.note) t.append(el('span', 'note', ` · ${c.note}`));
+      const li = el('li'); li.append(cs, t); list.append(li);
+    }
+    return list;
+  };
 
-  db.collection('shots').orderBy('at', 'desc').onSnapshot((snap) => {
+  function renderRounds() {
+    const [latest, ...past] = state.handovers;
+    const inRound = (id) => state.decisions.filter((x) => x.round === id).sort((a, b) => String(a.at).localeCompare(String(b.at)));
+    const lb = $('latest-box');
+    if (!latest) empty(lb, 'No handovers yet. After Claude hands over work, what it checked and decided shows here.');
+    else {
+      const card = el('article', 'round');
+      card.append(el('span', 'when', fmt(latest.at)), el('h3', null, latest.title || 'Handover'), el('span', 'label', 'Checks'), checkList(latest.checks));
+      const ds = inRound(latest.id);
+      if (ds.length) card.append(el('span', 'label', `Decided this round · ${ds.length}`), ...grouped(ds, false, true));
+      lb.replaceChildren(card);
+    }
+    const open = state.decisions.filter((x) => (x.status || 'open') === 'open').sort((a, b) => String(a.at).localeCompare(String(b.at)));
+    count('n-open', open.length);
+    if (!open.length) empty($('open-list'), state.decisions.length ? 'Nothing open: every decision has been settled.' : 'No decisions yet.');
+    else $('open-list').replaceChildren(...grouped(open, true, false));
+    count('n-history', past.length);
+    const hb = $('history-list');
+    if (!past.length) empty(hb, 'No earlier handovers yet.');
+    else {
+      const items = past.map((h) => {
+        const det = el('details', 'past');
+        const sum = el('summary');
+        const ds = inRound(h.id);
+        const checks = Array.isArray(h.checks) ? h.checks : [];
+        const notDone = checks.filter((c) => c.status !== 'done').length;
+        sum.append(el('span', 'title', h.title || 'Handover'), el('span', 'sum', `${fmt(h.at)} · ${checks.length} checks${notDone ? `, ${notDone} not done` : ''} · ${ds.length} decisions`));
+        const inner = el('div', 'inner');
+        inner.append(el('span', 'label', 'Checks'), checkList(checks));
+        if (ds.length) inner.append(el('span', 'label', 'Decided'), ...grouped(ds, false, true));
+        det.append(sum, inner);
+        return det;
+      });
+      const archived = Number(state.meta.archivedRounds) || 0;
+      if (archived) items.push(el('p', 'foot', `${archived} older ${archived === 1 ? 'round was' : 'rounds were'} removed to keep the board small.`));
+      hb.replaceChildren(...items);
+    }
+  }
+
+  db.collection('handovers').orderBy('at', 'desc').limit(13).onSnapshot((snap) => {
+    state.handovers = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
+    renderRounds();
+  }, () => empty($('latest-box'), 'Couldn\'t load handovers.'));
+
+  db.collection('decisions').orderBy('at', 'desc').limit(400).onSnapshot((snap) => {
+    state.decisions = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
+    renderRounds();
+  }, () => empty($('open-list'), 'Couldn\'t load decisions.'));
+
+  // Screens: one current screenshot per screen, size and theme; each round replaces it.
+  db.collection('shots').orderBy('screen').limit(120).onSnapshot((snap) => {
     const box = $('shots-list');
-    count('n-screenshots', snap.docs.length);
+    count('n-screens', new Set(snap.docs.map((d) => (d.data() || {}).screen)).size);
     if (!snap.docs.length) return empty(box, 'No screenshots yet. They appear after Claude checks a page it built. A Design canvas has none: open its directions instead.');
     const screens = new Map();
     for (const d of snap.docs) { const x = d.data() || {}; const k = x.screen || 'Screens'; screens.set(k, [...(screens.get(k) || []), x]); }
     box.replaceChildren(...[...screens].map(([screen, shots]) => {
-      const wrap = el('div'); wrap.style.display = 'grid'; wrap.style.gap = '10px';
+      const wrap = el('div', 'stack');
       wrap.append(el('h3', 'screen-name', screen));
       const grid = el('div', 'shots');
-      for (const x of shots) {
+      for (const x of shots.sort((a, b) => (b.width || 0) - (a.width || 0))) {
         const url = safeUrl(x.url); if (!url) continue;
         const f = el('figure', 'shot');
-        const a = el('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener';
-        const img = el('img'); img.src = url; img.loading = 'lazy'; img.alt = `${screen}, ${x.width || ''} px, ${x.theme || 'light'}`; a.append(img);
+        const a = ext(el('a'), url);
+        const img = el('img'); img.src = url; img.loading = 'lazy'; img.alt = `${screen} at ${x.width || '?'} px, ${x.theme || 'light'}`; a.append(img);
         const cap = el('figcaption'); cap.append(el('span', null, x.caption || `${x.width || '?'} px · ${x.theme || 'light'}`), el('span', 'tag', fmt(x.at)));
         f.append(a, cap); grid.append(f);
       }
@@ -246,26 +324,5 @@ figure.shot .tag { font-variant-numeric: tabular-nums; color: var(--ink-3); }
       return wrap;
     }));
   }, () => empty($('shots-list'), 'Couldn\'t load screenshots.'));
-
-  db.collection('handovers').orderBy('at', 'desc').onSnapshot((snap) => {
-    const box = $('handovers-list');
-    count('n-handovers', snap.docs.length);
-    if (!snap.docs.length) return empty(box, 'No handovers yet.');
-    box.replaceChildren(...snap.docs.map((d) => {
-      const x = d.data() || {};
-      const card = el('article', 'handover');
-      card.append(el('span', 'when', fmt(x.at)), el('h3', null, x.title || 'Handover'));
-      const list = el('ul', 'checks');
-      for (const c of Array.isArray(x.checks) ? x.checks : []) {
-        const li = el('li');
-        const s = ['done', 'skipped', 'not run'].includes(c.status) ? c.status : 'not run';
-        const cs = el('span', 'cs', s === 'done' ? 'Done' : s === 'skipped' ? 'Skipped' : 'Not run'); cs.dataset.s = s;
-        const t = el('span'); t.append(el('span', null, c.label || ''), c.note ? el('span', 'note', ` · ${c.note}`) : '');
-        li.append(cs, t); list.append(li);
-      }
-      card.append(list);
-      return card;
-    }));
-  }, () => empty($('handovers-list'), 'Couldn\'t load handovers.'));
 })();
 </script>

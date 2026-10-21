@@ -185,3 +185,25 @@ test('typed proofs: each kind says what it opens and opens in its place; variant
   expect(lead?.props.alignItems).toBe('flex-start')
   expect(await ui.find({ key: `actions:${id}` })).toBeDefined()
 })
+
+test('directions from .wwjd/directions.json: several on one canvas share one Open canvas button that opens in the app', async ($, on) => {
+  mock.store(on)
+  const url = 'https://claude.ai/artifact/canvas'
+  const files: Record<string, string> = { '/p/.wwjd/directions.json': JSON.stringify([
+    { name: 'A · Deck', url, board: 'Main.dc.html' }, { name: 'B · Nearby', url, board: 'B.dc.html' },
+    { name: 'Copy deck', url: 'https://claude.ai/artifact/other' }, { name: 'Bad', url: 'javascript:alert(1)' },
+  ]) }
+  const opened: unknown[] = []
+  disk(on as never, files)
+  on('ui.open', () => ({ value: { isPlaced: true } }) as never)
+  on('ui.toast', () => ({ value: undefined }) as never)
+  on('tool.call', { tool: 'Artifact' }, ((_$: unknown, e: { url: string }) => { opened.push(e.url); return { result: {} } }) as never)
+  on('tool.call', { tool: 'mcp__ccd_view__show_pane' }, (() => ({ result: {} })) as never)
+  await $.command.run({ command: 'wwjd' } as never)
+  const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })
+  expect(await ui.find({ type: 'Text', text: 'A · Deck, B · Nearby' })).toBeDefined()
+  expect(await ui.find({ type: 'Button', label: 'Copy deck' })).toBeDefined()
+  expect(await ui.find({ key: 'dir:2:open' })).toBeUndefined() // the javascript: link is dropped, so only two places
+  await ui.press({ key: 'dir:0:open' })
+  expect(opened.at(-1)).toBe(url)
+})
