@@ -362,3 +362,12 @@ test("stop: render commands write to the edited project with --root when it is n
   p.edit("card.html");
   assert.doesNotMatch(p.run("status", {}).checks.map((c) => c.how).join("\n"), /--root/);
 });
+
+test("stop: a Design canvas board (.dc.html) asks for no shots or fit, only the log", () => {
+  const p = project(4);
+  p.edit("canvas/project/Main.dc.html");
+  const r = p.run("stop", { stop_hook_active: false });
+  assert.match(r.reason, /mcp__wwjd__log/);
+  assert.doesNotMatch(r.reason, /render\.mjs/);
+  assert.deepEqual(p.run("status", {}).checks.map((c) => c.key), ["log"]);
+});

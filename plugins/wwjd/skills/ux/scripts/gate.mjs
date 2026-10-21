@@ -9,6 +9,7 @@
 //   stop   Stop: the checks the dial asks for, all newer than the last UI edit, before the turn may end:
 //          2 a screenshot · 3 two widths · 4 a dark shot and a runtime report · 5 a wwjd-critic run.
 //          .wwjd/shots/UNAVAILABLE (render.mjs writes it when it can't render) stands in for shots and runtime.
+//          A Design canvas board (.dc.html) asks for no shots, fit or runtime: it renders only in its canvas.
 //          Blocks at most twice per user turn, so a check that can't be done never traps the turn.
 //   status the same state as JSON, for the wwjd status band (hooks/status.tsx): stdin { session_id, cwd }.
 // Artifacts (.wwjd/) live at the nearest ancestor with .wwjd.json or .wwjd/, else the git root (paths.mjs): of the file
@@ -151,11 +152,14 @@ function checks(ledger, s) {
   const pngs = fresh.filter((f) => f.endsWith(".png"));
   const widths = new Set(pngs.map((f) => /-(\d+)-(?:light|dark)\.png$/.exec(f)?.[1]).filter(Boolean));
   const target = shotTarget(ledger);
+  // A Design canvas board (.dc.html) renders only inside its canvas runtime: shots and fit would measure raw
+  // template text, so they are skipped and the handover says it was looked at in the canvas.
+  const board = /\.dc\.html$/.test(ledger.lastFile || "");
   const out = [];
-  if (s >= 2) out.push(s >= 3
+  if (s >= 2 && !board) out.push(s >= 3
     ? { key: "shots", label: "Shots at 2 widths", done: unavailable || widths.size >= 2, how: `screenshots at desktop and phone width: node ${RENDER} shoot ${target} --theme light${at}` }
     : { key: "shots", label: "Screenshot", done: unavailable || pngs.length > 0, how: `a screenshot: node ${RENDER} shoot ${target} --one${at}, then look at it` });
-  if (s >= 3) {
+  if (s >= 3 && !board) {
     // Fit runs at 320–720px and must come back clean: wrapping, clipping and lone items are layout bugs, not taste.
     let fit = null;
     const fitFile = roots(ledger).map((r) => join(r, ".wwjd", "fit.json")).filter((f) => mtime(f) > since).sort((a, b) => mtime(b) - mtime(a))[0];
@@ -164,7 +168,7 @@ function checks(ledger, s) {
     out.push({ key: "fit", label: errs.length ? "Fit errors" : "Fit check", done: unavailable || (fit !== null && errs.length === 0),
       how: errs.length ? `fix the fit errors, then rerun fit: ${[...new Set(errs)].slice(0, 4).join("; ")}` : `the fit check: node ${RENDER} fit ${target} --widths 320,480,720${at}` });
   }
-  if (s >= 4) {
+  if (s >= 4 && !board) {
     out.push({ key: "dark", label: "Dark shot", done: unavailable || pngs.some((f) => f.includes("-dark.")), how: `a dark-mode shot: node ${RENDER} shoot ${target} --theme dark${at}` });
     out.push({ key: "runtime", label: "Runtime checks", done: unavailable || roots(ledger).some((r) => mtime(join(r, ".wwjd", "runtime.json")) > since), how: `the runtime checks: node ${RENDER} runtime ${target}${at}` });
   }
