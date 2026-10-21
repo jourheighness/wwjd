@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import { DIALS, isDefault, stopOf } from "../skills/ux/scripts/dials-spec.mjs";
-import { hooksMode } from "../skills/ux/scripts/paths.mjs";
+import { dialsFor, hooksMode } from "../skills/ux/scripts/paths.mjs";
 
 let input = {};
 try { input = JSON.parse(readFileSync(0, "utf8") || "{}"); } catch { process.exit(0); }
@@ -64,15 +64,9 @@ const also = [
   word("animat\\p{L}*|motion|transitions?|micro-?interactions?|smoother|snappier|feel alive").test(prompt) && "wwjd:motion",
 ].filter(Boolean);
 
-// The dials off default: plugin options (CLAUDE_PLUGIN_OPTION_*), then the nearest .wwjd.json "dials".
-const raw = {};
-for (const d of DIALS) { const v = process.env[`CLAUDE_PLUGIN_OPTION_${d.key.toUpperCase()}`]; if (v) raw[d.key] = v; }
-for (let dir = input.cwd || process.cwd(); ; dir = dirname(dir)) {
-  const f = join(dir, ".wwjd.json");
-  if (existsSync(f)) { try { Object.assign(raw, JSON.parse(readFileSync(f, "utf8")).dials || {}); } catch { /* bad file: options stand */ } break; }
-  if (dirname(dir) === dir) break;
-}
-const off = DIALS.map((d) => [d, stopOf(d, raw[d.key] ?? d.default)]).filter(([d, i]) => !isDefault(d, i)).map(([d, i]) => `${d.name} ${i + 1} ${d.stops[i][0]}`);
+// The dials off default (paths.mjs dialsFor: plugin options, then the nearest .wwjd.json "dials").
+const { d: dialValues } = dialsFor(input.cwd || process.cwd());
+const off = DIALS.map((d) => [d, stopOf(d, dialValues[d.key])]).filter(([d, i]) => !isDefault(d, i)).map(([d, i]) => `${d.name} ${i + 1} ${d.stops[i][0]}`);
 
 say(
   `UI work: call the Skill tool with wwjd:ux now, before anything else` +

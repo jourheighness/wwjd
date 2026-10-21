@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, extname, join, resolve } from "node:path";
+import { DIALS, stopOf, valueOf } from "./dials-spec.mjs";
 
 export const UI_EXT = new Set([".tsx", ".jsx", ".vue", ".svelte", ".astro", ".html", ".mdx", ".css", ".scss"]);
 // Tests and fixtures: never linted, never gated.
@@ -78,3 +79,18 @@ function setting(start, key, envs, allowed, fallback) {
 export const hooksMode = (start = process.cwd()) => setting(start, "hooks", ["CLAUDE_PLUGIN_OPTION_HOOKMODE", "WWJD_HOOKS"], ["on", "quiet", "off"], "on");
 /** The Project board setting: "on" (a new project offers a board; each handover adds its round) or "off". */
 export const boardMode = (start = process.cwd()) => setting(start, "boardMode", ["CLAUDE_PLUGIN_OPTION_BOARDMODE", "WWJD_BOARD"], ["on", "off"], "on");
+
+/** The effective dials for a project, one place for every script: the plugin options (CLAUDE_PLUGIN_OPTION_<KEY> in
+ * hooks, WWJD_DIALS in Bash) < the nearest .wwjd.json "dials". Values outside a dial's stops fall back to its default.
+ * Returns { d: { key: value }, from: { key: "plugin" | ".wwjd.json" } }. */
+export function dialsFor(start = process.cwd()) {
+  const raw = {}, from = {};
+  const ok = (v) => { const n = Math.round(Number(v)); return v !== "" && n >= 1 && n <= 5; }; // anything else falls through
+  for (const [k, v] of (process.env.WWJD_DIALS || "").split(/\s+/).filter(Boolean).map((x) => x.split("="))) if (ok(v)) { raw[k] = v; from[k] = "plugin"; }
+  for (const d of DIALS) { const v = process.env[`CLAUDE_PLUGIN_OPTION_${d.key.toUpperCase()}`]; if (ok(v)) { raw[d.key] = v; from[d.key] = "plugin"; } }
+  const f = nearestConfig(start);
+  if (f) { try { for (const [k, v] of Object.entries(JSON.parse(readFileSync(f, "utf8")).dials || {})) if (ok(v)) { raw[k] = v; from[k] = ".wwjd.json"; } } catch { /* bad file: options stand */ } }
+  const d = {};
+  for (const dial of DIALS) d[dial.key] = valueOf(dial, stopOf(dial, raw[dial.key] ?? dial.default));
+  return { d, from };
+}

@@ -105,11 +105,18 @@ export async function loadProjectDials($: EngineInterface) {
   await update($, projectBoard, () => boardOf(json.boardMode))
 }
 
-// A Project board pick: the plugin option for you, .wwjd.json "boardMode" for the project; '' hands it back to yours.
-async function pickBoard($: EngineInterface, value: string) {
+// A Hooks or Project board pick: the plugin option for you (plus the env the scripts read this session), the project's
+// .wwjd.json key for the project; '' hands the project back to yours.
+const SETTINGS = {
+  hooks: { option: 'wwjd.hookmode', json: 'hooks' },
+  board: { option: 'wwjd.boardmode', json: 'boardMode' },
+} as const
+async function pickSetting($: EngineInterface, which: keyof typeof SETTINGS, value: string) {
+  const { option, json: key } = SETTINGS[which]
   if ((await read($, scope)) === 'person') {
-    const { deny } = await $.config.set({ key: 'wwjd.boardmode', value })
+    const { deny } = await $.config.set({ key: option, value })
     if (deny) $.ui.toast(`Not saved: ${deny}`)
+    else if (which === 'hooks') await $.env.set('WWJD_HOOKS', value) // the engine lists env names, so each is literal
     else await $.env.set('WWJD_BOARD', value)
     return
   }
@@ -119,30 +126,11 @@ async function pickBoard($: EngineInterface, value: string) {
     return
   }
   const next: Record<string, unknown> = { ...json }
-  if (value) next.boardMode = value
-  else delete next.boardMode
+  if (value) next[key] = value
+  else delete next[key]
   await $.fs.write(file, JSON.stringify(next, null, 2) + '\n')
-  await update($, projectBoard, () => value)
-}
-
-// A Hooks pick: the plugin option for you, .wwjd.json "hooks" for the project; '' hands the project back to yours.
-async function pickHooks($: EngineInterface, value: string) {
-  if ((await read($, scope)) === 'person') {
-    const { deny } = await $.config.set({ key: 'wwjd.hookmode', value })
-    if (deny) $.ui.toast(`Not saved: ${deny}`)
-    else await $.env.set('WWJD_HOOKS', value)
-    return
-  }
-  const { file, json, error } = await readProject($)
-  if (error !== undefined) {
-    $.ui.toast(`Not saved: ${file.split('/').slice(-2).join('/')}: ${error}. Fix it, then pick again.`)
-    return
-  }
-  const next: Record<string, unknown> = { ...json }
-  if (value) next.hooks = value
-  else delete next.hooks
-  await $.fs.write(file, JSON.stringify(next, null, 2) + '\n')
-  await update($, projectHooks, () => value)
+  if (which === 'hooks') await update($, projectHooks, () => value)
+  else await update($, projectBoard, () => value)
 }
 
 /** The sidebar's one card: a rounded border around its content (sidebar.tsx draws decisions with it). A desktop button
@@ -197,10 +185,10 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
   const hooksOwn = where === 'project' && projHooks !== ''
   const hooksAt = hooksOwn ? projHooks : myHooks
   const hooksCard = dialCard('card-hooks', 'Hooks',
-    hooksOwn ? <Button key="hooks:reset" plain dimColor label="Use mine" onPress={() => pickHooks($, '')} />
+    hooksOwn ? <Button key="hooks:reset" plain dimColor label="Use mine" onPress={() => pickSetting($, 'hooks', '')} />
       : where === 'project' ? <Text dimColor>Same as yours</Text> : null,
     HOOKS.find(([k]) => k === hooksAt)?.[2] ?? '',
-    HOOKS.map(([k, label]) => stop(`hooks:${k}`, label, k === hooksAt && !(where === 'project' && !hooksOwn), () => pickHooks($, k))))
+    HOOKS.map(([k, label]) => stop(`hooks:${k}`, label, k === hooksAt && !(where === 'project' && !hooksOwn), () => pickSetting($, 'hooks', k))))
 
   // Project board: the same card shape, two stops
   const projBoard = (await read($, projectBoard)) as string
@@ -208,10 +196,10 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
   const boardOwn = where === 'project' && projBoard !== ''
   const boardAt = boardOwn ? projBoard : myBoard
   const boardCard = dialCard('card-board', 'Project board',
-    boardOwn ? <Button key="board:reset" plain dimColor label="Use mine" onPress={() => pickBoard($, '')} />
+    boardOwn ? <Button key="board:reset" plain dimColor label="Use mine" onPress={() => pickSetting($, 'board', '')} />
       : where === 'project' ? <Text dimColor>Same as yours</Text> : null,
     BOARD.find(([k]) => k === boardAt)?.[2] ?? '',
-    BOARD.map(([k, label]) => stop(`board:${k}`, label, k === boardAt && !(where === 'project' && !boardOwn), () => pickBoard($, k))))
+    BOARD.map(([k, label]) => stop(`board:${k}`, label, k === boardAt && !(where === 'project' && !boardOwn), () => pickSetting($, 'board', k))))
 
   const dialCards = DIALS.map(dial => {
     const { at, isOwn, isInherited } = state(dial)

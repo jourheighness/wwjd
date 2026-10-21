@@ -457,3 +457,12 @@ test("pre: a new app in a monorepo that already has UI elsewhere gets the start 
   const r = p.run("pre", write(join(mono, "apps", "new", "src", "App.tsx")));
   assert.match(r.hookSpecificOutput.permissionDecisionReason, /start question/);
 });
+
+test("dials: an empty or out-of-range strictness in .wwjd.json falls back to the option, then the default", () => {
+  const p = project(2);
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: "" } }));
+  assert.equal(p.run("status", {}).strictness, 3);
+  assert.equal(p.run("status", {}, { CLAUDE_PLUGIN_OPTION_STRICTNESS: "4" }).strictness, 4);
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 9 } }));
+  assert.equal(p.run("status", {}).strictness, 3);
+});

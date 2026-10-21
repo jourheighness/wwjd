@@ -28,9 +28,9 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, statSync, readdirSync, existsSync } from "node:fs";
 import { join, extname, resolve, relative, dirname, basename, sep } from "node:path";
 import { homedir } from "node:os";
-import { DIALS, stopOf, valueOf, isDefault, isGated } from "./dials-spec.mjs";
+import { DIALS, stopOf, isDefault, isGated } from "./dials-spec.mjs";
 import { noteEdit } from "./ledger.mjs";
-import { STORY, TEST, UI_EXT, boardMode, hooksMode, nearestConfig } from "./paths.mjs";
+import { STORY, TEST, UI_EXT, boardMode, dialsFor, hooksMode, nearestConfig } from "./paths.mjs";
 
 const [major, minor] = process.versions.node.split(".").map(Number);
 if (major < 20 || (major === 20 && minor < 10)) { console.error("wwjd needs Node 20.10 or newer"); process.exit(2); }
@@ -79,6 +79,9 @@ if (opt.hook) {
 const git = (args, cwd) => { try { return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 << 20 }); } catch { return null; } };
 // NUL-separated, so names with spaces, quotes or non-ASCII come through verbatim
 const gitPaths = (args, cwd) => { const out = git([...args, "-z"], cwd); return out === null ? null : out.split("\0").filter(Boolean); };
+// The lint's root: the git root first, then the nearest .wwjd.json (the baseline file lives here). .wwjd/ artifacts use
+// paths.mjs artifactRoot, which prefers .wwjd.json: in a monorepo with a nested .wwjd.json the two can differ on purpose
+// (one baseline per repo, one .wwjd/ per app).
 function findRoot(start) {
   let d = start;
   try { if (statSync(d).isFile()) d = dirname(d); } catch { d = dirname(d); }
@@ -390,15 +393,8 @@ const kb = (f) => { try { return Math.round(statSync(join(ROOT, f)).size / 1024)
 // ── commands ───────────────────────────────────────────────────────
 const fmt = (x) => `${x.file}:${x.line}  ${x.severity === "error" ? "ERROR" : "warn "} ${x.rule}: ${x.message}`;
 
-// ── dials (dials-spec.mjs): plugin options (WWJD_DIALS, from hooks) < project .wwjd.json "dials" ──
-function dials() {
-  const raw = {}, from = {};
-  for (const [k, v] of (process.env.WWJD_DIALS || "").split(/\s+/).filter(Boolean).map((x) => x.split("="))) { raw[k] = v; from[k] = "plugin"; }
-  for (const [k, v] of Object.entries(cfg.dials || {})) { raw[k] = v; from[k] = ".wwjd.json"; }
-  const d = {};
-  for (const dial of DIALS) d[dial.key] = valueOf(dial, stopOf(dial, raw[dial.key] ?? dial.default));
-  return { d, from };
-}
+// ── dials: paths.mjs dialsFor (plugin options < project .wwjd.json "dials") ──
+const dials = () => dialsFor(startDir);
 function dialLine() {
   const { d } = dials();
   const off = DIALS.filter((dial) => !isDefault(dial, stopOf(dial, d[dial.key]))).map((dial) => {

@@ -23,7 +23,7 @@ import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isGated } from "./dials-spec.mjs";
 import { isUI, noteEdit, openLedger } from "./ledger.mjs";
-import { MARKUP, artifactRoot, boardMode, hasUI, hooksMode, nearestConfig, projectOf } from "./paths.mjs";
+import { MARKUP, artifactRoot, boardMode, dialsFor, hasUI, hooksMode, nearestConfig, projectOf } from "./paths.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const RENDER = join(HERE, "render.mjs");
@@ -56,12 +56,8 @@ if (hooks === "off" || (hooks === "quiet" && (mode === "pre" || mode === "stop")
 const fileConfig = fileDir ? nearestConfig(fileDir) : null;
 const configFile = nearestConfig(projectDir) || nearestConfig(cwd);
 const config = (() => { try { return configFile ? JSON.parse(readFileSync(configFile, "utf8")) : {}; } catch { return {}; } })();
-// Strictness: the project's .wwjd.json > the plugin option > WWJD_DIALS > 3; anything not 1–5 falls through.
-function strictness() {
-  const ok = (v) => { const n = Math.round(Number(v)); return n >= 1 && n <= 5 ? n : null; };
-  return ok(config.dials?.strictness) ?? ok(process.env.CLAUDE_PLUGIN_OPTION_STRICTNESS)
-    ?? ok(/(?:^|\s)strictness=(\d)/.exec(process.env.WWJD_DIALS || "")?.[1]) ?? 3;
-}
+// Strictness: the project's dial (paths.mjs dialsFor: .wwjd.json > the plugin option > WWJD_DIALS > 3).
+const strictness = () => dialsFor(configFile ? dirname(configFile) : projectDir).d.strictness;
 let rootMemo = null;
 const root = () => (rootMemo ??= artifactRoot(cwd));
 const mtime = (p) => { try { return statSync(p).mtimeMs; } catch { return 0; } };

@@ -17,7 +17,8 @@
 // Dials (wwjd.mjs dials): budget shifts every budget surface by (dial − 3); expose caps never shift.
 // Inclusion needs proof on budget surfaces: an item stays only when it is needed here and restates or explains nothing.
 import { readFileSync, existsSync } from "node:fs";
-import { dirname, join, basename } from "node:path";
+import { join, basename } from "node:path";
+import { dialsFor } from "./paths.mjs";
 
 const args = process.argv.slice(2);
 const file = args.find(a => !a.startsWith("--"));
@@ -75,15 +76,8 @@ Rules:
 - Apart only when rare (last "Advanced" section, one level), destructive (danger zone, last, visible) or dependent (follows its parent).
 - Never a tooltip, expander, "Show more" or hover peek around an item the job needs. The person's own editable data is content, not clutter.`);
 } else {
-  // Dials: plugin options (WWJD_DIALS) < the nearest .wwjd.json "dials"
-  const dial = {};
-  for (const [k, v] of (process.env.WWJD_DIALS || "").split(/\s+/).filter(Boolean).map(x => x.split("="))) dial[k] = v;
-  for (let d = process.cwd(); ; d = dirname(d)) {
-    const f = join(d, ".wwjd.json");
-    if (existsSync(f)) { try { Object.assign(dial, JSON.parse(readFileSync(f, "utf8")).dials || {}); } catch {} break; }
-    if (dirname(d) === d) break;
-  }
-  const shift = Math.min(2, Math.max(-2, Math.round(Number(dial.budget ?? 3) - 3) || 0));
+  // Dials: paths.mjs dialsFor (plugin options < the nearest .wwjd.json "dials")
+  const shift = dialsFor(process.cwd()).d.budget - 3;
   const budget = Number(opt("--budget")) || spec.budget || Math.max(1, (BUDGET[surfaceType] || 4) + shift);
   if (!opt("--budget") && !spec.budget && !BUDGET[surfaceType]) console.error(`grade: no budget for surface "${surfaceType ?? ""}" (keys: ${[...Object.keys(BUDGET), ...Object.keys(EXPOSE)].join(" ")}); using 4. Pass --budget N.`);
   console.log(`Budget: ${budget} shown facts (${surfaceType || "surface"}${shift ? `, budget dial ${shift > 0 ? "+" : ""}${shift}` : ""}); * items are kept by rule and never count; ! items would be missed.`);
