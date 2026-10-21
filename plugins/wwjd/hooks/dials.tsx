@@ -7,6 +7,7 @@ import type { EngineInterface, PluginOptions, RenderInput } from 'claude-code'
 
 import { DIALS, isDefault, stopOf, valueOf } from '../skills/ux/scripts/dials-spec.mjs'
 import type { Scope } from '../types'
+import { tracked } from './press'
 
 type Dial = (typeof DIALS)[number]
 export const PANE = 'wwjd'
@@ -146,7 +147,7 @@ export function card(ui: ReturnType<EngineInterface['ui']['resolve']>, key: stri
 
 /** The dial cards, the sidebar's Settings view. */
 export async function settingsView($: EngineInterface, e: RenderInput, options: PluginOptions) {
-  const ui = $.ui.resolve(e)
+  const ui = tracked($.ui.resolve(e))
   const { Box, Text, Button } = ui
   const where = await read($, scope)
   const proj = (await read($, project)) as Record<string, string | number>

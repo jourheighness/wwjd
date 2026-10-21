@@ -10,6 +10,7 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import type { Entry, NoteScope, Scope } from '../types'
 import { PANE, card, exportDials, loadProjectDials, setProjectRoot, settingsView } from './dials'
+import { drawn, onFocus, onPress, tracked } from './press'
 
 const view = atom({ plugin: 'wwjd', key: 'view' } as const, 'log')
 const editing = atom({ plugin: 'wwjd', key: 'editing' } as const, '')
@@ -318,6 +319,10 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
+  // One-click buttons on the desktop (press.ts).
+  on('ui.focus', { component: 'Pane', requestId: PANE }, onFocus)
+  on('ui.press', { plugin: 'wwjd', component: 'Pane', requestId: PANE }, onPress)
+
   on('ui.close', { id: PANE }, async ($, e, next) => {
     if (e.origin.kind === 'person') await $.store.set('isPinned', false)
     return next(e)
@@ -390,8 +395,9 @@ export const register: Register = (on, options) => {
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const ui = $.ui.resolve(e)
+    const ui = tracked($.ui.resolve(e))
     const { Box, Text, Button } = ui
+    drawn(e.surface, e.props.isFocused)
     const shown = await read($, view)
     const header = (title: string, action: JSX.Element) => (
       <Box flexDirection="row" justifyContent="space-between" alignItems="center">
@@ -412,9 +418,8 @@ export const register: Register = (on, options) => {
     const ver = await read($, logVersion)
     const Link = ui.Link
     const isHandledShown = await read($, showHandled)
-    // What the pane reads from disk, cached: a click first moves the focus ring, which redraws the pane, and a slow
-    // redraw replaces the button under the click (the press then needs a second click). A log write bumps the version;
-    // any file edit clears it (the board link and directions are files Claude writes).
+    // What the pane reads from disk, cached, so the redraws a click causes (press.ts) stay quick. A log write bumps the
+    // version; any file edit clears it (the board link and directions are files Claude writes).
     if (!snap || snap.ver !== ver) {
       const root = await shownRoot($).catch(() => '')
       snap = { ver, root,
@@ -556,7 +561,7 @@ export const register: Register = (on, options) => {
           {board ? (inApp
             ? <Button key="board" plain label="Open board" onPress={() => { void openProof($, { kind: 'artifact', target: board }, 'the board') }} />
             : <Text><Link href={board} label="Open board" /></Text>) : null}
-          <Button key="to-settings" plain dimColor label="Settings" onPress={() => { setProjectRoot(root); void loadProjectDials($).then(() => update($, view, () => 'settings')) }} />
+          <Button key="to-settings" plain dimColor label="Settings" onPress={() => { setProjectRoot(root); void update($, view, () => 'settings').then(() => loadProjectDials($)) }} />
         </Box>
         {dirs.length ? (
           <Box key="directions" flexDirection="column" gap="xs">
