@@ -150,7 +150,11 @@ async function boardUrl($: EngineInterface): Promise<string | null> {
 // A proof as a link: a live dev-server URL is a way to try the state, an image a screenshot, anything else a file or
 // a page. Paths resolve from the project root; a file's :line stays in the label.
 const LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|[^/]+\.localhost|[^/]+\.test)(:\d+)?(\/|$)/
-export function proofLink(p: string, root: string): { href: string; label: string } {
+export function proofLink(proof: string, root: string): { href: string; label: string } {
+  // "Name | target" names it: "Variant A · Deck | https://claude.ai/artifact/…" reads "Variant A · Deck".
+  const named = /^(.+?)\s+\|\s+(\S+)$/.exec(proof)
+  if (named) return { ...proofLink(named[2] ?? '', root), label: named[1] ?? '' }
+  const p = proof
   if (/^https?:\/\//.test(p)) {
     if (LOCAL.test(p)) return { href: p, label: `Try it: ${p.replace(/^https?:\/\/[^/]+/, '') || '/'}` }
     if (/claude\.ai\/(code\/)?artifact\//.test(p)) return { href: p, label: 'Open Artifact' }
@@ -166,7 +170,8 @@ export function proofLink(p: string, root: string): { href: string; label: strin
 // Opens a proof inside the desktop app: an Artifact in its pane, a web page in the built-in browser, a file in the
 // Files pane (at its line). Each goes through the tool the model would call, permission check included; when a tool
 // is missing or refuses, the system opener stands in, so a press never does nothing.
-async function openProof($: EngineInterface, p: string, root: string) {
+async function openProof($: EngineInterface, proof: string, root: string) {
+  const p = /^(.+?)\s+\|\s+(\S+)$/.exec(proof)?.[2] ?? proof
   const { href } = proofLink(p, root)
   const tries: Record<string, unknown>[] = /claude\.ai\/(code\/)?artifact\//.test(href)
     ? [{ tool: 'Artifact', action: 'open', url: href }]
@@ -230,7 +235,7 @@ export const register: Register = (on, options) => {
           why: { type: 'string', description: 'One short reason in plain words, no jargon ("the card was too crowded to scan")' },
           path: { type: 'string', description: 'A file this is about, when the project being edited is not the session\'s folder; the entry goes to that project\'s log' },
           task: { type: 'string', description: 'The task this belongs to, the same words for every entry of it ("Signup flow", "Sidebar log")' },
-          proof: { type: 'array', items: { type: 'string' }, description: 'What it is about: a screenshot or file path (file:line), the dev-server URL that shows the state, an artifact link' },
+          proof: { type: 'array', items: { type: 'string' }, description: 'What shows it: a screenshot or file path (file:line), the dev-server URL, an artifact link. Name it with "Name | target" ("Variant A · Deck | https://claude.ai/artifact/…"), else the link is labelled by its kind' },
         },
       },
     })

@@ -145,7 +145,7 @@ test('cards group by task with a surface label inside; proof opens in the app on
   disk(on as never, files)
   on('ui.open', () => ({ value: { isPlaced: true } }) as never)
   await $.tool.call({ tool: 'mcp__wwjd__log', task: 'Signup flow', surface: 'Email step', kind: 'assumption', text: 'Work email only',
-    proof: ['http://localhost:5173/signup?step=email', '.wwjd/shots/signup-390-light.png', 'src/Signup.tsx:42'] } as never)
+    proof: ['http://localhost:5173/signup?step=email', '.wwjd/shots/signup-390-light.png', 'src/Signup.tsx:42', 'Variant B · Nearby | https://claude.ai/artifact/xyz'] } as never)
   await $.tool.call({ tool: 'mcp__wwjd__log', task: 'Signup flow', surface: 'Password step', kind: 'choice', text: 'Rules shown before typing' } as never)
   await $.tool.call({ tool: 'mcp__wwjd__log', surface: 'Board', kind: 'choice', text: 'Columns by status' } as never)
   await $.command.run({ command: 'wwjd' } as never)
@@ -161,6 +161,9 @@ test('cards group by task with a surface label inside; proof opens in the app on
   const [firstId] = ids(files)
   await ui.press({ key: `proof:${firstId}:2` })
   expect(opened.at(-1)).toEqual(['file', '/p/src/Signup.tsx', 42])
+  expect(await ui.find({ type: 'Button', label: 'Variant B · Nearby' })).toBeDefined()
+  await ui.press({ key: `proof:${firstId}:3` })
+  expect(opened.at(-1)).toEqual(['Artifact', 'https://claude.ai/artifact/xyz'])
   const term = await $.ui.mount({ plugin: 'wwjd', surface: 'terminal', ...PANE, props })
   expect(await term.find({ type: 'Link', label: 'Screenshot: signup-390-light', href: 'file:///p/.wwjd/shots/signup-390-light.png' })).toBeDefined()
   expect(await term.find({ type: 'Link', label: 'Open board', href: 'https://claude.ai/artifact/abc' })).toBeDefined()
