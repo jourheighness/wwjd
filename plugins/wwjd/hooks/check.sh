@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# PostToolUse: lint the UI file just edited with wwjd.mjs check --new.
+# PostToolUse: one node process per UI edit: note it for the Strictness gate, then lint it with wwjd.mjs check --new.
 # Reports errors plus warnings that are new against .wwjd-baseline.json (errors only without one),
 # at most 5 lines, as context for the agent. Silent for clean files, non-UI files and missing node.
-# Off for one project: WWJD_HOOK_CHECK=0.
-[ "${WWJD_HOOK_CHECK:-1}" = "0" ] && exit 0
+# Lint off for one project: WWJD_HOOK_CHECK=0 (the gate's note still happens).
 input=$(cat)
 # Non-UI paths leave before node starts: most edits are not UI files.
 re='"file_path"[[:space:]]*:[[:space:]]*"([^"]*)"'

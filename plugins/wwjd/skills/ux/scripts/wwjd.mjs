@@ -3,7 +3,7 @@
 //
 // Usage: node wwjd.mjs <command> [paths...] [options]
 //   status [paths]             stage (scratch | kit | messy), baseline files, kit, Storybook, golden and legacy files,
-//                              dials, and whether over-budget surfaces get a grade.mjs sheet (Strictness 3+);
+//                              dials, and whether over-budget surfaces get a grade.mjs sheet (Strictness 4+);
 //                              PRODUCT.md / DESIGN.md: the nearest up from the paths (or cwd), nested ones listed
 //   dials                      the effective dials, one line: plugin options (/plugin configure wwjd@wwjd), then
 //                              "dials" in .wwjd.json override per project; meanings in references/dials.md
@@ -12,8 +12,9 @@
 //     --new                    only errors, plus warnings not in .wwjd-baseline.json (errors only when there is none)
 //     --baseline               write .wwjd-baseline.json from a full scan (or the given paths); counts only go down
 //     --max <n>                print at most n findings      --json   machine output
-//     --hook                   PostToolUse mode: reads the hook JSON on stdin, checks the edited file with --new,
-//                              prints ≤5 lines as additionalContext, nothing when clean
+//     --hook                   PostToolUse mode: reads the hook JSON on stdin, notes the edit for the Strictness gate
+//                              (ledger.mjs), checks the edited file with --new, prints ≤5 lines as additionalContext,
+//                              nothing when clean. WWJD_HOOK_CHECK=0 keeps the note and skips the lint
 //   audit [paths]              debt map: findings by area, rebuild candidates, golden picks, RATCHET.md [design] lines
 // Config: --config <file>, else the nearest .wwjd.json up from the first path (or cwd), else ~/.config/wwjd/wwjd.json
 //   (or ui-check.json)
@@ -28,6 +29,7 @@ import { readFileSync, writeFileSync, statSync, readdirSync, existsSync } from "
 import { join, extname, resolve, relative, dirname, basename, sep } from "node:path";
 import { homedir } from "node:os";
 import { DIALS, stopOf, valueOf, isDefault, isGated } from "./dials-spec.mjs";
+import { noteEdit } from "./ledger.mjs";
 import { STORY, TEST, UI_EXT, nearestConfig } from "./paths.mjs";
 
 const [major, minor] = process.versions.node.split(".").map(Number);
@@ -62,6 +64,8 @@ let hookCwd = null;
 if (opt.hook) {
   let input = {};
   try { input = JSON.parse(readFileSync(0, "utf8") || "{}"); } catch { process.exit(0); }
+  try { noteEdit(input); } catch { /* the lint still runs */ } // one process per edit: the gate's note and the lint
+  if (process.env.WWJD_HOOK_CHECK === "0") process.exit(0);
   const fp = input.tool_input?.file_path || input.tool_input?.notebook_path;
   if (!fp) process.exit(0);
   hookCwd = input.cwd || process.cwd();

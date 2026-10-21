@@ -49,8 +49,8 @@ function project(strictness) {
 
 const write = (p) => ({ tool_name: "Write", tool_input: { file_path: p, content: "<div></div>" } });
 
-test("pre: Strictness 3 denies a new UI file until a grade sheet exists this session", () => {
-  const p = project(3);
+test("pre: Strictness 4 denies a new UI file until a grade sheet exists this session", () => {
+  const p = project(4);
   const r = p.run("pre", write(join(p.root, "card.html")));
   assert.equal(r.hookSpecificOutput.permissionDecision, "deny");
   assert.match(r.hookSpecificOutput.permissionDecisionReason, /grade/);
@@ -60,8 +60,10 @@ test("pre: Strictness 3 denies a new UI file until a grade sheet exists this ses
   assert.equal(p.run("pre", write(join(p.root, "card.html"))), null);
 });
 
-test("pre: silent below 3, for existing files, non-UI files and Edit", () => {
+test("pre: silent below 4 (graded in the head), for existing files, non-UI files and Edit", () => {
   assert.equal(project(2).run("pre", write("/x/card.html")), null);
+  const q = project(3);
+  assert.equal(q.run("pre", write(join(q.root, "card.html"))), null);
   const p = project(5);
   p.file("old.html");
   assert.equal(p.run("pre", write(join(p.root, "old.html"))), null);
@@ -150,26 +152,17 @@ test("stop: asks once per run of edits; with no new edit it stays silent, in thi
   assert.equal(p.run("stop", { stop_hook_active: false }).decision, "block");
 });
 
-test("post notes a wwjd-critic run, which satisfies Strictness 5", () => {
-  const p = project(5);
-  p.edit("card.html");
-  p.file(".wwjd/shots/UNAVAILABLE", "no playwright", 5);
-  assert.match(p.run("stop", { stop_hook_active: false }).reason, /critic/);
-  p.run("post", { tool_name: "Agent", tool_input: { subagent_type: "wwjd:wwjd-critic", prompt: "review" } });
-  assert.equal(p.run("stop", { stop_hook_active: false }), null);
-});
-
 test("status reports the dial, the sheet and each check", () => {
-  const p = project(3);
+  const p = project(4);
   let s = p.run("status", {});
-  assert.equal(s.strictness, 3);
+  assert.equal(s.strictness, 4);
   assert.deepEqual(s.sheet, { needed: true, file: null, due: false });
   assert.equal(s.hasEdits, false);
   p.file(".wwjd/grade/task-card.md", "within budget");
   p.edit("card.html");
   s = p.run("status", {});
   assert.equal(s.sheet.file, "task-card.md");
-  assert.deepEqual(s.checks.map((c) => [c.key, c.done]), [["shots", false], ["fit", false], ["log", false]]);
+  assert.deepEqual(s.checks.map((c) => [c.key, c.done]), [["shots", false], ["fit", false], ["dark", false], ["runtime", false], ["log", false]]);
   p.file(".wwjd/shots/card-390-light.png", "png", 5);
   p.file(".wwjd/shots/card-1440-light.png", "png", 5);
   assert.equal(p.run("status", {}).checks[0].done, true);
@@ -192,12 +185,12 @@ test("ledger: parallel hooks merge their fields instead of overwriting each othe
   p.edit("card.html");
   const calls = [];
   for (let i = 0; i < 6; i++) {
-    calls.push(p.runAsync("post", { tool_name: "Agent", tool_input: { subagent_type: "wwjd:wwjd-critic" } }));
+    calls.push(p.runAsync("pre", write(join(p.root, `new${i}.html`))));
     calls.push(p.runAsync("post", { tool_name: "Edit", tool_input: { file_path: join(p.root, `c${i}.css`) } }));
   }
   await Promise.all(calls);
   const l = p.ledger();
-  assert.ok(l.critic > 0, "the critic note survives the edits");
+  assert.ok(l.denied > 0, "the gate's refusal note survives the edits");
   assert.match(l.lastFile, /c\d\.css$/);
   assert.equal(readdirSync(join(p.state, "wwjd-gate")).filter((f) => /\.(tmp|lock)$/.test(f)).length, 0);
 });
@@ -239,7 +232,7 @@ test("shot commands point at an edited page, else the preview URL, never a sourc
 });
 
 test("status: the sheet is due only after the pre gate refused a new file", () => {
-  const p = project(3);
+  const p = project(4);
   p.file("old.html");
   p.edit("old.html");
   assert.equal(p.run("status", {}).sheet.due, false);
@@ -341,7 +334,7 @@ test("pre: a session in one repo writing another project reads that project's di
   const p = project(1);
   const app = mkdtempSync(join(tmpdir(), "wwjd-other-"));
   execFileSync("git", ["init", "-q", app]);
-  writeFileSync(join(app, ".wwjd.json"), JSON.stringify({ dials: { strictness: 3 } }));
+  writeFileSync(join(app, ".wwjd.json"), JSON.stringify({ dials: { strictness: 4 } }));
   const r = p.run("pre", write(join(app, "Card.tsx")));
   assert.equal(r.hookSpecificOutput.permissionDecision, "deny");
   assert.match(r.hookSpecificOutput.permissionDecisionReason, new RegExp(`grade/<surface>\\.json in ${app.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));

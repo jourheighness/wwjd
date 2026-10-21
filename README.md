@@ -25,8 +25,9 @@ plugins/wwjd/
   skills/look/            the look
   skills/motion/          motion
   agents/wwjd-critic.md   cold review, on request only
-  hooks/                  route.sh (points UI prompts at wwjd:ux, plus look or motion) · check.sh (lints each edited UI file) ·
-                          gate.mjs via hooks.json (Strictness: grade sheet before a new UI file, checks before the turn ends) ·
+  hooks/                  route.mjs (points UI prompts at wwjd:ux, plus look or motion) · check.sh (one process per UI edit: notes it
+                          for the gate, lints it) · gate.mjs via hooks.json (a new project asks how to begin; from Strictness 4 a grade
+                          sheet before a new UI file; checks before the turn ends) ·
                           main.tsx (the /wwjd sidebar: decisions, corrections, Settings; a status line and a band naming the checks still due)
   evals/                  trigger, quality and dial evals for `claude plugin eval` (`--tag dials`: one card per dial end)
 docs/research/            archived research (faux-pas catalogue, layouts, look); not shipped in the skill
@@ -68,7 +69,7 @@ Six dials tune how wwjd designs, never the floor: **Look** (plain ↔ expressive
 - **`.wwjd-baseline.json`** (committed): `wwjd.mjs check --baseline` writes it. The hook and `check --new` then report only errors and new warnings, and re-running `--baseline` only lowers counts. Delete it to accept new debt on purpose.
 - **`.wwjd/`** (gitignored): screenshots, references, look.json.
 - **One-off exceptions:** a trailing `wwjd-ignore: <reason>` comment on the line.
-- **Hook off for a project:** `WWJD_HOOK_CHECK=0`.
+- **Lint hook off for a project:** `WWJD_HOOK_CHECK=0` (the Strictness gate still sees the edit).
 
 ## Decisions and corrections
 `/wwjd` opens the sidebar (it then reopens every session until you close it, and opens by itself on the first logged decision): every design assumption and choice the agent made without being told, grouped by component, screen or layout (the agent logs them with the `mcp__wwjd__log` tool into `.wwjd/decisions.jsonl` of the project being edited: the file the call names, else the last edited file's project, else the session's folder). **Correct** one with a note for **This project** (its decision log: `docs/decisions/design.md`, else a Decisions section in `DESIGN.md`) or **You, every project** (your taste file); the note also goes straight to the agent. The dials sit behind **Settings**.

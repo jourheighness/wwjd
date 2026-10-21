@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -96,4 +96,17 @@ test("gradient: a flat fill through border-image (one colour, both stops) is not
     + ".hero { background: linear-gradient(90deg, var(--a) 0%, var(--b) 100%); }\n";
   const r = check(repo({ "band.css": css }), ["band.css"]);
   assert.deepEqual(r.findings.filter((x) => x.rule === "gradient").map((x) => x.line), [3]);
+});
+
+test("the edit hook is one process: it notes the edit for the gate and lints, and WWJD_HOOK_CHECK=0 keeps only the note", () => {
+  const root = repo({ "card.html": DEAD });
+  const state = mkdtempSync(join(tmpdir(), "wwjd-state-"));
+  const input = { session_id: "s1", cwd: root, tool_name: "Edit", tool_input: { file_path: join(root, "card.html") } };
+  const run = (extra = {}) => spawnSync("bash", [CHECK], { input: JSON.stringify(input), env: { ...env, TMPDIR: state, ...extra }, encoding: "utf8" });
+  const ledger = () => JSON.parse(readFileSync(join(state, "wwjd-gate", "s1.json"), "utf8"));
+  assert.match(run().stdout, /wwjd check/);
+  assert.match(ledger().lastFile, /card\.html$/);
+  const first = ledger().lastEdit;
+  assert.equal(run({ WWJD_HOOK_CHECK: "0" }).stdout.trim(), "");
+  assert.ok(ledger().lastEdit >= first);
 });

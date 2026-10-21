@@ -3,9 +3,10 @@
 //   pre    PreToolUse (Write): a new project's first UI file waits for the start question (commands/start.md §0): the
 //          person picks variants first or straight to build, recorded as "start" in the project's .wwjd.json. Any
 //          Strictness: wwjd owns the design side, so a new product never starts as code by default.
-//          From Strictness 3, a new UI file also waits for a grade sheet (.wwjd/grade/*.md) written this session.
-//          A surface within budget still gets one line there ("within budget: title + 3").
-//   post   PostToolUse (Write, Edit, MultiEdit, Agent): notes the session's last UI edit and its last wwjd-critic run.
+//          From Strictness 4, a new UI file also waits for a grade sheet (.wwjd/grade/*.md) written this session;
+//          below that the agent grades in its head. A surface within budget still gets one line ("within budget: title + 3").
+//   post   notes the session's last UI edit (ledger.mjs). The edit hook does this in its own process (wwjd.mjs check
+//          --hook); this mode is the same call for scripts and tests.
 //   stop   Stop: the checks the dial asks for, all newer than the last UI edit, before the turn may end:
 //          2 a screenshot · 3 two widths · 4 a dark shot and a runtime report · 5 a wwjd-critic run.
 //          .wwjd/shots/UNAVAILABLE (render.mjs writes it when it can't render) stands in for shots and runtime.
@@ -14,64 +15,29 @@
 //   status the same state as JSON, for the wwjd status band (hooks/status.tsx): stdin { session_id, cwd }.
 // Artifacts (.wwjd/) live at the nearest ancestor with .wwjd.json or .wwjd/, else the git root (paths.mjs): of the file
 // being written or last edited when a session in one folder works on another project, else of cwd.
-// Tests, fixtures and stories are not UI work here. The ledger (per session, in $TMPDIR/wwjd-gate) is updated under a
-// lock, re-read and merged field by field, then renamed into place, so parallel hooks never undo each other.
+// Tests, fixtures and stories are not UI work here. The ledger: ledger.mjs. A wwjd-critic run is read from the transcript.
 // Strictness: the nearest .wwjd.json "dials" > the plugin option > WWJD_DIALS > 3. No deps, Node 20.10+.
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { STORY, TEST, UI_EXT, artifactRoot, gitRoot, hasUI, nearestConfig, projectOf } from "./paths.mjs";
+import { isGated } from "./dials-spec.mjs";
+import { isUI, noteEdit, openLedger } from "./ledger.mjs";
+import { artifactRoot, gitRoot, hasUI, nearestConfig, projectOf } from "./paths.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const RENDER = join(HERE, "render.mjs");
-const SKIP_DIR = /(^|\/)(node_modules|dist|build|out|\.next|\.git|\.wwjd)(\/|$)/;
 
 const mode = process.argv[2];
 let input = {};
 try { input = JSON.parse(readFileSync(0, "utf8") || "{}"); } catch { process.exit(0); }
 const cwd = input.cwd || process.cwd();
-const isUI = (p) => typeof p === "string" && UI_EXT.has(extname(p)) && !SKIP_DIR.test(p) && !TEST.test(p) && !STORY.test(p);
 
 // Cheap exits first: no ledger, config or git for calls the gate does not care about.
 const fp = input.tool_input?.file_path;
-const isCritic = ["Agent", "Task"].includes(input.tool_name) && /wwjd-critic/.test(String(input.tool_input?.subagent_type || ""));
 if (mode === "pre" && (input.tool_name !== "Write" || !isUI(fp) || existsSync(resolve(cwd, fp)))) process.exit(0);
-if (mode === "post" && !isCritic && (!["Write", "Edit", "MultiEdit"].includes(input.tool_name) || !isUI(fp))) process.exit(0);
+if (mode === "post") { noteEdit(input); process.exit(0); }
 
-// ── ledger ──
-const STATE = join(process.env.TMPDIR || tmpdir(), "wwjd-gate");
-const ledgerFile = join(STATE, `${String(input.session_id || "none").replace(/[^\w.-]/g, "_")}.json`);
-const readLedger = () => { try { return JSON.parse(readFileSync(ledgerFile, "utf8")); } catch { return {}; } };
-const nap = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
-function locked(fn) {
-  mkdirSync(STATE, { recursive: true });
-  const lock = ledgerFile + ".lock", until = Date.now() + 2000;
-  let fd = null;
-  while (fd === null) {
-    try { fd = openSync(lock, "wx"); } catch (e) {
-      if (e.code !== "EEXIST") break; // can't lock here: the rename below still keeps the file whole
-      try { if (Date.now() - statSync(lock).mtimeMs > 5000) { unlinkSync(lock); continue; } } catch { continue; } // a crashed holder
-      if (Date.now() > until) break;
-      nap(5);
-    }
-  }
-  try { return fn(); } finally { if (fd !== null) { closeSync(fd); try { unlinkSync(lock); } catch { /* gone */ } } }
-}
-const sessionStart = () => { try { const s = statSync(input.transcript_path); return s.birthtimeMs || s.ctimeMs; } catch { return 0; } };
-/** Re-reads the ledger under the lock, lets `change` set only its own fields, writes a temp file and renames it. */
-function update(change) {
-  return locked(() => {
-    const l = readLedger();
-    if (!l.start) l.start = sessionStart() || Date.now();
-    change(l);
-    const tmp = `${ledgerFile}.${process.pid}.tmp`;
-    writeFileSync(tmp, JSON.stringify(l));
-    renameSync(tmp, ledgerFile);
-    return l;
-  });
-}
-const ensured = () => { const l = readLedger(); return l.start ? l : update(() => {}); };
+const { read: readLedger, update, ensured } = openLedger(input);
 const say = (o) => { console.log(JSON.stringify(o)); process.exit(0); };
 
 // ── project ──
@@ -101,9 +67,8 @@ function sheet(ledger, dirs = [root()]) {
   return fresh.sort((a, b) => mtime(b) - mtime(a))[0]?.split("/").pop() ?? null;
 }
 
-// Whether a wwjd-critic agent ran after `since`: the post hook's note, else the transcript.
-function criticSince(ledger, since) {
-  if ((ledger.critic || 0) > since) return true;
+// Whether a wwjd-critic agent ran after `since`, from the transcript.
+function criticSince(since) {
   try {
     for (const line of readFileSync(input.transcript_path, "utf8").split("\n")) {
       if (!line.includes("wwjd-critic")) continue;
@@ -175,17 +140,17 @@ function checks(ledger, s) {
   // Asked once per run of edits: an agent that made no unasked choice says so in the handover and may stop.
   if (s >= 2) out.push({ key: "log", label: "Decisions logged", done: (ledger.logAsked || 0) >= since || loggedSince(ledger.start || 0, ledger),
     how: "the design assumptions and choices you made without being told: one mcp__wwjd__log call each (surface, kind, one-line text, why, proof: the shot path, the page URL or the Artifact link that shows it); none? say so in the handover" });
-  if (s >= 5) out.push({ key: "critic", label: "Critic", done: criticSince(ledger, since), how: "a cold review: run the wwjd:wwjd-critic agent on what you built" });
+  if (s >= 5) out.push({ key: "critic", label: "Critic", done: criticSince(since), how: "a cold review: run the wwjd:wwjd-critic agent on what you built" });
   return out;
 }
 
 if (mode === "status") {
   const s = strictness();
   const ledger = ensured();
-  const file = s >= 3 ? sheet(ledger, roots(ledger)) : null;
+  const file = isGated(s) ? sheet(ledger, roots(ledger)) : null;
   // due: the pre gate refused a new UI file this session and no sheet has been written since.
   say({ strictness: s, hasEdits: editPending(ledger), lastFile: ledger.lastFile || null,
-    sheet: { needed: s >= 3, file, due: s >= 3 && Boolean(ledger.denied) && !file }, checks: checks(ledger, s) });
+    sheet: { needed: isGated(s), file, due: isGated(s) && Boolean(ledger.denied) && !file }, checks: checks(ledger, s) });
 }
 
 if (mode === "pre") {
@@ -202,7 +167,7 @@ if (mode === "pre") {
       `once the comparison Artifact exists, "board": its link), and do what they chose before writing ${fp}.` } });
   }
   const s = strictness();
-  if (s < 3) process.exit(0);
+  if (!isGated(s)) process.exit(0);
   const ledger = ensured();
   if (sheet(ledger, [...new Set([project, root()])])) process.exit(0);
   update((l) => { l.denied = Date.now(); });
@@ -210,13 +175,6 @@ if (mode === "pre") {
     `wwjd Strictness ${s}: grade this surface before building it (references/budgets.md, Grade gate). ` +
     `Write .wwjd/grade/<surface>.json in ${project}, run node ${join(HERE, "grade.mjs")} .wwjd/grade/<surface>.json there and answer its sheet in .wwjd/grade/<surface>.md. ` +
     `Within budget: one line in that .md ("within budget: title + 3"). Then write ${fp} again.` } });
-}
-
-if (mode === "post") {
-  const now = Date.now();
-  if (isCritic) update((l) => { l.critic = now; });
-  else update((l) => { l.lastEdit = now; l.lastFile = resolve(cwd, fp); });
-  process.exit(0);
 }
 
 if (mode === "stop") {

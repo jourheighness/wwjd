@@ -72,7 +72,7 @@ Budget surfaces only. On an **expose** surface nothing is cut for count: drop on
 8. **Keep the sheets:** the answered `.wwjd/grade/*.md` sheets are the record of what was cut. Something cut again and again (subtitles, "Learn more", helper text under every field) becomes a ban in `bans.md` or DESIGN.md, so it stops being proposed.
 
 ## Grade gate
-Set by the Strictness dial: 3 and up writes a sheet (gate), 1–2 grade in your head (light); `wwjd.mjs status` prints which. With the gate, a hook refuses a new UI file until a `.wwjd/grade/*.md` from this session exists. A surface within budget, or an expose surface: the sheet is one line naming the surface, its job and its kind ("Profile settings: configure, expose").
+Set by the Strictness dial: 4 and up writes a sheet (gate), 1–3 grade in your head (light); `wwjd.mjs status` prints which. With the gate, a hook refuses a new UI file until a `.wwjd/grade/*.md` from this session exists. A surface within budget, or an expose surface: the sheet is one line naming the surface, its job and its kind ("Profile settings: configure, expose").
 - **When:** a surface has more candidate facts than its budget: once, before building or simplifying it. Never per edit. Expose surfaces skip the count; grade only for restating, explaining and system facts. Name the job first; a settings page is never graded as a drawer.
 - **gate:** write the spec, run `grade.mjs` and answer its sheet in `.wwjd/grade/<surface>.md` before the surface's markup. The sheet is the gate: no sheet, no build.
 - **light:** the same questions in your head; the handover still says what moved and where.

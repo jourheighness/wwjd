@@ -27,7 +27,7 @@ The owner's words, used literally. A drawer is not a rail.
 | Budget | A surface's min–max of facts and actions (`budgets.md`) |
 | Job | What the person does on a surface: glance, decide, configure, review, compare, bulk edit, audit, inspect, flow, persuade. It picks the surface's kind |
 | Exposure surface | A surface whose job is configure, review, compare, bulk edit, audit or inspect: shows everything the job needs, organised, never hidden (`budgets.md` Expose by job) |
-| Grade gate | A written `grade.mjs` sheet per over-budget surface before it is built, one line for the rest (Strictness 3 and up, `budgets.md`) |
+| Grade gate | A written `grade.mjs` sheet per over-budget surface before it is built, one line for the rest (Strictness 4 and up, `budgets.md`) |
 | Stretched target | A row's or card's title link whose `::after` covers the whole container; one target, one behaviour |
 | Hover toolbar | A row's shortcuts, shown on hover, keyboard focus inside or an open menu; each also in ⋯ or the detail view |
 | Christmas tree | Colour on everything, so nothing stands out |

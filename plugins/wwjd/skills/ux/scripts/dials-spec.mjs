@@ -41,8 +41,8 @@ export const DIALS = [
   { key: "strictness", name: "Strictness", ends: ["fast", "strict"], default: 3, stops: [
     ["Fast", "Over-budget surfaces graded in your head; after: lint only."],
     ["Light", "Over-budget surfaces graded in your head; after: lint and one desktop screenshot."],
-    ["Standard", "A written grade sheet per over-budget surface before it is built; after: lint, screenshots at desktop and phone width and a clean fit check."],
-    ["Careful", "Grade sheets; after: adds dark mode, the key states and render.mjs runtime checks."],
+    ["Standard", "Over-budget surfaces graded in your head; after: lint, screenshots at desktop and phone width and a clean fit check."],
+    ["Careful", "A written grade sheet per over-budget surface before it is built; after: adds dark mode, the key states and render.mjs runtime checks."],
     ["Strict", "Grade sheets; after: adds the critic agent, and explore's variants before building."],
   ] },
 ];
@@ -52,8 +52,8 @@ export function stopOf(dial, value) {
   const n = Math.round(Number(value));
   return (n >= 1 && n <= 5 ? n : dial.default) - 1;
 }
-/** Whether over-budget surfaces get a written grade sheet before they are built (Strictness 3 and up). */
-export const isGated = (strictness) => Number(strictness) >= 3;
+/** Whether over-budget surfaces get a written grade sheet before they are built (Strictness 4 and up). */
+export const isGated = (strictness) => Number(strictness) >= 4;
 /** The value stored for a stop index. */
 export const valueOf = (_dial, stop) => stop + 1;
 export const isDefault = (dial, stop) => stop === stopOf(dial, dial.default);
