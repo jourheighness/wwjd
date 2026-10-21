@@ -119,23 +119,25 @@ body { margin: 0; background: var(--surface-1); color: var(--text); font: var(--
 [hidden] { display: none !important; } /* wwjd-ignore: a display rule must never resurrect a hidden state */
 h1, h2, h3, h4, p { margin: 0; }
 h1, h2, h3 { font-weight: 600; text-wrap: balance; }
-.t-display { font-size: var(--text-display); line-height: var(--lh-display); font-weight: 600; letter-spacing: -.02em; }
-.t-title { font-size: var(--text-title); line-height: var(--lh-title); font-weight: 600; letter-spacing: -.012em; }
+/* Display face (wwjd:look's --font-display, --weight-heading, --tracking-display) on display and title tiers; unset, they inherit */
+h1, h2, .t-display, .t-title { font-family: var(--font-display, inherit); font-weight: var(--weight-heading, 600); }
+.t-display { font-size: var(--text-display); line-height: var(--lh-display); letter-spacing: var(--tracking-display, -.02em); }
+.t-title { font-size: var(--text-title); line-height: var(--lh-title); letter-spacing: calc(var(--tracking-display, -.024em) / 2); }
 .t-heading { font-size: var(--text-heading); line-height: var(--lh-heading); font-weight: 600; }
 .t-caption { font-size: var(--text-caption); line-height: var(--lh-caption); }
-.t-2 { color: var(--text-2); } .t-3 { color: var(--text-3); }
+.t-2 { color: var(--text-2); } .t-3 { color: var(--text-3); } .t-accent-2 { color: var(--accent-2, var(--accent-text)); } /* one secondary category, on surfaces */
 .num, .t-display { font-variant-numeric: tabular-nums; }
 .prose { max-width: var(--measure); line-height: 1.5; text-wrap: pretty; }
 code, .mono { font-family: var(--font-mono); font-size: .92em; }
 a { color: var(--accent-text); text-underline-offset: 2px; }
 .icon { width: var(--icon); height: var(--icon); flex-shrink: 0; stroke-width: 1.5; }
-:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+:focus-visible { outline: var(--focus-width, 2px) solid var(--focus); outline-offset: 2px; }
 ::selection { background: color-mix(in oklab, var(--accent) 28%, transparent); }
 
 /* Button (plain class; Base UI Button or <button>). Secondary is the default; one primary per region */
 .btn { --bg: var(--fill); --bg-h: var(--fill-strong); --fg: var(--text);
   display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1-5); flex-shrink: 0;
-  height: var(--control-h); padding: 0 var(--space-3); border: 1px solid transparent; border-radius: var(--r-2);
+  height: var(--control-h); padding: 0 var(--space-3); border: 1px solid transparent; border-radius: var(--r-button, var(--r-2));
   background: var(--bg); color: var(--fg); font: 500 var(--text-body)/1 var(--font-sans); white-space: nowrap;
   cursor: pointer; user-select: none; touch-action: manipulation; text-decoration: none;
   transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out); }
@@ -161,7 +163,7 @@ a { color: var(--accent-text); text-underline-offset: 2px; }
   background: linear-gradient(45deg, transparent 50%, var(--text-2) 50%) right 17px center / 5px 5px no-repeat, /* wwjd-ignore: chevron drawn with gradients */
               linear-gradient(135deg, var(--text-2) 50%, transparent 50%) right 12px center / 5px 5px no-repeat, var(--surface-2); } /* wwjd-ignore: chevron */
 .select option { background: var(--surface-3); color: var(--text); }
-:is(.input, .select, .textarea):focus-visible, .select[data-popup-open] { outline: 2px solid var(--focus); outline-offset: -1px; border-color: transparent; }
+:is(.input, .select, .textarea):focus-visible, .select[data-popup-open] { outline: var(--focus-width, 2px) solid var(--focus); outline-offset: -1px; border-color: transparent; }
 :is(.input, .select, .textarea):is([data-invalid], [aria-invalid="true"]) { border-color: var(--danger); outline-color: var(--danger); }
 :is(.input, .select, .textarea):is(:disabled, [data-disabled]) { background-color: var(--fill); color: var(--text-disabled); border-color: var(--border); cursor: not-allowed; }
 .field { display: grid; gap: var(--space-1-5); }
@@ -174,7 +176,8 @@ a { color: var(--accent-text); text-underline-offset: 2px; }
 .segmented { display: inline-flex; gap: var(--space-0-5); padding: var(--space-0-5); border-radius: var(--r-2); background: var(--fill); }
 .segment { height: calc(var(--control-h) - 4px); padding: 0 var(--space-3); border: 1px solid transparent; border-radius: var(--r-1);
   background: none; color: var(--text-2); font: 500 var(--text-body)/1 var(--font-sans); cursor: pointer; }
-.segment:is([data-pressed], [aria-pressed="true"]) { background: light-dark(var(--surface-3), var(--fill-strong)); color: var(--text); border-color: light-dark(var(--border), transparent); }
+/* Pressed: ink text (4.5:1) and a --text-3 edge, 3:1 on the --fill track in both themes; a fill step alone vanishes in dark */
+.segment:is([data-pressed], [aria-pressed="true"]) { background: light-dark(var(--surface-3), var(--fill-strong)); color: var(--text); border-color: var(--text-3); }
 
 /* Checkbox / Radio / Switch: Base UI Root ([data-checked]) or native input. Indicators are drawn by the root */
 .checkbox, .radio, .switch { appearance: none; position: relative; display: inline-grid; place-content: center; flex-shrink: 0;
@@ -239,7 +242,7 @@ progress.progress::-moz-progress-bar { background: var(--accent); }
 .item { display: flex; align-items: center; gap: var(--space-2); width: 100%; min-height: var(--control-h); padding: 0 var(--space-2);
   border: 0; border-radius: var(--r-1); outline: 0; background: none; color: inherit; font: inherit; text-align: start; cursor: default; user-select: none; }
 .item:is([data-highlighted], [data-popup-open]) { background: var(--hover); }
-.item:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.item:focus-visible { outline: var(--focus-width, 2px) solid var(--focus); outline-offset: calc(var(--focus-width, 2px) * -1); }
 .item > .icon { color: var(--text-2); }
 .item > :is(kbd, .meta, .item-indicator) { margin-left: auto; border: 0; background: none; color: var(--text-3); }
 .item[data-danger], .item[data-danger] > .icon { color: var(--danger); }
@@ -323,7 +326,7 @@ dialog.drawer { transform: translateX(100%); }
    kit/table-scroll.js sets data-more-start / data-more-end on .table-wrap while there is more to scroll, and --pin-w */
 .table-wrap { position: relative; }
 .table-scroll { overflow: auto; overscroll-behavior-x: contain; scroll-padding-inline-start: var(--pin-w, 0px); }
-.table-scroll:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.table-scroll:focus-visible { outline: var(--focus-width, 2px) solid var(--focus); outline-offset: calc(var(--focus-width, 2px) * -1); }
 .table :is(th, td).pin { position: sticky; inset-inline-start: 0; z-index: var(--z-sticky); background: var(--surface-2); border-inline-end: 1px solid transparent; }
 .table th.pin { z-index: calc(var(--z-sticky) + 1); }
 .table .pin::after, .table-wrap::after { content: ""; position: absolute; inset-block: 0; pointer-events: none; opacity: 0; transition: opacity var(--dur-pop) ease; }
@@ -341,13 +344,19 @@ dialog.drawer { transform: translateX(100%); }
 .group-header > .count { color: var(--text-3); font-variant-numeric: tabular-nums; }
 
 /* Card, empty state, skeleton, kbd: plain classes */
-.card { padding: var(--space-4); border: 1px solid transparent; border-radius: var(--r-3); background: var(--surface-2); }
+.card { padding: var(--space-4); border: 1px solid transparent; border-radius: var(--r-3); background: var(--surface-2); box-shadow: var(--shadow-card, none); }
 .card.is-outlined { border-color: var(--border); }
 .empty { display: grid; justify-items: start; gap: var(--space-2); max-width: 48ch; padding: var(--space-10) var(--space-4); }
 .empty > h3 { font-size: var(--text-body); }
 .empty > p { color: var(--text-2); }
 .empty > .btn { margin-top: var(--space-2); }
 .skeleton { display: block; height: var(--h, 12px); border-radius: var(--r-1); background: var(--fill); }
+/* Look regions, opt-in: a project adds the class only when its look writes the tokens (wwjd:look surface axis).
+   .chrome: a dark sidebar or bar in both themes (surface "chrome", --chrome-*); dark scheme, so kit parts inside resolve dark.
+   .material: one frosted bar or sheet (surface "translucent", Native only; --surface-material, --material-blur) */
+.chrome { color-scheme: dark; --text: var(--chrome-text); --text-2: var(--chrome-text-2); --border: var(--chrome-border); --selected: var(--chrome-selected);
+  background: var(--chrome-bg); color: var(--text); }
+.material { background: var(--surface-material, var(--surface-2)); -webkit-backdrop-filter: blur(var(--material-blur, 0px)); backdrop-filter: blur(var(--material-blur, 0px)); } /* wwjd-ignore: opt-in Native material; look.mjs rejects it elsewhere */
 kbd, .kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 var(--space-1); border: 1px solid var(--border);
   border-radius: var(--r-1); background: var(--surface-2); color: var(--text-2); font: 500 var(--text-caption)/1 var(--font-sans); }
 
@@ -447,7 +456,7 @@ kbd, .kbd { display: inline-grid; place-items: center; min-width: 20px; height: 
 .subcards > * > :last-child { align-self: end; }
 
 /* Rings never clipped. Inside scroll/clip containers draw them inset; rounded cards clip with a margin */
-.ring-inset :is(:focus-visible, [aria-selected="true"], [data-selected]) { outline-offset: -2px; }
+.ring-inset :is(:focus-visible, [aria-selected="true"], [data-selected]) { outline-offset: calc(var(--focus-width, 2px) * -1); }
 .clip-ring { overflow: clip; overflow-clip-margin: 4px; } /* never overflow: hidden: it cuts rings and diacritics */
 
 /* Workshop probe: a resizable container story (viewport addons test media queries, not containers) */

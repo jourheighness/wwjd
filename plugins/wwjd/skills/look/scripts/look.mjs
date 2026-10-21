@@ -78,13 +78,29 @@ const VALUES = { type: Object.keys(TYPE), neutral: Object.keys(TEMP).flatMap(t =
 const BASE = { type: 'grotesk', neutral: 'stone/quiet', accent: 'quiet', surface: 'tonal', shape: 'standard', density: 'regular', contrast: 'standard', elevation: 'hairline', motion: 'crisp', imagery: 'ui' };
 const LOUD = new Set(['vivid', 'dual', 'round', 'springy', 'serif-display']);
 const SHAPE = { sharp: [0, 2, 2, 4], crisp: [2, 4, 6, 8], standard: [4, 6, 8, 12], soft: [6, 8, 12, 16], round: [8, 10, 16, 24] };
-const DENS = { // control, row, [size, line-height] for caption, body, heading, title, display
-  compact: [28, 32, [[12, 16], [13, 18], [15, 20], [18, 24], [24, 30]]], regular: [32, 36, [[12, 16], [14, 20], [16, 24], [20, 28], [28, 34]]],
+const DENS = { // app profile: control, row, [size, line-height] for caption, body, heading, title, display (kit/base.css; compact moves body only)
+  compact: [28, 32, [[12, 16], [13, 20], [16, 24], [20, 28], [28, 34]]], regular: [32, 36, [[12, 16], [14, 20], [16, 24], [20, 28], [28, 34]]],
   comfortable: [36, 44, [[12, 16], [14, 20], [16, 24], [20, 28], [28, 34]]],
   spacious: [40, 52, [[14, 20], [16, 24], [20, 28], ['clamp(24px, 1.5vw + 18px, 32px)', 1.25], ['clamp(32px, 4vw + 16px, 56px)', 1.1]]] };
+// The register's data-profile (ux registers/<name>.md) owns type and heights at runtime; each mirrors its kit/base.css block
+// (control base, row base, ramp; a ratio line height is a multiple of its size). Density steps heights 4px, as base.css does.
+const PROFILE = { persuade: 'marketing', showcase: 'marketing', editorial: 'reading', reference: 'docs', operate: 'app', monitor: 'app', converse: 'app',
+  flow: 'consumer', transact: 'consumer', native: 'consumer' };
+const FLUID = { caption: 'clamp(0.875rem, 0.8494rem + 0.1136vw, 0.9375rem)', body: 'clamp(1.0625rem, 0.9858rem + 0.3409vw, 1.25rem)', heading: 'clamp(1.275rem, 1.1139rem + 0.7159vw, 1.6687rem)' };
+const PROF = {
+  consumer: [40, 48, [[13, 18], [16, 24], [20, 28], [24, 32], [32, 40]]], docs: [32, 36, [[13, 20], [16, 26], [20, 28], [24, 32], [32, 40]]],
+  reading: [40, 36, [[FLUID.caption, 1.45], [FLUID.body, 1.6], [FLUID.heading, 1.25], ['clamp(1.5313rem, 1.25rem + 1.25vw, 2.2188rem)', 1.2], ['clamp(2.25rem, 1.6364rem + 2.7273vw, 3.75rem)', 1.1]]],
+  marketing: [44, 48, [[FLUID.caption, 1.45], [FLUID.body, 1.55], [FLUID.heading, 1.25], ['clamp(1.8375rem, 1.3773rem + 2.0455vw, 2.9625rem)', 1.15], ['clamp(2.75rem, 1.8295rem + 4.0909vw, 5rem)', 1.05]]] };
+const STEP = { compact: -1, comfortable: 1 };
+// [control, row, ramp, profile] as the page renders them; app keeps the density table
+const scale = x => { const p = PROFILE[x.register] || 'app'; if (p == 'app') return [...DENS[x.density], p];
+  const [cb, rb, sc] = PROF[p], st = STEP[x.density] || 0; return [cb + st * 4, rb + st * 4 + Math.max(st, 0) * 4, sc, p]; };
+// px of a ramp size: a number, or a clamp()'s [min, max] in px (rem = 16px)
+const pxs = q => typeof q == 'number' ? [q, q] : [...String(q).matchAll(/([\d.]+)(px|rem)(?=\s*[,)])/g)].filter((m, i, a) => i == 0 || i == a.length - 1).map(m => Math.round(m[2] == 'rem' ? m[1] * 16 : +m[1]));
+const pxt = q => { const [a, b] = pxs(q); return a == b ? `${a}px` : `${a}–${b}px`; };
 const DESC = {
   accent: { quiet: 'one accent for the primary action, links, selection and focus; under ~5% of the view', mono: 'no hue: the primary action is ink; colour appears only in status', wash: 'grays carry the accent hue; selection and hover are tinted', vivid: 'a high-chroma accent that may fill navigation and hero moments', dual: 'a second hue (+60°) marks one secondary category; the accent still leads' },
-  surface: { tonal: 'ground darker than panes; layers separate by lightness steps before borders', flat: 'one surface; hairlines carry structure', raised: 'white cards on a pale ground', chrome: 'a dark sidebar/chrome over light content (--chrome-* tokens)', translucent: 'platform material (--surface-material + blur) on bars and sheets only' },
+  surface: { tonal: 'ground darker than panes; layers separate by lightness steps before borders', flat: 'one surface; hairlines carry structure', raised: 'white cards on a pale ground', chrome: 'a dark sidebar/chrome over light content (`class="chrome"`, --chrome-* tokens)', translucent: 'platform material (`class="material"`: --surface-material + blur) on bars and sheets only' },
   shape: { sharp: 'square corners', crisp: 'small radii', standard: 'medium radii', soft: 'soft radii', round: 'large radii, pill buttons' },
   contrast: { soft: 'softer ink and hairlines; the floors still hold', standard: 'standard', high: 'no third text level, 4.5:1 borders, 3px focus' },
   elevation: { flat: 'no shadows; overlays get a 1px ring', hairline: 'borders on panes; shadows on overlays only', soft: 'cards get a soft shadow in light mode (--shadow-card)', layered: 'layered, neutral-tinted shadows on cards (light mode) and overlays' } };
@@ -224,7 +240,7 @@ const ok = (c, v, M = SRGB) => { const [L, C, h] = fit(c, M); return `oklch(${f(
 const ld = (r, M) => { const l = ok(r.l, r.v, M), d = ok(r.d, r.v, M); return l == d ? l : `light-dark(${l}, ${d})`; };
 const fam = s => s.split(',')[0].replace(/"/g, '').trim();
 function css(look, x, B) {
-  const { R, n, a } = B, T = TYPE[x.type], [c, row, sc] = DENS[x.density], r = SHAPE[x.shape], wash = x.accent == 'wash';
+  const { R, n, a } = B, T = TYPE[x.type], [c, row, sc, prof] = scale(x), r = SHAPE[x.shape], wash = x.accent == 'wash';
   const sh = (al, ad) => `light-dark(oklch(.2 .01 var(--n) / ${f(al)}), oklch(0 0 0 / ${f(ad)}))`;
   const SH = { flat: [`0 0 0 1px ${sh(.1, .5)}`, `0 0 0 1px ${sh(.12, .6)}`, 'none'],
     hairline: [`0 1px 2px ${sh(.06, .3)},\n              0 8px 20px -6px ${sh(.14, .5)}`, `0 2px 6px ${sh(.06, .3)},\n              0 24px 48px -12px ${sh(.22, .6)}`, 'none'] };
@@ -233,11 +249,11 @@ function css(look, x, B) {
     `0 1px 2px ${sh(.05, .3)}, 0 4px 8px ${sh(.05, .3)},\n              0 16px 32px -8px ${sh(.12, .5)}, 0 32px 64px -16px ${sh(.14, .6)}`,
     `0 1px 1px ${sh(.04, 0)}, 0 2px 4px ${sh(.04, 0)}, 0 8px 16px -6px ${sh(.08, 0)}`];
   const [s1, s2, cs] = SH[x.elevation], al = R.accent.l, ad = R.accent.d, v = k => `  --${k}: ${ld(R[k])};`;
-  const px = q => typeof q == 'number' ? q + 'px' : q, lh = q => typeof q == 'number' && q > 3 ? q + 'px' : q;
+  const px = q => typeof q == 'number' ? q + 'px' : q, lh = (q, k) => typeof q == 'number' && q > 3 ? q + 'px' : `calc(var(--text-${k}) * ${q})`;
   const L = [`/* tokens.css: generated by wwjd:look (scripts/look.mjs). Change .wwjd/look.json and regenerate; never hand-edit a colour.`,
     `   Look: ${AXES.map(k => x[k]).join(' · ')}${look.ref ? `\n   Reference: ${look.ref.id || ''} ${look.ref.name || ''} ${look.ref.url || ''}`.trimEnd() : ''}`,
     gfLink(T, look.fonts) ? `   Font: <link href="https://fonts.googleapis.com/css2?family=${gfLink(T, look.fonts)}&display=swap" rel="stylesheet">` : '   Font: system faces, nothing to load.',
-    `   Density: ${{ compact: '<html data-density="compact">', comfortable: '<html data-density="comfortable">', regular: 'default, no attribute', spacious: 'the register\'s data-profile (marketing, reading) from wwjd' }[x.density]}; kit/base.css owns the scale, the values below are its fallback.`,
+    `   Profile: ${prof == 'app' ? 'app (default, no attribute)' : `<html data-profile="${prof}">`} (${x.register}); density: ${{ compact: '<html data-density="compact">', comfortable: '<html data-density="comfortable">', regular: 'default, no attribute', spacious: prof == 'app' ? 'the register\'s data-profile (marketing, reading) from wwjd' : 'the profile\'s own, no attribute' }[x.density]}; kit/base.css owns the scale, the values below are its fallback.`,
     `   Motion: <html data-motion="${x.motion}"> with wwjd:motion's motion.css; the --dur/--ease values below are the crisp defaults. */`,
     `:root[data-theme="light"] { color-scheme: light; }`, `:root[data-theme="dark"] { color-scheme: dark; }`, `:root {`, `  color-scheme: light dark;`,
     `  --n: ${Math.round(n)};   /* neutral hue */`, `  --a: ${Math.round(a)};  /* accent hue */`, '',
@@ -257,8 +273,8 @@ function css(look, x, B) {
     `  --space-0-5: 2px; --space-1: 4px; --space-1-5: 6px; --space-2: 8px; --space-3: 12px; --space-4: 16px;`,
     `  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px; --space-16: 64px;`, '',
     `  --font-sans: ${look.fonts?.sans || T.sans};`, `  --font-mono: ${look.fonts?.mono || T.mono || MONO};`,
-    `  --font-display: ${look.fonts?.display || T.disp || 'var(--font-sans)'}; --weight-heading: ${wt(look.fonts?.display || T.disp || look.fonts?.sans || T.sans, T.w)}; --tracking-display: ${T.tr}em;`,
-    ...['caption', 'body', 'heading', 'title', 'display'].map((k, i) => `  --text-${k}: ${px(sc[i][0])}; --lh-${k}: ${lh(sc[i][1])};`), '',
+    ...(look.fonts?.display || T.disp ? [`  --font-display: ${look.fonts?.display || T.disp};`] : []), `  --weight-heading: ${wt(look.fonts?.display || T.disp || look.fonts?.sans || T.sans, T.w)}; --tracking-display: ${T.tr}em;`,
+    ...['caption', 'body', 'heading', 'title', 'display'].map((k, i) => `  --text-${k}: ${px(sc[i][0])}; --lh-${k}: ${lh(sc[i][1], k)};`), '',
     `  --ease-out: cubic-bezier(.23, 1, .32, 1); --ease-move: cubic-bezier(.77, 0, .175, 1); --ease-drawer: cubic-bezier(.32, .72, 0, 1);`,
     `  --dur-fast: 120ms; --dur-pop: 160ms; --dur-modal: 220ms;`, '',
     `  --control-h: ${c}px; --row-h: ${row}px;`, `  --z-sticky: 10; --z-popup: 20; --z-modal: 30; --z-toast: 40; --z-tooltip: 50;`, `}`];
@@ -271,10 +287,10 @@ function css(look, x, B) {
 
 // ── DESIGN.md (google-labs-code spec "alpha": hex in frontmatter, 8 sections, dark-* mirror) ──
 function designMd(look, x, B, au) {
-  const { R } = B, T = TYPE[x.type], [c, row, sc] = DENS[x.density], r = SHAPE[x.shape], q = s => JSON.stringify(s);
+  const { R } = B, T = TYPE[x.type], [c, row, sc, prof] = scale(x), r = SHAPE[x.shape], q = s => JSON.stringify(s);
   const cols = DMD.filter(([, role]) => R[role]).map(([k, role]) => `  ${k}: "${hex(R[role].l)}"`)
     .concat(DARK.filter(k => R[toRole(k)]).map(k => `  dark-${k}: "${hex(R[toRole(k)].d)}"`));
-  const pxv = s => typeof s == 'number' ? s : +String(s).match(/(\d+)px\)$/)[1];
+  const pxv = s => pxs(s)[1]; // fluid sizes at their widest
   const F = faces(T, look.fonts), dS = F.display || F.sans, sans = fam(F.sans), disp = fam(dS), mono = fam(F.mono || MONO), dw = wt(dS, T.w), hw = wt(F.sans, T.w);
   // the preset's prose names its own faces; with any override, name the faces actually in use
   const td = !['sans', 'display', 'mono'].some(k => look.fonts?.[k]) ? T.d
@@ -318,9 +334,9 @@ function designMd(look, x, B, au) {
     `- **Ink:** ${okc('text')}; secondary ${hex(R['text-2'].l)}; muted ${hex(R['text-3'].l)} (surfaces only, never on fills).`,
     `- **Status:** error ${hex(R.danger.l)}, warning ${hex(R.warning.l)} (glyph only in light), success ${hex(R.success.l)}, info ${hex(R.info.l)}; always with a glyph or word.`,
     `- **Dark:** its own lightness table, never inverted; \`dark-*\` tokens above. Audited: ${au.pairs} pairs, min text ${au.minT}:1, min edge ${au.minE}:1.`, '',
-    '## Typography', '', `- ${td}.`, `- Sizes: ${['caption', 'body', 'heading', 'title', 'display'].map((k, i) => `${k} ${typeof sc[i][0] == 'number' ? sc[i][0] + 'px' : 'fluid'}`).join(', ')}.`,
+    '## Typography', '', `- ${td}.`, `- Sizes: ${['caption', 'body', 'heading', 'title', 'display'].map((k, i) => `${k} ${pxt(sc[i][0])}`).join(', ')}${typeof sc[4][0] == 'number' ? '' : ' (fluid with the viewport)'}.`,
     `- ${dw == hw ? `Headings weight ${hw}` : `Display and titles weight ${dw} (${disp} has one weight; never faux bold), headings ${hw}`}; display tracking ${T.tr}em; \`tabular-nums\` wherever numbers align.`, '',
-    '## Layout', '', `- ${x.density}: ${c}px controls, ${row}px rows, ${typeof sc[1][0] == 'number' ? sc[1][0] : 16}px body${/compact|comfortable/.test(x.density) ? ` (\`<html data-density="${x.density}">\`)` : ''}.`, '- 4px spacing base (`--space-*`); structure follows the wwjd layout rules.', '',
+    '## Layout', '', `- ${prof == 'app' ? '' : `${prof} profile (\`<html data-profile="${prof}">\`), `}${x.density}: ${c}px controls, ${row}px rows, ${pxt(sc[1][0])} body${/compact|comfortable/.test(x.density) ? ` (\`<html data-density="${x.density}">\`)` : ''}.`, '- 4px spacing base (`--space-*`); structure follows the wwjd layout rules.', '',
     '## Elevation & Depth', '', `- Surfaces: ${DESC.surface[x.surface]}.`, `- Elevation: ${DESC.elevation[x.elevation]}.`, '- Dark mode: lighter is higher; no resting shadows.', '',
     '## Shapes', '', `- ${x.shape}: ${r.join('/')}px (\`--r-1\`…\`--r-4\`): ${DESC.shape[x.shape]}.`, '',
     '## Components', '', '- Buttons, inputs, cards, popups and badges come from the kit and read these tokens; the frontmatter lists their pairs.',
@@ -429,6 +445,11 @@ if (!args.look) die('usage: node look.mjs --look look.json [--out .] [--tokens f
 const rootOf = d => { for (let p = d; ; p = path.dirname(p)) { if (['.wwjd.json', '.wwjd', '.git'].some(q => fs.existsSync(path.join(p, q)))) return p; if (p == path.dirname(p)) return d; } };
 const look = readLook(args.look), out = args.out || '.', root = rootOf(process.cwd()), wdir = path.join(root, '.wwjd'), rel = path.relative(root, fs.existsSync(out) ? fs.realpathSync(out) : path.resolve(out));
 const state = path.join(wdir, rel ? `look.${path.basename(path.resolve(out)).replace(/[^\w.-]+/g, '-').replace(/^\.+/, '') || 'out'}.json` : 'look.json');
+// No register in the look: the project's (.wwjd.json "register", else the first PRODUCT.md names, by --out then the root), else operate
+const registerOf = (...dirs) => { for (const d of dirs) {
+  try { const g = JSON.parse(fs.readFileSync(path.join(d, '.wwjd.json'), 'utf8')).register; if (g) return String(g).toLowerCase(); } catch {}
+  try { const m = fs.readFileSync(path.join(d, 'PRODUCT.md'), 'utf8').match(new RegExp(`register[^\\n]*?\\b(${Object.keys(PROFILE).join('|')})\\b`, 'i')); if (m) return m[1].toLowerCase(); } catch {} } };
+if (!look.register) { const g = registerOf(out, root); if (g) look.register = g; }
 if (args.design) look.fixed = { ...designColors(args.design), ...(look.fixed || {}) };
 const fp = look.fixed?.primary || look.fixed?.accent; if (/^#/.test(fp || '')) look.brand = fp; // a pinned primary is the brand: dark, hover and link derive from it
 const x = resolve(look), bad = clashes(x, look.allow);
