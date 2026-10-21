@@ -305,7 +305,7 @@ export const register: Register = (on, options) => {
         required: ['surface', 'kind', 'text'],
         properties: {
           surface: { type: 'string', description: 'The component, screen or layout it is about, in product words ("Task card", "Settings page")' },
-          kind: { type: 'string', enum: ['assumption', 'choice', 'save'], description: 'assumption: a guess about product, data or intent; choice: a design call nobody asked for; save: a wwjd rule changed what you were about to do (text: what it kept you from, as "putting the price in a tooltip"; rule: its name)' },
+          kind: { type: 'string', enum: ['assumption', 'choice', 'save'], description: 'assumption: a guess about product, data or intent; choice: a design call nobody asked for; save: a wwjd rule changed what you were about to do (text: only what it kept you from, a short phrase as "putting the price in a tooltip"; what you did instead goes in why; rule: its name)' },
           text: { type: 'string', description: 'One line in the past tense, what you already did or assumed, in plain words a non-designer reads ("Dropped the comment count from the card", "Assumed people sign up with a work email")' },
           why: { type: 'string', description: 'One short reason in plain words, no jargon ("the card was too crowded to scan")' },
           rule: { type: 'string', description: 'save only: the wwjd rule that stepped in, by its name ("Floor: tooltips", "One primary action")' },
@@ -348,11 +348,14 @@ export const register: Register = (on, options) => {
       if (typeof o.line === 'number' && o.line > 0) out.line = Math.floor(o.line)
       return out.url || out.path ? [out] : []
     }).slice(0, 8)
-    // A save reads "Johannes kept Claude from <text>": the text is what was avoided, without that lead-in.
-    const text = x.kind === 'save' ? x.text.trim().replace(/^(johannes |wwjd )?(kept|stopped) claude from\s+/i, '').replace(/^[A-Z](?=[a-z])/, c => c.toLowerCase()) : x.text.trim()
+    // A save reads "Johannes kept Claude from <text>": the text is what was avoided, without that lead-in, and only
+    // that; what was done instead (after a ";" or a dash) becomes its why.
+    const [said, ...instead] = x.kind === 'save' ? x.text.trim().replace(/^(johannes |wwjd )?(kept|stopped) claude from\s+/i, '').split(/;\s+|\s[—–]\s/) : [x.text.trim()]
+    const text = x.kind === 'save' ? (said ?? '').replace(/^[A-Z](?=[a-z])/, c => c.toLowerCase()) : x.text.trim()
+    const why = typeof x.why === 'string' && x.why.trim() ? x.why.trim() : instead.join('; ').replace(/^./, c => c.toUpperCase())
     const entry = {
       surface: x.surface.trim(), kind: x.kind as Entry['kind'], text,
-      ...(typeof x.why === 'string' && x.why.trim() ? { why: x.why.trim() } : {}),
+      ...(why ? { why } : {}),
       ...(x.kind === 'save' && typeof x.rule === 'string' && x.rule.trim() ? { rule: x.rule.trim() } : {}),
       ...(typeof x.task === 'string' && x.task.trim() ? { task: x.task.trim() } : {}),
       ...(proof.length ? { proof } : {}),

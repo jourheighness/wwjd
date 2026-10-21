@@ -36,6 +36,8 @@ test("round: creates only, never changes a document; settled decisions and repla
   assert.deepEqual(d1.find((w) => w.collection === "handovers").data.checks[1], { label: "Get a second opinion", status: "not run", note: "not owed" });
   assert.equal(d1.find((w) => w.collection === "meta").data.title, "Toolshed");
   assert.deepEqual(r1.deleteAssets, []);
+  assert.equal(p.docs(p.run("round", "--again", "--title", "Landing page", "--shot", "/x/Pricing page-390-dark.png=/_blob/ccc")).find((w) => w.collection === "shots").data.screen, "Pricing page");
+  p.run("round", "--again", "--title", "Landing page", "--shot", "/x/landing-1440-light.png=/_blob/aaa");
 
   p.log([{ id: "d1", at: "2026-10-21T10:00:00Z", surface: "Hero", kind: "choice", text: "Cut the stats row", kept: true },
     { id: "d2", at: "2026-10-21T11:00:00Z", surface: "Hero", kind: "assumption", text: "Members are local" }]);

@@ -106,9 +106,9 @@ const deleteAssets = [];
 for (const s of opt.shots) {
   const eq = s.indexOf("=");
   const file = eq > 0 ? s.slice(0, eq) : "", url = eq > 0 ? s.slice(eq + 1) : "";
-  const m = /([\w-]+?)-(\d+)-(light|dark)\.png$/.exec(basename(file));
+  const m = /^(.+?)-(\d+)-(light|dark)\.png$/.exec(basename(file));
   if (!m || !/^(https:\/\/|\/_blob\/)/.test(url)) fail(`--shot "${s}": want "<screen>-<width>-<theme>.png=<upload url>"`);
-  const [, slug, width, theme] = m, key = `${slug}-${width}-${theme}`;
+  const [, slug, width, theme] = m, key = `${slug.trim().replace(/\s+/g, "-")}-${width}-${theme}`;
   const screen = slug.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase());
   put("shots", `${round}-${key}`, { at, screen, width: Number(width), theme, url });
   const old = state.shots[key];

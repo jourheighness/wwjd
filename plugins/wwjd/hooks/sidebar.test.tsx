@@ -218,9 +218,10 @@ test('a save logs as "Johannes kept Claude from …": its own section, never a d
   const files: Record<string, string> = {}
   disk(on as never, files)
   on('ui.open', () => ({ value: { isPlaced: true } }) as never)
-  await $.tool.call({ tool: 'mcp__wwjd__log', surface: 'Price', kind: 'save', text: 'Kept Claude from putting the price in a tooltip', rule: 'Floor: tooltips' } as never)
+  await $.tool.call({ tool: 'mcp__wwjd__log', surface: 'Price', kind: 'save', text: 'Kept Claude from putting the price in a tooltip; it sits under the name now', rule: 'Floor: tooltips' } as never)
   const saved = JSON.parse((files['/p/.wwjd/decisions.jsonl'] ?? '').trim()) as { text: string; rule: string }
   expect(saved.text).toBe('putting the price in a tooltip')
+  expect((saved as { why?: string }).why).toBe('It sits under the name now')
   expect(saved.rule).toBe('Floor: tooltips')
   await $.command.run({ command: 'wwjd' } as never)
   const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })
