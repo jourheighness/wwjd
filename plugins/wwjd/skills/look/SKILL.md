@@ -7,7 +7,7 @@ compatibility: scripts/look.mjs needs Node 20.10+, no dependencies. Reference sc
 
 # wwjd:look
 
-References → board → pick → `look.json` → `node <skill>/scripts/look.mjs` → `tokens.css` + `DESIGN.md` + `.wwjd/look.json`.
+References → board → pick → `look.json` → `node <skill>/scripts/look.mjs` → `tokens.css` + `DESIGN.md` (in `--out`) + `.wwjd/look.json` (always the project root's `.wwjd/`; `look.<out folder>.json` for another `--out`).
 Axes, presets and clashes: `references/axes.md`. Where references come from and the card format: `references/sources.md`.
 
 ## Quick mode (no DESIGN.md, no board asked)

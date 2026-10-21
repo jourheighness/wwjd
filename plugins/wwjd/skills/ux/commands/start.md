@@ -2,14 +2,14 @@
 
 For `scratch`, or UI without baseline files. An existing design system wins: read it and fill only the gaps the user agrees to.
 
-## 0. Ask first (a new project: no `.wwjd.json`, no UI yet; before any code)
+## 0. Ask first (a new project: no `"start"` in `.wwjd.json`, no UI yet; before any code)
 wwjd owns the design side, so a new product never starts as code by default. One AskUserQuestion batch, each with a default:
 - **How to begin:** lettered variants in an Artifact first (default; `explore.md`), or straight to build; ask how many (default 3).
 - **The look:** a board of options (`wwjd:look` §2, default for Look 4–5) or quick mode.
 - **A project board** (only while the Project board setting is on): one shareable Artifact that collects directions, decisions, screenshots and handovers (`references/board.md`); default yes.
 - **Anything the brief leaves open** that would change the variants: register, the one job of the first screen, the benchmark product.
 
-Record the answer in `.wwjd.json`: `"start": "variants"` or `"build"`, plus `"register"`, and `"board"` (the project board's link, `references/board.md`) once it exists. The pre hook holds the first UI file of a new project until `.wwjd.json` exists. Steps 1–5 follow; each is skippable, and showing work never waits on them.
+Record the answer in `.wwjd.json`: `"start": "variants"` or `"build"`, plus `"register"`, and `"board"` (the project board's link, `references/board.md`) once it exists. The pre hook holds the first UI file of a new project until `.wwjd.json` has `"start"`. Nobody to ask (an unattended run, a subagent): take each default and log it as an assumption. Steps 1–5 follow; each is skippable, and showing work never waits on them.
 
 ## 1. PRODUCT.md (short; infer, then ask the rest in one batch, each with a default)
 - **Product type** (`references/product-types.md`): core objects, top 3 jobs.

@@ -1,4 +1,4 @@
-// ledger.mjs: the per-session note of UI work the Strictness gate reads (gate.mjs) and the edit hook writes
+// ledger.mjs: the per-session (and per-subagent) note of UI work the Strictness gate reads (gate.mjs) and the edit hook writes
 // (wwjd.mjs check --hook, one process per edit). Per session, in $TMPDIR/wwjd-gate. Updated under a lock, re-read and
 // merged field by field, then renamed into place, so parallel hooks never undo each other. No deps, Node 20.10+.
 import { closeSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
@@ -14,7 +14,10 @@ const nap = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0,
 /** The ledger of the session the hook input names: read, a locked update, and read-or-start. */
 export function openLedger(input) {
   const state = join(process.env.TMPDIR || tmpdir(), "wwjd-gate");
-  const file = join(state, `${String(input.session_id || "none").replace(/[^\w.-]/g, "_")}.json`);
+  // A subagent's tool calls carry its agent_id: its edits and checks are its own, so parallel agents on different
+  // projects never answer for each other, and the main session's Stop never waits on a subagent's page.
+  const id = [input.session_id || "none", input.agent_id].filter(Boolean).join(".");
+  const file = join(state, `${String(id).replace(/[^\w.-]/g, "_")}.json`);
   const read = () => { try { return JSON.parse(readFileSync(file, "utf8")); } catch { return {}; } };
   const locked = (fn) => {
     mkdirSync(state, { recursive: true });

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// look.mjs: a look (10 axes) → contrast-solved tokens.css + DESIGN.md + .wwjd/look.json. No deps, Node 20.10+.
+// look.mjs: a look (10 axes) → contrast-solved tokens.css + DESIGN.md + .wwjd/look.json (project root). No deps, Node 20.10+.
 //   node look.mjs --look look.json [--out .] [--tokens <file>] [--design DESIGN.md] [--force] [--verbose]
 //   node look.mjs --look look.json --variants 3 [--sweep neutral,surface,type]   → .wwjd/variants/A….{json,css}
 //   node look.mjs --card .wwjd/refs/B.yaml [--brand "#5E6AD2"] [--register operate]   → look.json on stdout
@@ -56,14 +56,19 @@ const TYPE = {
   humanist: { sans: `"Source Sans 3", "IBM Plex Sans", ${SYS}`, w: 600, tr: 0, gf: 'Source+Sans+3:wght@400..600', d: 'Source Sans 3: open, friendly letterforms for reading and forms' },
   'serif-display': { sans: INTER, disp: '"Source Serif 4", ui-serif, Georgia, "Times New Roman", serif', w: 500, tr: -.01, gf: `${GF_INTER}&family=Source+Serif+4:opsz,wght@8..60,400..600`, d: 'Source Serif 4 for display and titles over an Inter body' },
   'mono-label': { sans: INTER, mono: `"IBM Plex Mono", ${MONO}`, w: 600, tr: -.02, gf: `${GF_INTER}&family=IBM+Plex+Mono:wght@400;500`, d: 'Inter, with IBM Plex Mono for IDs, codes and data cells (never as a label voice)' } };
-// Custom faces ("fonts": {"display": "\"Archivo\", sans-serif"}) load from Google Fonts next to the preset's own.
+// Custom faces ("fonts": {"display": "\"Archivo\", sans-serif"}) load from Google Fonts; an override replaces the preset's face
+// for its role, and only faces in use are loaded.
 const famOf = f => (String(f || '').match(/^\s*"([^"]+)"/) || [])[1];
+// Google Fonts families with one weight (400): a wght range makes Google drop the family, and a 600 heading would be faux bold.
+const SINGLE = new Set(['young serif', 'dm serif display', 'dm serif text', 'abril fatface', 'alfa slab one', 'bebas neue', 'instrument serif',
+  'anton', 'archivo black', 'gloock', 'calistoga', 'fjalla one', 'staatliches', 'ultra', 'shrikhand', 'titan one', 'russo one', 'bungee',
+  'rubik mono one', 'righteous', 'lobster', 'pacifico', 'monoton', 'rammetto one', 'bowlby one', 'black ops one']);
+const wt = (f, w) => SINGLE.has(String(famOf(f) || '').toLowerCase()) ? 400 : w;
+const faces = (T, fonts = {}) => ({ sans: fonts.sans || T.sans, display: fonts.display || T.disp, mono: fonts.mono || T.mono });
 const gfLink = (T, fonts = {}) => {
-  const preset = T.gf ? T.gf.split('&family=') : [];
-  const extra = ['sans', 'display', 'mono'].map(k => famOf(fonts[k])).filter(Boolean)
-    .filter(n => !preset.some(p => p.startsWith(n.replace(/ /g, '+'))))
-    .map(n => `${n.replace(/ /g, '+')}:wght@400..700`);
-  return [...new Set([...(fonts.sans ? preset.filter(p => !/^Inter\b/.test(p) || /Inter/.test(fonts.sans)) : preset), ...extra])].join('&family=');
+  const preset = T.gf ? T.gf.split('&family=') : [], plus = n => n.replace(/ /g, '+');
+  return [...new Set(Object.values(faces(T, fonts)).map(famOf).filter(Boolean).map(n => preset.find(p => p.split(':')[0] == plus(n))
+    || (SINGLE.has(n.toLowerCase()) ? plus(n) : `${plus(n)}:wght@400..700`)))].join('&family=');
 };
 const VALUES = { type: Object.keys(TYPE), neutral: Object.keys(TEMP).flatMap(t => Object.keys(CHROMA).map(c => `${t}/${c}`)),
   accent: ['quiet', 'mono', 'wash', 'vivid', 'dual'], surface: ['tonal', 'flat', 'raised', 'chrome', 'translucent'],
@@ -252,7 +257,7 @@ function css(look, x, B) {
     `  --space-0-5: 2px; --space-1: 4px; --space-1-5: 6px; --space-2: 8px; --space-3: 12px; --space-4: 16px;`,
     `  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px; --space-16: 64px;`, '',
     `  --font-sans: ${look.fonts?.sans || T.sans};`, `  --font-mono: ${look.fonts?.mono || T.mono || MONO};`,
-    `  --font-display: ${look.fonts?.display || T.disp || 'var(--font-sans)'}; --weight-heading: ${T.w}; --tracking-display: ${T.tr}em;`,
+    `  --font-display: ${look.fonts?.display || T.disp || 'var(--font-sans)'}; --weight-heading: ${wt(look.fonts?.display || T.disp || look.fonts?.sans || T.sans, T.w)}; --tracking-display: ${T.tr}em;`,
     ...['caption', 'body', 'heading', 'title', 'display'].map((k, i) => `  --text-${k}: ${px(sc[i][0])}; --lh-${k}: ${lh(sc[i][1])};`), '',
     `  --ease-out: cubic-bezier(.23, 1, .32, 1); --ease-move: cubic-bezier(.77, 0, .175, 1); --ease-drawer: cubic-bezier(.32, .72, 0, 1);`,
     `  --dur-fast: 120ms; --dur-pop: 160ms; --dur-modal: 220ms;`, '',
@@ -270,13 +275,16 @@ function designMd(look, x, B, au) {
   const cols = DMD.filter(([, role]) => R[role]).map(([k, role]) => `  ${k}: "${hex(R[role].l)}"`)
     .concat(DARK.filter(k => R[toRole(k)]).map(k => `  dark-${k}: "${hex(R[toRole(k)].d)}"`));
   const pxv = s => typeof s == 'number' ? s : +String(s).match(/(\d+)px\)$/)[1];
-  const sans = fam(look.fonts?.sans || T.sans), disp = fam(look.fonts?.display || T.disp || T.sans), mono = fam(look.fonts?.mono || T.mono || MONO);
+  const F = faces(T, look.fonts), dS = F.display || F.sans, sans = fam(F.sans), disp = fam(dS), mono = fam(F.mono || MONO), dw = wt(dS, T.w), hw = wt(F.sans, T.w);
+  // the preset's prose names its own faces; with any override, name the faces actually in use
+  const td = !['sans', 'display', 'mono'].some(k => look.fonts?.[k]) ? T.d
+    : (disp != sans ? `${disp} for display and titles, ${sans} for body text` : `${sans} for everything`) + (F.mono ? `; ${mono} for IDs, codes and data cells` : '');
   const ty = (k, fm, i, w, ls, lhv) => [`  ${k}:`, `    fontFamily: ${q(fm)}`, `    fontSize: ${pxv(sc[i][0])}px`, `    fontWeight: ${w}`,
     `    lineHeight: ${lhv ?? (typeof sc[i][1] == 'number' && sc[i][1] > 3 ? sc[i][1] + 'px' : sc[i][1])}`, ...(ls ? [`    letterSpacing: ${ls}em`] : [])].join('\n');
   const comp = (k, o) => `  ${k}:\n` + Object.entries(o).map(([p, v]) => `    ${p}: ${q(v)}`).join('\n');
   const fm = ['---', 'version: alpha', `name: ${q(look.name || 'Look')}`, `description: ${q(look.identity || 'Generated by wwjd:look')}`, 'colors:', ...cols, 'typography:',
-    ty('display', disp, 4, T.w, T.tr), ty('title', disp, 3, T.w, T.tr / 2), ty('heading', sans, 2, T.w), ty('body-md', sans, 1, 400), ty('body-sm', sans, 0, 400),
-    ty('label-md', sans, 1, 500, 0, 1), ty('caption', sans, 0, 400), ty('mono', mono, 0, 400),
+    ty('display', disp, 4, dw, T.tr), ty('title', disp, 3, dw, T.tr / 2), ty('heading', sans, 2, hw), ty('body-md', sans, 1, 400), ty('body-sm', sans, 0, 400),
+    ty('label-md', sans, 1, wt(F.sans, 500), 0, 1), ty('caption', sans, 0, 400), ty('mono', mono, 0, 400),
     'rounded:', `  sm: ${r[0]}px`, `  md: ${r[1]}px`, `  lg: ${r[2]}px`, `  xl: ${r[3]}px`, '  full: 9999px',
     'spacing:', '  xs: 4px', '  sm: 8px', '  md: 16px', '  lg: 24px', '  xl: 40px', `  control: ${c}px`, `  row: ${row}px`, 'components:',
     comp('button-primary', { backgroundColor: '{colors.primary}', textColor: '{colors.on-primary}', rounded: x.shape == 'round' ? '{rounded.full}' : '{rounded.md}', height: `${c}px`, padding: '0 12px' }),
@@ -310,8 +318,8 @@ function designMd(look, x, B, au) {
     `- **Ink:** ${okc('text')}; secondary ${hex(R['text-2'].l)}; muted ${hex(R['text-3'].l)} (surfaces only, never on fills).`,
     `- **Status:** error ${hex(R.danger.l)}, warning ${hex(R.warning.l)} (glyph only in light), success ${hex(R.success.l)}, info ${hex(R.info.l)}; always with a glyph or word.`,
     `- **Dark:** its own lightness table, never inverted; \`dark-*\` tokens above. Audited: ${au.pairs} pairs, min text ${au.minT}:1, min edge ${au.minE}:1.`, '',
-    '## Typography', '', `- ${T.d}.`, `- Sizes: ${['caption', 'body', 'heading', 'title', 'display'].map((k, i) => `${k} ${typeof sc[i][0] == 'number' ? sc[i][0] + 'px' : 'fluid'}`).join(', ')}.`,
-    `- Headings weight ${T.w}; display tracking ${T.tr}em; \`tabular-nums\` wherever numbers align.`, '',
+    '## Typography', '', `- ${td}.`, `- Sizes: ${['caption', 'body', 'heading', 'title', 'display'].map((k, i) => `${k} ${typeof sc[i][0] == 'number' ? sc[i][0] + 'px' : 'fluid'}`).join(', ')}.`,
+    `- ${dw == hw ? `Headings weight ${hw}` : `Display and titles weight ${dw} (${disp} has one weight; never faux bold), headings ${hw}`}; display tracking ${T.tr}em; \`tabular-nums\` wherever numbers align.`, '',
     '## Layout', '', `- ${x.density}: ${c}px controls, ${row}px rows, ${typeof sc[1][0] == 'number' ? sc[1][0] : 16}px body${/compact|comfortable/.test(x.density) ? ` (\`<html data-density="${x.density}">\`)` : ''}.`, '- 4px spacing base (`--space-*`); structure follows the wwjd layout rules.', '',
     '## Elevation & Depth', '', `- Surfaces: ${DESC.surface[x.surface]}.`, `- Elevation: ${DESC.elevation[x.elevation]}.`, '- Dark mode: lighter is higher; no resting shadows.', '',
     '## Shapes', '', `- ${x.shape}: ${r.join('/')}px (\`--r-1\`…\`--r-4\`): ${DESC.shape[x.shape]}.`, '',
@@ -416,12 +424,16 @@ const designColors = file => { const fmx = fs.readFileSync(file, 'utf8').match(/
 if (args.card) { console.log(JSON.stringify(cardLook(card(args.card), args), null, 2)); process.exit(0); }
 if (args.pick) { pick(+args.pick, args.rest); process.exit(0); }
 if (!args.look) die('usage: node look.mjs --look look.json [--out .] [--tokens file] [--design DESIGN.md] [--variants N --sweep a,b] [--force]\n       node look.mjs --card refs/B.yaml [--brand #hex]  |  node look.mjs --pick N refs/*.yaml');
-const look = readLook(args.look), out = args.out || '.', wdir = path.join(out, '.wwjd');
+// Own state goes to the project root's .wwjd/, never under --out: a nested .wwjd/ would stop the decision log's root finder
+// there. Root: the nearest ancestor of cwd with .wwjd.json, .wwjd/ or .git, else cwd. A look written elsewhere is .wwjd/look.<out>.json.
+const rootOf = d => { for (let p = d; ; p = path.dirname(p)) { if (['.wwjd.json', '.wwjd', '.git'].some(q => fs.existsSync(path.join(p, q)))) return p; if (p == path.dirname(p)) return d; } };
+const look = readLook(args.look), out = args.out || '.', root = rootOf(process.cwd()), wdir = path.join(root, '.wwjd'), rel = path.relative(root, fs.existsSync(out) ? fs.realpathSync(out) : path.resolve(out));
+const state = path.join(wdir, rel ? `look.${path.basename(path.resolve(out)).replace(/[^\w.-]+/g, '-').replace(/^\.+/, '') || 'out'}.json` : 'look.json');
 if (args.design) look.fixed = { ...designColors(args.design), ...(look.fixed || {}) };
 const fp = look.fixed?.primary || look.fixed?.accent; if (/^#/.test(fp || '')) look.brand = fp; // a pinned primary is the brand: dark, hover and link derive from it
 const x = resolve(look), bad = clashes(x, look.allow);
 if (bad.length) die(`rejected: ${bad.join('; ')}. Change an axis, or add the id to "allow" once the owner agrees.`, 1);
-fs.mkdirSync(wdir, { recursive: true });
+fs.mkdirSync(wdir, { recursive: true }); fs.mkdirSync(out, { recursive: true });
 if (!fs.existsSync(path.join(wdir, '.gitignore'))) fs.writeFileSync(path.join(wdir, '.gitignore'), '*\n');
 const B = build(look, x), au = audit(B), line = AXES.map(k => x[k]).join(' · ');
 console.log(`look: ${look.name || ''} (${x.register}) ${line}`);
@@ -450,6 +462,6 @@ const ramp = m => { const S = B.R.accent[m][0], T = B.R['accent-text'][m][0], C 
 const resolved = Object.fromEntries(Object.entries(B.R).map(([k, r]) => [k, { light: fit(r.l).map(q => +q.toFixed(4)), dark: fit(r.d).map(q => +q.toFixed(4)), hex: [hex(r.l), hex(r.d)] }]));
 fs.writeFileSync(tokens, css(look, x, B));
 fs.writeFileSync(dm, keepSections(fs.existsSync(dm) ? fs.readFileSync(dm, 'utf8') : '', designMd(look, x, B, au)));
-fs.writeFileSync(path.join(wdir, 'look.json'), JSON.stringify({ ...look, axes: Object.fromEntries(AXES.map(k => [k, x[k]])),
+fs.writeFileSync(state, JSON.stringify({ ...look, axes: Object.fromEntries(AXES.map(k => [k, x[k]])),
   resolved, ramp: { light: ramp('l'), dark: ramp('d') }, audit: { pairs: au.pairs, minText: au.minT, minEdge: au.minE, apca: au.warns, solved: B.notes } }, null, 2) + '\n');
-console.log(`  wrote ${tokens}, ${dm}, ${path.join(wdir, 'look.json')}`);
+console.log(`  wrote ${tokens}, ${dm}, ${state}`);

@@ -9,7 +9,7 @@ Product UI copy is labels, values and one-line states. Persuade and Editorial ne
 - **≤ ~4 words.** Legally required wording (the EU order button) is never shortened.
 - **One term per concept,** from the product's glossary; no system words (status, event, run, signal, tenant, entity). Codes and IDs as quiet secondary text. Settings describe the outcome, not the implementation.
 - **Case:** sentence case; no uppercase labels; periods on sentences, not labels. "…" (the character) only on items that open further input.
-- **Headings and links lead with the keyword,** never "Welcome to…"; screen titles name the thing, not "Overview" everywhere. **`<title>`** unique per route: "Object – Section – Product".
+- **Headings and links lead with the keyword,** never "Welcome to…"; screen titles name the thing, not "Overview" everywhere. **`<title>`** unique per route: "Object · Section · Product" (middle dots: a dash in a UI string reads as AI copy).
 
 ## Numbers and time
 - **Progress label format:** label → number → bar: muted 11–12px label with the count, end-aligned above its bar.

@@ -38,7 +38,7 @@ if (major < 20 || (major === 20 && minor < 10)) { console.error("wwjd needs Node
 // ── args ───────────────────────────────────────────────────────────
 const argv = process.argv.slice(2);
 const CMDS = new Set(["status", "check", "audit", "dials"]);
-const cmd = CMDS.has(argv[0]) ? argv.shift() : argv[0] === "-h" || argv[0] === "--help" || !argv.length ? "help" : "check";
+const cmd = CMDS.has(argv[0]) ? argv.shift() : ["help", "-h", "--help"].includes(argv[0]) || !argv.length ? "help" : "check";
 const opt = { paths: [], json: false, register: null, config: null, new: false, baseline: false, max: Infinity, hook: false };
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
@@ -157,7 +157,7 @@ const rules = [
   { id: "input-label", sev: "warn", re: /<input\b(?![^>]*(aria-label|aria-labelledby|id=))(?![^>]*type=["'](hidden|submit|button|reset|image)["'])[^>]*>/, unless: /<label\b|\{\.\.\./, only: MARKUP, msg: "input without a label association" },
   { id: "dead-link", sev: "error", re: /href=["']#["']/, msg: 'dead link href="#"; give it a real target or make it a button' },
   { id: "alert", sev: "error", re: /\bwindow\.alert\(|\balert\(\s*["'`]/, msg: "alert(); show the error inline" },
-  { id: "focus-removed", sev: "error", re: /outline:\s*none|\boutline-none\b|\boutline-0\b/, unless: /focus(-visible)?:(ring|outline)|:focus-visible/, msg: "focus outline removed without a visible focus-visible replacement" },
+  { id: "focus-removed", sev: "error", re: /outline:\s*none|\boutline-none\b|\boutline-0\b/, unless: /focus(-visible)?:(ring|outline)|:focus-visible/, ok: (lines, i) => lines.slice(Math.max(0, i - 8), i + 9).some((l) => /:focus-visible|focus(-visible)?:(ring|outline)/.test(l)), msg: "focus outline removed without a visible focus-visible replacement" },
   { id: "img-dimensions", sev: "warn", re: /<img\b(?![^>]*\b(width|height)=)(?![^>]*aspect-)[^>]*>/, only: MARKUP, msg: "image without dimensions shifts layout as it loads" },
   { id: "fake-urgency", sev: "warn", re: /\b(only \d+ left|hurry|offer ends in|limited time only|\d+ people are (viewing|looking))\b/i, only: MARKUP, off: R("transact"), msg: "urgency/scarcity copy; only if true and verifiable" },
   // ── copy ──
@@ -403,7 +403,7 @@ function dialLine() {
   });
   if (!off.length) return "dials: all default";
   // An order, not a note: agents read "dials:" as information and build the default.
-  const look = stopOf(DIALS[0], d.creativity) >= 3 ? " Look 4-5: call the Skill tool with wwjd:look (quick mode) before building, even for one component." : "";
+  const look = stopOf(DIALS[0], d.creativity) >= 3 ? " Look 4-5: call the Skill tool with wwjd:look before building, even for one component (quick mode, unless the start question chose a board of options)." : "";
   return `dials (apply each to everything you build and write this session; the handover names how each showed): ${off.join(" · ")}${look} The rest default; DESIGN.md and the Floor still win.`;
 }
 

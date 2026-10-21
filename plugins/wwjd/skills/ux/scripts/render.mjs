@@ -367,10 +367,17 @@ if (cmd === "fit") {
           out.push(["orphan-item", "error", orphanName(el) + " wrapped onto a line of its own"]); break;
         }
       }
+      // A cell (one word, a checkbox) is laid out by its table or grid, never a lone row: skip it and what it holds.
+      const CELL = "td, th, [role=cell], [role=gridcell], [role=columnheader], [role=rowheader], [role=row]";
+      const inTable = (el) => {
+        if (el.closest(CELL)) return true;
+        for (let p = el; p && p !== document.body; p = p.parentElement) if (/table/.test(getComputedStyle(p).display)) return true;
+        return false;
+      };
       for (const el of root.querySelectorAll("*")) {
         const kids = [...el.children].filter((k) => k.getClientRects().length);
         const sib = el.parentElement ? [...el.parentElement.children].filter((k) => k.getClientRects().length) : [];
-        if (kids.length !== 1 || sib.length < 2 || el.textContent.trim().length > 3 || !el.getClientRects().length) continue;
+        if (kids.length !== 1 || sib.length < 2 || el.textContent.trim().length > 3 || !el.getClientRects().length || inTable(el)) continue;
         const b = kids[0].getBoundingClientRect(), row = el.getBoundingClientRect();
         if (b.width < 56 && row.width > b.width * 4 && b.height < 56) { out.push(["orphan-item", "error", (kids[0].getAttribute("aria-label") || kids[0].className || kids[0].tagName) + " sits alone in its own row"]); break; }
       }

@@ -12,7 +12,7 @@ const GATE = join(dirname(fileURLToPath(import.meta.url)), "gate.mjs");
 function project(strictness) {
   const root = mkdtempSync(join(tmpdir(), "wwjd-gate-"));
   execFileSync("git", ["init", "-q", root]);
-  writeFileSync(join(root, ".wwjd.json"), JSON.stringify({ dials: { strictness } }));
+  writeFileSync(join(root, ".wwjd.json"), JSON.stringify({ start: "build", dials: { strictness } }));
   const state = mkdtempSync(join(tmpdir(), "wwjd-state-"));
   const transcript = join(root, "transcript.jsonl");
   writeFileSync(transcript, "");
@@ -334,7 +334,7 @@ test("pre: a session in one repo writing another project reads that project's di
   const p = project(1);
   const app = mkdtempSync(join(tmpdir(), "wwjd-other-"));
   execFileSync("git", ["init", "-q", app]);
-  writeFileSync(join(app, ".wwjd.json"), JSON.stringify({ dials: { strictness: 4 } }));
+  writeFileSync(join(app, ".wwjd.json"), JSON.stringify({ start: "build", dials: { strictness: 4 } }));
   const r = p.run("pre", write(join(app, "Card.tsx")));
   assert.equal(r.hookSpecificOutput.permissionDecision, "deny");
   assert.match(r.hookSpecificOutput.permissionDecisionReason, new RegExp(`grade/<surface>\\.json in ${app.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
@@ -465,4 +465,22 @@ test("dials: an empty or out-of-range strictness in .wwjd.json falls back to the
   assert.equal(p.run("status", {}, { CLAUDE_PLUGIN_OPTION_STRICTNESS: "4" }).strictness, 4);
   writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 9 } }));
   assert.equal(p.run("status", {}).strictness, 3);
+});
+
+test("pre: a .wwjd.json without \"start\" (empty, or dials only) still gets the start question", () => {
+  const p = project(1);
+  const app = mkdtempSync(join(tmpdir(), "wwjd-other-"));
+  execFileSync("git", ["init", "-q", app]);
+  writeFileSync(join(app, ".wwjd.json"), "{}");
+  assert.match(p.run("pre", write(join(app, "index.html"))).hookSpecificOutput.permissionDecisionReason, /start question/);
+  writeFileSync(join(app, ".wwjd.json"), JSON.stringify({ start: "variants" }));
+  assert.equal(p.run("pre", write(join(app, "index.html"))), null);
+});
+
+test("a subagent's edits are its own ledger: the main session's stop never waits on them, the subagent's does", () => {
+  const p = project(3);
+  p.run("post", { tool_name: "Write", tool_input: { file_path: join(p.root, "page.html") }, agent_id: "ag1" });
+  writeFileSync(join(p.root, "page.html"), "<div></div>");
+  assert.equal(p.run("stop", { stop_hook_active: false }), null);
+  assert.match(p.run("stop", { stop_hook_active: false, agent_id: "ag1" }).reason, /render/);
 });

@@ -1,19 +1,22 @@
-// node --test skills/look/scripts/look.test.mjs: look.mjs bans apply to new choices, not to a project's own faces.
+// node --test skills/look/scripts/look.test.mjs: look.mjs bans apply to new choices, not to a project's own faces; font
+// links load only faces in use, single-weight faces without a range; its own state lands in the root's .wwjd/, never under --out.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const LOOK = join(dirname(fileURLToPath(import.meta.url)), "look.mjs");
-function run(look) {
+// runs in the temp dir, so the root's .wwjd/ is the temp dir's own
+function run(look, out) {
   const dir = mkdtempSync(join(tmpdir(), "wwjd-look-"));
   writeFileSync(join(dir, "look.json"), JSON.stringify(look));
-  const r = spawnSync("node", [LOOK, "--look", join(dir, "look.json"), "--out", dir], { encoding: "utf8" });
-  return { ...r, dir };
+  const r = spawnSync("node", [LOOK, "--look", join(dir, "look.json"), "--out", out || dir], { encoding: "utf8", cwd: dir });
+  return { ...r, dir, out: join(dir, out || "") };
 }
+const font = css => css.match(/css2\?family=(\S+)&display=swap/)[1];
 const FONTS = { display: '"Space Grotesk", sans-serif', sans: '"Inter", sans-serif' };
 
 test("trend-font: a new pick of a trend face is rejected", () => {
@@ -31,4 +34,39 @@ test("trend-font: the project's own faces (lock fonts) are kept, and its pinned 
   const md = readFileSync(join(r.dir, "DESIGN.md"), "utf8");
   assert.match(md, /surface: "#FAFAF9"/);
   assert.match(md, /on-surface: "#1C1917"/);
+  assert.ok(existsSync(join(r.dir, ".wwjd", "look.json")));
+});
+
+test("fonts: a single-weight display face is linked without a weight range and never claims a heavier weight", () => {
+  const r = run({ register: "operate", hue: 150, fonts: { display: '"Young Serif", Georgia, serif' } });
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  const css = readFileSync(join(r.dir, "tokens.css"), "utf8");
+  assert.deepEqual(font(css).split("&family="), ["Inter:opsz,wght@14..32,400..600", "Young+Serif"]);
+  assert.match(css, /--weight-heading: 400;/);
+  const md = readFileSync(join(r.dir, "DESIGN.md"), "utf8");
+  assert.match(md, /display:\n    fontFamily: "Young Serif"\n    fontSize: \d+px\n    fontWeight: 400/);
+  assert.match(md, /title:\n    fontFamily: "Young Serif"\n    fontSize: \d+px\n    fontWeight: 400/);
+  assert.doesNotMatch(md, /Headings weight 600/);
+});
+
+test("fonts: a display override replaces the preset's serif in the link, the token and the prose", () => {
+  const r = run({ register: "editorial", hue: 150, axes: { type: "serif-display" }, fonts: { display: '"Newsreader", Georgia, serif' } });
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  const css = readFileSync(join(r.dir, "tokens.css"), "utf8");
+  assert.deepEqual(font(css).split("&family="), ["Inter:opsz,wght@14..32,400..600", "Newsreader:wght@400..700"]);
+  assert.match(css, /--font-display: "Newsreader"/);
+  assert.doesNotMatch(css, /Source.Serif/);
+  const md = readFileSync(join(r.dir, "DESIGN.md"), "utf8");
+  assert.doesNotMatch(md, /Source Serif/);
+  assert.match(md, /Newsreader for display and titles, Inter for body text/);
+});
+
+test("--out: tokens and DESIGN.md go to --out, the look's state to the root's .wwjd/, never a nested .wwjd/", () => {
+  const r = run({ register: "operate", hue: 150 }, ".wwjd/looks/A");
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  assert.ok(existsSync(join(r.out, "tokens.css")));
+  assert.ok(existsSync(join(r.out, "DESIGN.md")));
+  assert.ok(!existsSync(join(r.out, ".wwjd")));
+  assert.ok(existsSync(join(r.dir, ".wwjd", "look.A.json")));
+  assert.ok(!existsSync(join(r.dir, ".wwjd", "look.json")));
 });

@@ -1,4 +1,4 @@
-<title>wwjd Board</title>
+<title>Project board</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,7 +30,6 @@ a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; 
 h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
 
 header.top { display: grid; gap: 10px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
-.eyebrow { font: 600 12px/1 var(--text); letter-spacing: .08em; text-transform: uppercase; color: var(--pen); }
 h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.02; letter-spacing: -.02em; font-weight: 700; }
 .summary { color: var(--ink-2); max-width: 62ch; margin: 0; }
 .meta { color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; }
@@ -60,7 +59,7 @@ a.dir:hover { border-color: var(--ink-3); }
 .round { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 14px; }
 .round .when { color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; }
 .round h3 { font-size: 19px; font-weight: 600; }
-.label { font: 600 12px/1 var(--text); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.label { font: 600 13px/1.2 var(--text); color: var(--ink-3); }
 
 .checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .checks li { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; align-items: baseline; }
@@ -69,7 +68,7 @@ a.dir:hover { border-color: var(--ink-3); }
 .note { color: var(--ink-2); font-size: 14px; }
 
 .group { display: grid; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
-.group > h3 { font: 600 13px/1 var(--text); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); padding: 14px 16px 6px; }
+.group > h3 { font: 600 14px/1.2 var(--text); color: var(--ink-2); padding: 14px 16px 6px; }
 .group.flat { border: 0; border-radius: 0; background: none; }
 .group.flat > h3 { padding: 0 0 6px; }
 .dec { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 4px 12px; padding: 14px 16px; border-top: 1px solid var(--line); }
@@ -119,7 +118,6 @@ details.past .inner { padding: 0 16px 16px; display: grid; gap: 14px; }
 
 <div class="wrap">
   <header class="top">
-    <span class="eyebrow">wwjd board</span>
     <h1 id="title">Project board</h1>
     <p class="summary" id="summary">Everything Claude explored, decided and checked for this project, in one place.</p>
     <span class="meta" id="updated"></span>
@@ -178,29 +176,32 @@ details.past .inner { padding: 0 16px 16px; display: grid; gap: 14px; }
 
   // State from capped live queries; the round sections render together whenever one changes.
   // handovers and decisions start unknown, so the page keeps "Loading…" instead of flashing empty states
-  const state = { handovers: null, decisions: null, open: null, meta: {} };
+  // Every board write creates a document (scripts/board.mjs): a settled decision is a settled/<id>-<round> document,
+  // a screenshot or direction list carries its round, and the page shows the newest of each.
+  const state = { handovers: null, decisions: null, open: null, settled: new Map(), meta: {} };
 
   db.doc('meta/project').onSnapshot((s) => {
     state.meta = s.data() || {};
     const m = state.meta;
-    if (m.title) { $('title').textContent = m.title; document.title = `${m.title} · wwjd Board`; }
+    if (m.title) { $('title').textContent = m.title; document.title = `${m.title} board`; }
     if (m.summary) $('summary').textContent = m.summary;
-    $('updated').textContent = m.updatedAt ? `Updated ${fmt(m.updatedAt)}` : '';
     renderRounds();
   }, () => {});
 
-  db.collection('directions').orderBy('order').limit(24).onSnapshot((snap) => {
+  db.collection('directions').limit(200).onSnapshot((snap) => {
     const box = $('directions-list');
-    count('n-directions', snap.docs.length);
-    if (!snap.docs.length) return empty(box, 'No directions yet. They appear when Claude explores options before building.');
-    box.replaceChildren(...snap.docs.map((d) => {
-      const x = d.data() || {};
+    const all = snap.docs.map((d) => d.data() || {});
+    const set = all.map((x) => String(x.set || '')).sort().pop();
+    const list = all.filter((x) => String(x.set || '') === set).sort((a, b) => (a.order || 0) - (b.order || 0));
+    count('n-directions', list.length);
+    if (!list.length) return empty(box, 'No directions yet. They appear when Claude explores options before building.');
+    box.replaceChildren(...list.map((x) => {
       const url = safeUrl(x.url);
       const tile = url ? ext(el('a', 'dir'), url) : el('div', 'dir');
       const [letter, ...rest] = String(x.name || '').split(' · ');
       tile.append(el('span', 'letter', rest.length ? letter : ''), el('span', 'name', rest.length ? rest.join(' · ') : (x.name || 'Direction')));
       if (x.note) tile.append(el('span', 'note', x.note));
-      if (url) tile.append(el('span', 'go', 'Opens in a new tab ↗'));
+      if (url) tile.append(el('span', 'go', 'Opens in a new tab'));
       return tile;
     }));
   }, () => empty($('directions-list'), 'Couldn\'t load directions.'));
@@ -218,7 +219,7 @@ details.past .inner { padding: 0 16px 16px; display: grid; gap: 14px; }
       const chips = el('div', 'chips');
       for (const p of proofs) {
         const url = safeUrl(p && p.url);
-        if (url) chips.append(ext(el('a', 'chip', `${p.name || 'Open'} ↗`), url));
+        if (url) chips.append(ext(el('a', 'chip', p.name || 'Open'), url));
         else if (p && p.path) chips.append(el('span', 'chip path', p.name ? `${p.name} · ${p.path}` : p.path));
       }
       body.append(chips);
@@ -254,10 +255,12 @@ details.past .inner { padding: 0 16px 16px; display: grid; gap: 14px; }
     return list;
   };
 
+  const settle = (x) => { const s = state.settled.get(x.id); return s ? { ...x, status: s.status, change: s.change || x.change } : x; };
   function renderRounds() {
     if (!state.handovers || !state.decisions || !state.open) return;
     const [latest, ...past] = state.handovers;
-    const inRound = (id) => state.decisions.filter((x) => x.round === id).sort((a, b) => String(a.at).localeCompare(String(b.at)));
+    $('updated').textContent = latest ? `Updated ${fmt(latest.at)}` : '';
+    const inRound = (id) => state.decisions.map(settle).filter((x) => x.round === id).sort((a, b) => String(a.at).localeCompare(String(b.at)));
     const lb = $('latest-box');
     if (!latest) empty(lb, 'No handovers yet. After Claude hands over work, what it checked and decided shows here.');
     else {
@@ -267,7 +270,7 @@ details.past .inner { padding: 0 16px 16px; display: grid; gap: 14px; }
       if (ds.length) card.append(el('span', 'label', `Decided this round · ${ds.length}`), ...grouped(ds, false, true));
       lb.replaceChildren(card);
     }
-    const open = [...state.open].sort((a, b) => String(a.at).localeCompare(String(b.at)));
+    const open = state.open.map(settle).filter((x) => x.status === 'open').sort((a, b) => String(a.at).localeCompare(String(b.at)));
     count('n-open', open.length);
     if (!open.length) empty($('open-list'), state.decisions.length ? 'Nothing open: every decision has been settled.' : 'No decisions yet.');
     else $('open-list').replaceChildren(...grouped(open, true, false));
@@ -289,8 +292,8 @@ details.past .inner { padding: 0 16px 16px; display: grid; gap: 14px; }
         det.append(sum, inner);
         return det;
       });
-      const archived = Number(state.meta.archivedRounds) || 0;
-      if (archived) items.push(el('p', 'foot', `${archived} older ${archived === 1 ? 'round was' : 'rounds were'} removed to keep the board small.`));
+      const archived = Math.max(0, (Number(latest.n) || 0) - state.handovers.length);
+      if (archived) items.push(el('p', 'foot', `${archived} older ${archived === 1 ? 'round is' : 'rounds are'} not shown, to keep the board small.`));
       hb.replaceChildren(...items);
     }
   }
@@ -311,13 +314,22 @@ details.past .inner { padding: 0 16px 16px; display: grid; gap: 14px; }
     renderRounds();
   }, () => empty($('open-list'), 'Couldn\'t load decisions.'));
 
-  // Screens: one current screenshot per screen, size and theme; each round replaces it.
-  db.collection('shots').orderBy('screen').limit(120).onSnapshot((snap) => {
+  db.collection('settled').orderBy('at', 'desc').limit(1000).onSnapshot((snap) => {
+    const latest = new Map();
+    for (const d of snap.docs) { const x = d.data() || {}; if (x.id && !latest.has(x.id)) latest.set(x.id, x); }
+    state.settled = latest;
+    renderRounds();
+  }, () => {});
+
+  // Screens: the newest screenshot per screen, size and theme; older ones are replaced.
+  db.collection('shots').orderBy('at', 'desc').limit(300).onSnapshot((snap) => {
     const box = $('shots-list');
-    count('n-screens', new Set(snap.docs.map((d) => (d.data() || {}).screen)).size);
-    if (!snap.docs.length) return empty(box, 'No screenshots yet. They appear after Claude checks a page it built. A Design canvas has none: open its directions instead.');
+    const seen = new Set();
+    const docs = snap.docs.filter((d) => { const x = d.data() || {}; const k = `${x.screen}|${x.width}|${x.theme}`; return !seen.has(k) && seen.add(k); });
+    count('n-screens', new Set(docs.map((d) => (d.data() || {}).screen)).size);
+    if (!docs.length) return empty(box, 'No screenshots yet. They appear after Claude checks a page it built. A Design canvas has none: open its directions instead.');
     const screens = new Map();
-    for (const d of snap.docs) { const x = d.data() || {}; const k = x.screen || 'Screens'; screens.set(k, [...(screens.get(k) || []), x]); }
+    for (const d of docs) { const x = d.data() || {}; const k = x.screen || 'Screens'; screens.set(k, [...(screens.get(k) || []), x]); }
     box.replaceChildren(...[...screens].map(([screen, shots]) => {
       const wrap = el('div', 'stack');
       wrap.append(el('h3', 'screen-name', screen));

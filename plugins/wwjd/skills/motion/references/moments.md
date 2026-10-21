@@ -16,7 +16,7 @@ Each moment: **when** it earns motion, the **spec** (tokens from `motion.css`, s
 | **Popover / menu / select** | Opened by click | From trigger (`--transform-origin`), opacity + `scale(var(--pop-scale))`, `--dur-pop`; exit `--dur-fast` | From centre; on a command palette opened by shortcut (instant) |
 | **Dialog** | Occasional, blocking | Centre, opacity + `scale(var(--pop-scale))`, backdrop fades; exit faster | Slide from off-screen; bounce |
 | **Drawer / sheet** | Detail panel, mobile sheet | Translate from its edge, `--dur-modal` `--ease-drawer`; drag follows the finger, release keeps velocity, dismiss past ~25% or a flick | Scale; snapping back with no momentum |
-| **Toast** | Result of an action off-screen, or undo | From its edge, `--enter-y` + fade, `--dur-pop`; stack shifts by transform; 4–6s, pauses on hover and hidden tab; swipe to dismiss | For a change already visible; celebration toasts; stacking more than 3 |
+| **Toast** | Result of an action off-screen, or undo | From its edge, `--enter-y` + fade, `--dur-pop`; stack shifts by transform; 4–6s, pauses on hover and hidden tab (an Undo toast stays until the next action, the Floor); swipe to dismiss | For a change already visible; celebration toasts; stacking more than 3 |
 
 ## Layout change
 | Moment | When | Spec | Never |

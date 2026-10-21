@@ -93,6 +93,17 @@ test("orphan-item: a dot centred beside taller text on one line is not alone", (
   assert.ok(!rules.includes("orphan-item"), rules.join(", "));
 });
 
+test("orphan-item: a cell holding one word or a checkbox is laid out by the table; a lone row item still counts", (t) => {
+  const rules = fit(`<style>table{width:460px}</style>
+    <table><tr><th><span>Off</span></th><td><input type="checkbox" aria-label="Aktiv"></td><td>Leverantörsavtal</td></tr>
+    <tr><td><span>På</span></td><td><input type="checkbox" aria-label="Aktiv"></td><td>Städtjänster</td></tr></table>
+    <div role="grid"><div role="row" style="display:flex"><div role="gridcell" style="flex:1"><input type="checkbox" aria-label="Vald"></div><div role="gridcell" style="flex:3">Region Mitt</div></div></div>`);
+  if (!rules) return t.skip("no Playwright");
+  assert.ok(!rules.includes("orphan-item"), rules.join(", "));
+  const lone = fit(`<div><div><input type="checkbox" aria-label="Vald"></div><p>Leverantörsavtal för städtjänster</p></div>`);
+  assert.ok(lone.includes("orphan-item"), lone.join(", "));
+});
+
 test("identifier-clipped: a visually hidden (sr-only) heading is skipped; a clipped one still counts", (t) => {
   const rules = fit(`<style>.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0}
     .vh{position:absolute;clip-path:inset(50%);white-space:nowrap}</style>

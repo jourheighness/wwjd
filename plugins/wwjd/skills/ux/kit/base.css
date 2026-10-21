@@ -76,6 +76,11 @@
 }
 [data-density="compact"]:is(:not([data-profile]), [data-profile="app"]) { --text-body: 13px; }
 :root[data-density="comfortable"], [data-density="comfortable"] { --step: 1; --pad-box: var(--space-5); }
+/* Touch: app body text is 16px at every density (other profiles start at 16). Specificity beats tokens.css's :root ramp in any load order */
+@media (pointer: coarse) {
+  :root:is(:not([data-profile]), [data-profile="app"]), [data-profile="app"],
+  [data-density="compact"]:is(:not([data-profile]), [data-profile="app"]) { --text-body: 16px; --lh-body: 24px; }
+}
 
 /* Derived heights: rows 32/36/44 (app), 44/48/56 (consumer); touch lifts both to the floor */
 :root, [data-profile], [data-density] {
@@ -174,7 +179,7 @@ a { color: var(--accent-text); text-underline-offset: 2px; }
 /* Checkbox / Radio / Switch: Base UI Root ([data-checked]) or native input. Indicators are drawn by the root */
 .checkbox, .radio, .switch { appearance: none; position: relative; display: inline-grid; place-content: center; flex-shrink: 0;
   margin: 2px 0 0; padding: 0; border: 1px solid var(--border-control); background: var(--surface-2); cursor: pointer; }
-.checkbox { width: 16px; height: 16px; border-radius: var(--r-1); }
+.checkbox { width: 16px; height: 16px; border-radius: min(var(--r-1), 4px); } /* capped: a round look's 8px would turn it into a radio */
 .radio { width: 16px; height: 16px; border-radius: 50%; }
 .checkbox:is(:checked, :indeterminate, [data-checked], [data-indeterminate]), .radio:is(:checked, [data-checked]) { background: var(--accent); border-color: var(--accent); }
 .checkbox:is(:checked, [data-checked])::before { content: ""; width: 10px; height: 10px; background: var(--on-accent); clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0, 43% 62%); }
@@ -184,6 +189,8 @@ a { color: var(--accent-text); text-underline-offset: 2px; }
 input.switch::before, .switch-thumb { content: ""; position: absolute; inset: 2px auto auto 2px; width: 16px; height: 16px; border-radius: 50%; background: oklch(1 0 0); transition: transform var(--dur-fast) var(--ease-out); }
 .switch:is(:checked, [data-checked]) { background: var(--accent); }
 input.switch:checked::before, .switch-thumb[data-checked] { transform: translateX(12px); }
+/* Hit target >=24px (Floor) around the 16px box and 20px switch, centred; out of flow, so layout keeps the visual size */
+:is(.checkbox, .radio, .switch)::after { content: ""; position: absolute; top: 50%; left: 50%; width: max(100%, 24px); height: max(100%, 24px); translate: -50% -50%; }
 :is(.checkbox, .radio, .switch):is(:disabled, [data-disabled]) { opacity: .45; cursor: not-allowed; }
 .choice { display: flex; align-items: flex-start; gap: var(--space-2); cursor: pointer; }
 
@@ -320,8 +327,9 @@ dialog.drawer { transform: translateX(100%); }
 .table :is(th, td).pin { position: sticky; inset-inline-start: 0; z-index: var(--z-sticky); background: var(--surface-2); border-inline-end: 1px solid transparent; }
 .table th.pin { z-index: calc(var(--z-sticky) + 1); }
 .table .pin::after, .table-wrap::after { content: ""; position: absolute; inset-block: 0; pointer-events: none; opacity: 0; transition: opacity var(--dur-pop) ease; }
-.table .pin::after { inset-inline-start: 100%; width: 12px; background: linear-gradient(to right, light-dark(oklch(0 0 0 / .12), oklch(0 0 0 / .5)), transparent); }
-.table-wrap::after { inset-inline-end: 0; z-index: calc(var(--z-sticky) + 2); width: 32px; background: linear-gradient(to left, light-dark(oklch(0 0 0 / .16), oklch(0 0 0 / .55)), transparent); }
+/* Scroll shadows: an inset shadow on the wall edge, horizontal only (spread cancels blur top and bottom); never a gradient */
+.table .pin::after { inset-inline-start: 100%; width: 12px; box-shadow: inset 14px 0 10px -10px light-dark(oklch(0 0 0 / .12), oklch(0 0 0 / .5)); }
+.table-wrap::after { inset-inline-end: 0; z-index: calc(var(--z-sticky) + 2); width: 32px; box-shadow: inset -40px 0 24px -24px light-dark(oklch(0 0 0 / .16), oklch(0 0 0 / .55)); }
 :is(.table-wrap:dir(rtl) .pin, .table-wrap:dir(rtl))::after { transform: scaleX(-1); }
 .table-wrap[data-more-start] .table .pin { border-inline-end-color: var(--border); }
 .table-wrap[data-more-start] .table .pin::after, .table-wrap[data-more-end]::after { opacity: 1; }

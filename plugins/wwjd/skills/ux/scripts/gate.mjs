@@ -7,7 +7,7 @@
 //          below that the agent grades in its head. A surface within budget still gets one line ("within budget: title + 3").
 //   post   notes the session's last UI edit (ledger.mjs). The edit hook does this in its own process (wwjd.mjs check
 //          --hook); this mode is the same call for scripts and tests.
-//   stop   Stop: the checks the dial asks for, all newer than the last UI edit, before the turn may end:
+//   stop   Stop and SubagentStop (a subagent's edits are its own ledger, ledger.mjs): the checks the dial asks for, all newer than the last UI edit, before the turn may end:
 //          2 a screenshot · 3 two widths · 4 a dark shot and a runtime report · 5 a wwjd-critic run.
 //          .wwjd/shots/UNAVAILABLE (render.mjs writes it when it can't render) stands in for shots and runtime.
 //          A Design canvas board (.dc.html) asks for no shots, fit or runtime: it renders only in its canvas.
@@ -173,7 +173,7 @@ function checks(ledger, s) {
   const boardId = boardUrl ? /artifact\/([\w-]+)/.exec(boardUrl)?.[1] : null;
   if (s >= 2 && boardId && boardMode(projectDir) === "on") out.push({ key: "board", label: "Add this round to the board",
     what: "Claude adds this round's decisions, screenshots and checks to the shared project board.", done: seenSince(since, boardId).board,
-    how: `add this round to the project board ${boardUrl} in one ArtifactData batch (references/board.md); the Project board setting turns this off` });
+    how: `add this round to the project board ${boardUrl}: node ${q(join(HERE, "board.mjs"))} round --title "<what you handed over>" --check … --shot …, then its batch (references/board.md); the Project board setting turns this off` });
   if (s >= 5) out.push({ key: "critic", label: "Get a second opinion", what: "A separate reviewer looks at the result with fresh eyes and lists what to fix.", done: seenSince(since, boardId).critic, how: "a cold review: run the wwjd:wwjd-critic agent on what you built" });
   const skipped = skippedAt(ledger);
   for (const c of out) if ((skipped[c.key] || 0) > since) Object.assign(c, { done: true, skipped: true });
@@ -199,11 +199,13 @@ if (mode === "pre") {
     }
     return top;
   })();
-  // A new project (a repo or package with no .wwjd.json and no UI yet): the person decides how it starts, before any UI
+  // A new project (a repo or package with no "start" in .wwjd.json and no UI yet): the person decides how it starts, before any UI
   // file is written. Loose files outside a project (an Artifact page in a scratchpad, the variants themselves) pass.
   const isProject = existsSync(join(project, "package.json")) || existsSync(join(project, ".git"));
   const isMarkup = MARKUP.has(extname(fp)) && !/(^|\/)(docs?|emails?)\//.test(fp);
-  if (!fileConfig && isMarkup && isProject && !hasUI(project)) {
+  // A .wwjd.json without "start" (dials only, or empty) has not had the question yet.
+  const started = (() => { try { return Boolean(fileConfig && JSON.parse(readFileSync(fileConfig, "utf8")).start); } catch { return false; } })();
+  if (!started && isMarkup && isProject && !hasUI(project)) {
     say({ hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason:
       `wwjd: ${project} is a new project, and wwjd owns its design side. Before the first UI file, ask the start question ` +
       `(skills/ux/commands/start.md §0) in one AskUserQuestion batch, each with a default: how to begin (lettered variants ` +

@@ -56,6 +56,17 @@
           }
         ]
       }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}\"/skills/ux/scripts/gate.mjs stop",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   },
   "modules": [
