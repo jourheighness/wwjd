@@ -10,6 +10,8 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import type { Entry, NoteScope, Scope } from '../types'
 import { PANE, card, exportDials, loadProjectDials, setProjectRoot, settingsView } from './dials'
+import { TONE, iconSource } from './icons'
+import type { IconName } from './icons'
 import { drawn, onFocus, onPress, tracked } from './press'
 
 const view = atom({ plugin: 'wwjd', key: 'view' } as const, 'log')
@@ -401,14 +403,14 @@ export const register: Register = (on, options) => {
     const shown = await read($, view)
     const header = (title: string, action: JSX.Element) => (
       <Box flexDirection="row" justifyContent="space-between" alignItems="center">
-        <Text bold>{title}</Text>
+        <Text size="heading" weight="semibold">{title}</Text>
         {action}
       </Box>
     )
 
     if (shown === 'settings') {
       return (
-        <Box flexDirection="column" padding="md" gap="md">
+        <Box flexDirection="column" padding="lg" gap="lg">
           {header('Settings', <Button key="to-log" plain dimColor label="‹ Back" onPress={() => update($, view, () => 'log')} />)}
           {await settingsView($, e, options)}
         </Box>
@@ -442,6 +444,22 @@ export const register: Register = (on, options) => {
     const open = await read($, editing)
     const where = await read($, noteScope)
     const Input = 'Input' in ui ? ui.Input : null
+    // Icons where the surface draws Svg (icons.ts); the terminal keeps text marks.
+    const Svg = 'Svg' in ui ? ui.Svg : null
+    const icon = (name: IconName, alt: string, color?: string) => (Svg ? <Svg source={iconSource(name, color)} alt={alt} width={16} height={16} /> : null)
+    // A section: icon, title and count on one line, what it holds in a smaller line under it.
+    const section = (key: string, name: IconName, title: string, n: number, sub: string | null, body: (JSX.Element | null)[], color?: string) => (
+      <Box key={key} flexDirection="column" gap="sm">
+        <Box flexDirection="column" gap="xs">
+          <Box flexDirection="row" alignItems="center" gap="sm">
+            {icon(name, '', color)}
+            <Text weight="semibold" color={color}>{title}{n ? <Text dimColor tabular weight="regular"> {String(n)}</Text> : null}</Text>
+          </Box>
+          {sub ? <Text size="footnote" wrap="wrap" dimColor>{sub}</Text> : null}
+        </Box>
+        {body}
+      </Box>
+    )
 
     // Tasks (else surfaces) in order of their latest entry, newest first; entries in each oldest first.
     const groupOf = (x: Entry) => x.task ?? x.surface
@@ -471,27 +489,34 @@ export const register: Register = (on, options) => {
         const variants = g.filter(p => p.kind === 'variant').map(p => proofLabel(p, board))
         const label = variants.length ? `${first.target === board ? 'Open board' : 'Open'}: ${variants.join(', ')}` : proofLabel(first, board)
         const note = variants.length ? `Opened the board · look for ${variants.join(', ')}` : undefined
-        return { p: first, label, note }
+        const kind: IconName = first.kind === 'screenshot' ? 'image' : first.kind === 'page' ? 'globe' : first.kind === 'file' ? 'file' : first.kind === 'link' ? 'link' : 'layout'
+        return { p: first, label, note, kind }
       })
       return (
         <Box key={`proof:${key}`} flexDirection="row" flexWrap="wrap" gap="sm">
           {items.map((it, i) => inApp
-            ? <Button key={`proof:${key}:${i}`} plain label={it.label} onPress={() => { void openProof($, it.p, it.label, it.note) }} />
+            ? (
+              <Box key={`proof:${key}:${i}`} flexDirection="row" alignItems="center" gap="xs">
+                {icon(it.kind, '')}
+                <Button key={`proof:${key}:${i}`} plain label={it.label} onPress={() => { void openProof($, it.p, it.label, it.note) }} />
+              </Box>
+            )
             : <Text key={`proof:${key}:${i}`}><Link href={proofHref(it.p)} label={it.label} /></Text>)}
         </Box>
       )
     }
-    const mark = (kind: Entry['kind'] | 'blocking') => kind === 'blocking'
-      ? <Text color="error" bold>✕</Text>
+    const mark = (kind: Entry['kind'] | 'blocking') => Svg
+      ? (kind === 'blocking' ? icon('alert', 'Not done yet', TONE.error) : kind === 'assumption' ? icon('help', 'Claude guessed', TONE.guess) : icon('dot', 'Claude chose'))
+      : kind === 'blocking' ? <Text color="error" bold>✕</Text>
       : kind === 'assumption' ? <Text color="suggestion" bold>?</Text> : <Text dimColor bold>·</Text>
     // The mark sits on the first line at the top left; everything else, the actions included, hangs on the text's edge.
     const lead = (key: string, kind: Entry['kind'] | 'blocking', text: string, lines: (string | undefined)[], below: (JSX.Element | null)[], corner?: JSX.Element) => (
-      <Box key={`lead:${key}`} flexDirection="row" gap={1} alignItems="flex-start">
+      <Box key={`lead:${key}`} flexDirection="row" gap="sm" alignItems="flex-start">
         {mark(kind)}
-        <Box flexDirection="column" flexGrow={1} flexShrink={1} gap="xs">
-          <Box flexDirection="column">
+        <Box flexDirection="column" flexGrow={1} flexShrink={1} gap="sm">
+          <Box flexDirection="column" gap="xs">
             <Text wrap="wrap">{text}</Text>
-            {lines.filter(Boolean).map((l, i) => <Text key={`line:${key}:${i}`} wrap="wrap" dimColor>{l}</Text>)}
+            {lines.filter(Boolean).map((l, i) => <Text key={`line:${key}:${i}`} size="footnote" wrap="wrap" dimColor>{l}</Text>)}
           </Box>
           {below}
         </Box>
@@ -542,82 +567,68 @@ export const register: Register = (on, options) => {
     }
 
     const handledRow = (x: Entry) => (
-      <Box key={`handled:${x.id}`} flexDirection="row" gap={1} alignItems="flex-start">
+      <Box key={`handled:${x.id}`} flexDirection="row" gap="sm" alignItems="flex-start">
         {mark(x.kind)}
-        <Box flexDirection="column" flexGrow={1} flexShrink={1}>
-          <Text wrap="wrap" dimColor><Text dimColor>{x.task ?? x.surface} · </Text>{x.text}</Text>
+        <Box flexDirection="column" flexGrow={1} flexShrink={1} gap="xs">
+          <Text size="footnote" wrap="wrap" dimColor><Text dimColor>{x.task ?? x.surface} · </Text>{x.text}</Text>
           {x.correction
-            ? <Text wrap="wrap">Changed → {x.correction.note} <Text dimColor>· {x.correction.scope === 'once' ? 'just this time' : x.correction.scope === 'person' ? 'every project' : 'this project'}</Text></Text>
-            : <Text dimColor>Dismissed</Text>}
+            ? <Text size="footnote" wrap="wrap">Changed → {x.correction.note} <Text dimColor>· {x.correction.scope === 'once' ? 'just this time' : x.correction.scope === 'person' ? 'every project' : 'this project'}</Text></Text>
+            : <Text size="footnote" dimColor>Dismissed</Text>}
         </Box>
         {x.kept ? <Button key={`reopen:${x.id}`} plain dimColor label="Reopen" onPress={() => setKept($, x.id, false)} /> : null}
       </Box>
     )
 
+    const dirRows = [...dirs.reduce((m, d) => m.set(d.url, [...(m.get(d.url) ?? []), d]), new Map<string, Direction[]>()).entries()].map(([url, ds], i) => {
+      const names = ds.map(d => d.name).join(', ')
+      const label = ds.length > 1 ? 'Open canvas' : ds[0]?.name ?? 'Open'
+      const onCanvas = ds.length === 1 && Boolean(ds[0]?.board)
+      const press = () => { void openProof($, { kind: onCanvas ? 'variant' : 'artifact', target: url, name: label }, label, onCanvas ? `Opened the canvas · look for ${names}` : undefined) }
+      return (
+        <Box key={`dir:${i}`} flexDirection="row" flexWrap="wrap" gap="sm" alignItems="center">
+          {ds.length > 1 ? <Text size="footnote" wrap="wrap" dimColor>{names}</Text> : null}
+          {inApp ? <Button key={`dir:${i}:open`} plain label={label} onPress={press} /> : <Text><Link href={url} label={label} /></Text>}
+        </Box>
+      )
+    })
+    const decided = groups.map(([name, xs]) => {
+      const surfaces = [...new Set(xs.map(x => x.surface))]
+      const isTask = xs.some(x => x.task)
+      return (
+        <Box key={`group:${name}`} flexDirection="column" gap="sm">
+          <Text size="footnote" weight="semibold" dimColor>{name}</Text>
+          {isTask && surfaces.length > 1
+            ? surfaces.map(sf => (
+              <Box key={`sub:${name}:${sf}`} flexDirection="column" gap="sm">
+                <Text size="footnote" dimColor>{sf}</Text>
+                {xs.filter(x => x.surface === sf).map(decisionCard)}
+              </Box>
+            ))
+            : xs.map(decisionCard)}
+        </Box>
+      )
+    })
+
     return (
-      <Box flexDirection="column" padding="md" gap="md">
+      <Box flexDirection="column" padding="lg" gap="lg">
         <Box flexDirection="row" alignItems="center" gap="sm">
-          <Box flexGrow={1}><Text bold>wwjd</Text></Box>
+          <Box flexGrow={1}><Text size="heading" weight="semibold">wwjd</Text></Box>
           {board ? (inApp
             ? <Button key="board" plain label="Open board" onPress={() => { void openProof($, { kind: 'artifact', target: board }, 'the board') }} />
             : <Text><Link href={board} label="Open board" /></Text>) : null}
           <Button key="to-settings" plain dimColor label="Settings" onPress={() => { setProjectRoot(root); void update($, view, () => 'settings').then(() => loadProjectDials($)) }} />
         </Box>
-        {dirs.length ? (
-          <Box key="directions" flexDirection="column" gap="xs">
-            <Text bold>Directions <Text dimColor>{String(dirs.length)}</Text></Text>
-            {[...dirs.reduce((m, d) => m.set(d.url, [...(m.get(d.url) ?? []), d]), new Map<string, Direction[]>()).entries()].map(([url, ds], i) => {
-              const names = ds.map(d => d.name).join(', ')
-              const label = ds.length > 1 ? 'Open canvas' : ds[0]?.name ?? 'Open'
-              const onCanvas = ds.length === 1 && Boolean(ds[0]?.board)
-              const press = () => { void openProof($, { kind: onCanvas ? 'variant' : 'artifact', target: url, name: label }, label, onCanvas ? `Opened the canvas · look for ${names}` : undefined) }
-              return (
-                <Box key={`dir:${i}`} flexDirection="row" flexWrap="wrap" gap="sm" alignItems="center">
-                  {ds.length > 1 ? <Text wrap="wrap" dimColor>{names}</Text> : null}
-                  {inApp ? <Button key={`dir:${i}:open`} plain label={label} onPress={press} /> : <Text><Link href={url} label={label} /></Text>}
-                </Box>
-              )
-            })}
-          </Box>
-        ) : null}
-        {due.length ? (
-          <Box key="needs" flexDirection="column" gap="sm">
-            <Box flexDirection="column">
-              <Text bold color="error">Not done yet <Text dimColor>{String(due.length)}</Text></Text>
-              <Text wrap="wrap" dimColor>Claude does these before it says the work is finished. Run one now, or skip it.</Text>
-            </Box>
-            {due.map(blockingCard)}
-          </Box>
-        ) : null}
-        {groups.length ? (
-          <Box key="decided" flexDirection="column">
-            <Text bold>Claude decided <Text dimColor>{String(entries.length)}</Text></Text>
-            <Text wrap="wrap" dimColor>Already in the work. Dismiss what's fine with ✕, or edit it and Claude changes it.</Text>
-          </Box>
-        ) : null}
-        {groups.length
-          ? groups.map(([name, xs]) => {
-            const surfaces = [...new Set(xs.map(x => x.surface))]
-            const isTask = xs.some(x => x.task)
-            return (
-              <Box key={`group:${name}`} flexDirection="column" gap="sm">
-                <Text bold>{name}</Text>
-                {isTask && surfaces.length > 1
-                  ? surfaces.map(sf => (
-                    <Box key={`sub:${name}:${sf}`} flexDirection="column" gap="sm">
-                      <Text dimColor>{sf}</Text>
-                      {xs.filter(x => x.surface === sf).map(decisionCard)}
-                    </Box>
-                  ))
-                  : xs.map(decisionCard)}
-              </Box>
-            )
-          })
-          : due.length ? null : <Text dimColor>{handled.length ? 'Nothing open.' : 'No decisions logged in this project yet.'}</Text>}
+        {due.length ? section('needs', 'alert', 'Not done yet', due.length, 'Claude does these before it says the work is finished. Run one now, or skip it.', due.map(blockingCard), TONE.error) : null}
+        {dirs.length ? section('directions', 'compass', 'Directions', dirs.length, null, dirRows) : null}
+        {groups.length ? section('decided', 'list', 'Claude decided', entries.length, "Already in the work. Dismiss what's fine with ✕, or edit it and Claude changes it.", decided) : null}
+        {!groups.length && !due.length ? <Text dimColor>{handled.length ? 'Nothing open.' : 'No decisions logged in this project yet.'}</Text> : null}
         {handled.length ? (
-          <Box flexDirection="column" gap="xs">
-            <Button key="handled" plain dimColor label={`${isHandledShown ? '▾' : '▸'} Handled · ${handled.length}`}
-              onPress={() => update($, showHandled, v => !v)} />
+          <Box key="handled-list" flexDirection="column" gap="sm">
+            <Box flexDirection="row" alignItems="center" gap="sm">
+              {icon('archive', '')}
+              <Button key="handled" plain dimColor label={`${isHandledShown ? '▾' : '▸'} Handled · ${handled.length}`}
+                onPress={() => update($, showHandled, v => !v)} />
+            </Box>
             {isHandledShown ? handled.map(handledRow) : null}
           </Box>
         ) : null}

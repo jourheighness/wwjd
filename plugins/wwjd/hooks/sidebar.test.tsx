@@ -39,6 +39,11 @@ test('the agent logs through the tool; the sidebar groups entries by surface', a
   expect(await ui.find({ type: 'Text', text: 'Task card' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: 'Dropped the comment count' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: 'over the card budget' })).toBeDefined()
+  // The desktop draws the marks as icons; the terminal keeps text marks
+  expect((await ui.findAll({ type: 'Svg' })).length).toBeGreaterThan(0)
+  const term = await $.ui.mount({ plugin: 'wwjd', surface: 'terminal', ...PANE, props })
+  expect(await term.find({ type: 'Svg' })).toBeUndefined()
+  expect(await term.find({ type: 'Text', text: 'Dropped the comment count' })).toBeDefined()
 })
 
 test('a correction goes to the project decision log or your taste file, and back to the agent', async ($, on) => {

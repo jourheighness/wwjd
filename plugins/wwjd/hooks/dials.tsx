@@ -139,7 +139,7 @@ async function pickSetting($: EngineInterface, which: keyof typeof SETTINGS, val
 export function card(ui: ReturnType<EngineInterface['ui']['resolve']>, key: string, content: JSX.Element, borderColor = 'subtle') {
   const { Box } = ui
   return (
-    <Box key={key} flexDirection="column" borderStyle="round" borderColor={borderColor} paddingX="md" paddingY="sm">
+    <Box key={key} flexDirection="column" borderStyle="round" borderColor={borderColor} padding="md">
       {content}
     </Box>
   )
@@ -163,12 +163,12 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
     <Button key={key} label={label} variant={isPicked ? 'primary' : undefined} dimColor={!isPicked} onPress={onPress} />
   const dialCard = (key: string, name: string, right: JSX.Element | null, does: string, stops: JSX.Element[]) => card(ui, key, (
     <Box flexDirection="column" gap="sm">
-      <Box flexDirection="column">
+      <Box flexDirection="column" gap="xs">
         <Box flexDirection="row" justifyContent="space-between" alignItems="center">
-          <Text bold>{name}</Text>
+          <Text weight="semibold">{name}</Text>
           {right}
         </Box>
-        <Text wrap="wrap" dimColor>{does}</Text>
+        <Text size="footnote" wrap="wrap" dimColor>{does}</Text>
       </Box>
       <Box flexDirection="row" flexWrap="wrap" gap="xs">{stops}</Box>
     </Box>
