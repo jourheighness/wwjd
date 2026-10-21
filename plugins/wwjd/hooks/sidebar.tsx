@@ -211,7 +211,14 @@ async function openProof($: EngineInterface, p: Proof, what: string, note?: stri
   let why = ''
   try {
     const r = (await $.tool.call(call as never)) as { deny?: string; isError?: boolean; text?: string } | undefined
-    if (r && !r.deny && !r.isError) { if (note) $.ui.toast(note); return }
+    if (r && !r.deny && !r.isError) {
+      // Opening an Artifact from a plugin's call loads it without bringing the pane forward: show the pane too.
+      if (p.kind === 'variant' || p.kind === 'artifact') {
+        await $.tool.call({ tool: 'mcp__ccd_view__show_pane', pane: 'artifact' } as never).catch(() => undefined)
+      }
+      if (note) $.ui.toast(note)
+      return
+    }
     why = r?.deny ?? r?.text ?? 'refused'
   } catch (err) {
     why = err instanceof Error ? err.message : String(err)
