@@ -1,10 +1,10 @@
-// The wwjd sidebar (/wwjd), in plain words for someone who never read the skill. Two sections, each saying what it
-// holds: "Not done yet" (what Claude still does before calling the work finished, from the Strictness gate: Run it or
-// Skip) and "Claude decided" (choices and guesses already in the work, grouped by task: the ✕ dismisses it as fine,
-// Edit or Correct sends Claude the change, just this time or saved as a rule for this project or every project).
-// Every button says what it does and every toast says what happened. Proof opens inside the desktop app where it can:
-// an Artifact in its pane, a page in the built-in browser, a file in the Files pane; else as a link. The dials sit behind Settings (dials.tsx). The agent logs through the `log` tool registered here
-// (mcp__wwjd__log); entries live in .wwjd/decisions.jsonl at the root of the project being edited (artifactRoot below).
+// The wwjd sidebar (/wwjd), drawn as Claude's own sidebar is: quiet rounded cards that fold, rows of an icon and a short
+// title. Not done yet (red: what Claude still owes before it hands over, from the Strictness gate: Run it or Skip),
+// Johannes stepped in (saves: a wwjd rule changed what Claude was about to do), Claude decided (choices and guesses
+// already in the work; a row opens to why, proof, Edit and Dismiss), Directions, Handled, and Project (board, Settings).
+// Icons are Svg on the desktop (icons.ts), text marks on the terminal. Proof opens inside the desktop app where it can.
+// The agent logs through the `log` tool registered here (mcp__wwjd__log); entries live in .wwjd/decisions.jsonl at the
+// root of the project being edited (artifactRoot below).
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
@@ -145,6 +145,8 @@ async function correct($: EngineInterface, id: string) {
 }
 
 const settled = (x: Entry) => Boolean(x.correction || x.kept)
+// A row's label: the entry's title, else its text up to the first clause break, at most seven words (older entries).
+const titleOf = (x: Entry) => x.title || (x.text.split(/[,;:(]|\s[—–]\s/)[0] ?? x.text).trim().split(/\s+/).slice(0, 7).join(' ')
 
 // The project's board artifact, when .wwjd.json names one ("board"): the same link every session.
 // The directions explored, from .wwjd/directions.json (written with the board; local, never committed):
@@ -305,10 +307,11 @@ export const register: Register = (on, options) => {
       isDeferred: false,
       inputSchema: {
         type: 'object',
-        required: ['surface', 'kind', 'text'],
+        required: ['surface', 'kind', 'title', 'text'],
         properties: {
           surface: { type: 'string', description: 'The component, screen or layout it is about, in product words ("Task card", "Settings page")' },
           kind: { type: 'string', enum: ['assumption', 'choice', 'save'], description: 'assumption: a guess about product, data or intent; choice: a design call nobody asked for; save: a wwjd rule changed what you were about to do (text: only what it kept you from, a short phrase as "putting the price in a tooltip"; what you did instead goes in why; rule: its name)' },
+          title: { type: 'string', description: 'Two to six words, what you need to know at a glance; the sidebar row ("Decisions open on press", "Prices visible, no tooltips", "Work email assumed")' },
           text: { type: 'string', description: 'One line in the past tense, what you already did or assumed, in plain words a non-designer reads ("Dropped the comment count from the card", "Assumed people sign up with a work email")' },
           why: { type: 'string', description: 'One short reason in plain words, no jargon ("the card was too crowded to scan")' },
           rule: { type: 'string', description: 'save only: the wwjd rule that stepped in, by its name ("Floor: tooltips", "One primary action")' },
@@ -336,7 +339,7 @@ export const register: Register = (on, options) => {
   })
 
   on('tool.call', { tool: TOOL }, async ($, e) => {
-    const x = e as unknown as { surface?: unknown; kind?: unknown; text?: unknown; why?: unknown; rule?: unknown; path?: unknown; task?: unknown; proof?: unknown }
+    const x = e as unknown as { surface?: unknown; kind?: unknown; title?: unknown; text?: unknown; why?: unknown; rule?: unknown; path?: unknown; task?: unknown; proof?: unknown }
     if (typeof x.surface !== 'string' || typeof x.text !== 'string' || (x.kind !== 'assumption' && x.kind !== 'choice' && x.kind !== 'save')) {
       return { deny: 'Needs surface, kind (assumption, choice or save) and text.' }
     }
@@ -358,6 +361,7 @@ export const register: Register = (on, options) => {
     const why = typeof x.why === 'string' && x.why.trim() ? x.why.trim() : instead.join('; ').replace(/^./, c => c.toUpperCase())
     const entry = {
       surface: x.surface.trim(), kind: x.kind as Entry['kind'], text,
+      ...(typeof x.title === 'string' && x.title.trim() ? { title: x.title.trim().slice(0, 60) } : {}),
       ...(why ? { why } : {}),
       ...(x.kind === 'save' && typeof x.rule === 'string' && x.rule.trim() ? { rule: x.rule.trim() } : {}),
       ...(typeof x.task === 'string' && x.task.trim() ? { task: x.task.trim() } : {}),
@@ -469,10 +473,15 @@ export const register: Register = (on, options) => {
     const panel = (key: string, title: string, meta: string, body: (JSX.Element | null)[], opts: { isFoldable?: boolean; isOpen?: boolean; color?: string } = {}) => {
       const isOpen = !opts.isFoldable || (folds[key] ?? opts.isOpen ?? true)
       return (
-        <Box key={`panel:${key}`} flexDirection="column" gap="sm" borderStyle="round" borderColor={inApp ? LINE : 'subtle'} paddingX="md" paddingY="sm">
+        <Box key={`panel:${key}`} flexDirection="column" gap="md" borderStyle="round" borderColor={inApp ? LINE : 'subtle'} padding="md">
           <Box flexDirection="row" justifyContent="space-between" alignItems="center" gap="sm">
             {opts.isFoldable
-              ? <Button key={`fold:${key}`} plain label={`${title} ${isOpen ? '⌄' : '›'}`} onPress={() => update($, foldsAtom, f => ({ ...(f as Record<string, boolean>), [key]: !isOpen }))} />
+              ? (
+                <Box flexDirection="row" alignItems="center" gap="xs">
+                  <Button key={`fold:${key}`} plain label={Svg ? title : `${title} ${isOpen ? '▾' : '▸'}`} onPress={() => update($, foldsAtom, f => ({ ...(f as Record<string, boolean>), [key]: !isOpen }))} />
+                  {icon(isOpen ? 'down' : 'right', '')}
+                </Box>
+              )
               : <Text weight="semibold" color={opts.color}>{title}</Text>}
             {meta ? <Text size="footnote" dimColor tabular>{meta}</Text> : null}
           </Box>
@@ -534,7 +543,10 @@ export const register: Register = (on, options) => {
     const saveRows = [
       ...(isAllSaves ? saves : saves.slice(0, SAVES)).map(x => {
         const p = (x.proof ?? []).map(y => toProof(y, root)).find((y): y is Proof => y !== null) ?? null
-        return row(`save:${x.id}`, mark('save'), [opener(`save:${x.id}`, `Kept Claude from ${x.text}`, p), x.rule ? note(`rule:${x.id}`, x.rule) : null])
+        return row(`save:${x.id}`, mark('save'), [
+          <Text key={`save-text:${x.id}`} wrap="wrap">{`Kept Claude from ${x.text}`}</Text>,
+          x.rule || p ? actions(`save:${x.id}`, [x.rule ? <Text key={`rule:${x.id}`} size="footnote" dimColor>{x.rule}</Text> : null, p ? opener(`save:${x.id}`, 'Open', p) : null]) : null,
+        ])
       }),
       saves.length > SAVES ? <Button key="saves-all" plain dimColor label={isAllSaves ? 'Show less' : 'Show more'} onPress={() => update($, showSaves, v => !v)} /> : null,
     ]
@@ -551,9 +563,11 @@ export const register: Register = (on, options) => {
     const decisionRow = (x: Entry) => {
       const guess = x.kind === 'assumption'
       const isOpen = row1 === x.id || open === x.id
-      const line = <Button key={`row:${x.id}`} plain label={x.text} onPress={() => update($, openRow, r => (r === x.id ? '' : x.id))} />
+      const label = titleOf(x)
+      const line = <Button key={`row:${x.id}`} plain label={label} onPress={() => update($, openRow, r => (r === x.id ? '' : x.id))} />
+      const whole = label !== x.text ? <Text key={`text:${x.id}`} wrap="wrap">{x.text}</Text> : null
       if (open === x.id) {
-        return row(x.id, mark(x.kind), [line,
+        return row(x.id, mark(x.kind), [line, whole,
           x.why ? note(`why:${x.id}`, `Why: ${x.why}`) : null,
           Input ? (
             <Input key={`note:${x.id}`} placeholder="What should it be instead?" autoFocus
@@ -573,6 +587,7 @@ export const register: Register = (on, options) => {
         ])
       }
       return row(x.id, mark(x.kind), [line, ...(isOpen ? [
+        whole,
         x.why ? note(`why:${x.id}`, `Why: ${x.why}`) : null,
         proofs(x.id, x.proof),
         actions(x.id, [
@@ -589,7 +604,7 @@ export const register: Register = (on, options) => {
     const decided = groups.flatMap(([name, xs]) => [groups.length > 1 ? note(`group:${name}`, name) : null, ...xs.map(decisionRow)])
 
     const handledRows = handled.map(x => row(`handled:${x.id}`, mark(x.kind), [
-      <Text key={`handled-text:${x.id}`} size="footnote" wrap="wrap" dimColor>{x.text}</Text>,
+      <Text key={`handled-text:${x.id}`} size="footnote" wrap="wrap" dimColor>{titleOf(x)}</Text>,
       x.correction ? note(`changed:${x.id}`, `Changed to: ${x.correction.note}`) : null,
       x.kept ? <Button key={`reopen:${x.id}`} plain dimColor label="Reopen" onPress={() => setKept($, x.id, false)} /> : null,
     ]))
@@ -607,7 +622,7 @@ export const register: Register = (on, options) => {
     ]
 
     return (
-      <Box flexDirection="column" padding="md" gap="sm">
+      <Box flexDirection="column" padding="md" gap="md">
         {due.length ? panel('needs', 'Not done yet', String(due.length), dueRows, { color: inApp ? TONE.error : 'error' }) : null}
         {saves.length ? panel('saves', 'Johannes stepped in', String(saves.length), saveRows, { isFoldable: true }) : null}
         {entries.length ? panel('decided', 'Claude decided', String(entries.length), decided, { isFoldable: true }) : null}

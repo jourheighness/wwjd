@@ -167,7 +167,7 @@ function checks(ledger, s) {
   }
   // Asked once per run of edits: an agent that made no unasked choice says so in the handover and may stop.
   if (s >= 2) out.push({ key: "log", label: "List the choices Claude made", what: "Claude writes down what it decided without asking you, so you can approve or change each one here.", done: (ledger.logAsked || 0) >= since || loggedSince(ledger.start || 0, ledger),
-    how: "the design assumptions and choices you made without being told: one mcp__wwjd__log call each (surface, kind, one-line text, why, proof: the shot path, the page URL or the Artifact link that shows it); none? say so in the handover" });
+    how: "the design assumptions and choices you made without being told: one mcp__wwjd__log call each (surface, kind, a 2-6 word title, one-line text, why, proof: the shot path, the page URL or the Artifact link that shows it); none? say so in the handover" });
   // The project board (references/board.md), when the setting is on and the project has one
   const boardUrl = typeof config.board === "string" && /^https:\/\//.test(config.board) ? config.board : null;
   const boardId = boardUrl ? /artifact\/([\w-]+)/.exec(boardUrl)?.[1] : null;

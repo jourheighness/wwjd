@@ -1,6 +1,6 @@
 {
   "name": "wwjd",
-  "version": "0.31.0",
+  "version": "0.31.1",
   "description": "What Would Johannes Do: opinionated UI/UX rules and workflow. Three skills (wwjd:ux for structure, behaviour and copy; wwjd:look for the look; wwjd:motion for motion), a cold critic agent, a prompt hook that routes UI work, a lint hook after UI edits, a gate (new-project start question, Strictness checks), the /wwjd sidebar and an optional project board.",
   "author": {
     "name": "Johannes Carlsten"

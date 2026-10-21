@@ -233,7 +233,7 @@ test('a save logs as "Johannes kept Claude from …": its own section, never a d
   await $.command.run({ command: 'wwjd' } as never)
   const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })
   // The hero card: a save with no proof is a plain line; one with proof opens it
-  expect(await ui.find({ type: 'Button', text: 'Johannes stepped in ⌄' })).toBeDefined()
+  expect(await ui.find({ type: 'Button', text: 'Johannes stepped in' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: 'Kept Claude from putting the price in a tooltip' })).toBeDefined()
-  expect(await ui.find({ type: 'Button', text: 'Claude decided ⌄' })).toBeUndefined()
+  expect(await ui.find({ type: 'Button', text: 'Claude decided' })).toBeUndefined()
 })

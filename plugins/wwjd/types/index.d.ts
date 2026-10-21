@@ -24,6 +24,8 @@ export type Entry = {
   surface: string
   kind: 'assumption' | 'choice' | 'save'
   text: string
+  /** 2–6 words, the row's label in the sidebar ("Decisions open on press"); the text is the whole line. */
+  title?: string
   why?: string
   /** A save's rule, by its wwjd name ("Floor: tooltips"). */
   rule?: string

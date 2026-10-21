@@ -86,7 +86,7 @@ for (const x of entries) {
   const status = statusOf(x), change = x.correction?.note;
   if (!(x.id in state.sent)) {
     put("decisions", x.id, { at: x.at || at, round, task: x.task || "", surface: x.surface || "", kind: x.kind === "assumption" ? "assumption" : "choice",
-      text: x.text || "", why: x.why || "", status, ...(change ? { change } : {}), proofs: Array.isArray(x.proof) ? x.proof : [] });
+      ...(x.title ? { title: x.title } : {}), text: x.text || "", why: x.why || "", status, ...(change ? { change } : {}), proofs: Array.isArray(x.proof) ? x.proof : [] });
   } else if (state.sent[x.id] !== status) {
     put("settled", `${x.id}-${round}`, { id: x.id, at, status, ...(change ? { change } : {}) });
   }
