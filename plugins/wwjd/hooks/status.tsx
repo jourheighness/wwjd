@@ -43,7 +43,10 @@ async function refresh($: EngineInterface, options: PluginOptions) {
   const run = await $.process.run(['node', `${$.plugin.root}/skills/ux/scripts/gate.mjs`, 'status'], { stdin, env, timeoutMs: 5000 })
   let next: Gate | null = null
   try { next = JSON.parse(run.stdout) as Gate } catch { /* node missing or the script failed: keep quiet */ }
-  await update($, gate, () => next)
+  // Redraw only on a real change: a refresh after every tool call would otherwise redraw the pane while the person
+  // clicks, and a press that lands mid-redraw can miss.
+  const prev = await read($, gate)
+  if (JSON.stringify(prev) !== JSON.stringify(next)) await update($, gate, () => next)
   const off = DIALS.filter(x => x.key !== 'strictness' && !isDefault(x, stopOf(x, d[x.key]))).map(x => `${x.name} ${x.stops[stopOf(x, d[x.key])]?.[0]}`)
   $.ui.status(['wwjd', `Strictness ${d.strictness ?? 3}`, ...off].join(' · '))
 }

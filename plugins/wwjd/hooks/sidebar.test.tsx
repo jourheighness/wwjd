@@ -72,7 +72,7 @@ test('a correction goes to the project decision log or your taste file, and back
   expect(JSON.parse(files['/p/.wwjd/decisions.jsonl']?.trim().split('\n')[1] ?? '{}').correction.scope).toBe('person')
 })
 
-test('keep and change settle an entry: it leaves the open list for Handled with a toast; a kept one reopens', async ($, on) => {
+test('dismiss and change settle an entry: it leaves the open list for Handled with a toast; a kept one reopens', async ($, on) => {
   mock.store(on)
   const files: Record<string, string> = { '/p/DESIGN.md': '# Design\n' }
   const toasts: string[] = []
@@ -86,9 +86,9 @@ test('keep and change settle an entry: it leaves the open list for Handled with 
   await $.command.run({ command: 'wwjd' } as never)
   const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })
 
-  await ui.press({ key: `keep:${d1}` })
-  expect(toasts.at(-1)).toBe('Approved · Task card · nothing changes')
-  expect(await ui.find({ key: `keep:${d1}` })).toBeUndefined()
+  await ui.press({ key: `dismiss:${d1}` })
+  expect(toasts.at(-1)).toBe('Dismissed · Task card · nothing changes')
+  expect(await ui.find({ key: `dismiss:${d1}` })).toBeUndefined()
   await ui.press({ key: `change:${d2}` })
   await ui.input({ key: `note:${d2}`, text: 'Columns by owner', kind: 'submit' })
   expect(toasts.at(-1)).toBe('Sent to Claude · Board · just this time')
@@ -99,7 +99,7 @@ test('keep and change settle an entry: it leaves the open list for Handled with 
   await ui.press({ key: 'handled' })
   await ui.press({ key: `reopen:${d1}` })
   expect(toasts.at(-1)).toBe('Reopened · Task card')
-  expect(await ui.find({ key: `keep:${d1}` })).toBeDefined()
+  expect(await ui.find({ key: `dismiss:${d1}` })).toBeDefined()
   expect(await ui.find({ key: `reopen:${d2}` })).toBeUndefined()
 })
 

@@ -1,7 +1,7 @@
 // The wwjd sidebar (/wwjd), in plain words for someone who never read the skill. Two sections, each saying what it
 // holds: "Not done yet" (what Claude still does before calling the work finished, from the Strictness gate: Run it or
-// Skip) and "Claude decided" (choices and guesses already in the work, grouped by task: Approve or Confirm leaves it as
-// it is, Edit or Correct sends Claude the change, just this time or saved as a rule for this project or every project).
+// Skip) and "Claude decided" (choices and guesses already in the work, grouped by task: the ✕ dismisses it as fine,
+// Edit or Correct sends Claude the change, just this time or saved as a rule for this project or every project).
 // Every button says what it does and every toast says what happened. Proof opens inside the desktop app where it can:
 // an Artifact in its pane, a page in the built-in browser, a file in the Files pane; else as a link. The dials sit behind Settings (dials.tsx). The agent logs through the `log` tool registered here
 // (mcp__wwjd__log); entries live in .wwjd/decisions.jsonl at the root of the project being edited (artifactRoot below).
@@ -198,7 +198,7 @@ async function sendFix($: EngineInterface, label: string, ask: string) {
   $.ui.toast(`Sent · ${label}`)
 }
 
-// Approve (or Confirm): the decision stands. It leaves the open list; Reopen in Handled brings it back. The host's toast holds text
+// Dismiss (the card's ✕): the decision stands. It leaves the open list; Reopen in Handled brings it back. The host's toast holds text
 // only, so the way back lives in Handled rather than an Undo in the toast.
 async function setKept($: EngineInterface, id: string, isKept: boolean) {
   const day = await today($)
@@ -214,7 +214,7 @@ async function setKept($: EngineInterface, id: string, isKept: boolean) {
   })
   if (!entry) return
   await update($, logVersion, n => (n ?? 0) + 1)
-  $.ui.toast(isKept ? `Approved · ${entry.surface} · nothing changes` : `Reopened · ${entry.surface}`)
+  $.ui.toast(isKept ? `Dismissed · ${entry.surface} · nothing changes` : `Reopened · ${entry.surface}`)
 }
 
 export const register: Register = (on, options) => {
@@ -287,7 +287,8 @@ export const register: Register = (on, options) => {
       const fp = typeof x.file_path === 'string' ? x.file_path : typeof x.notebook_path === 'string' ? x.notebook_path : ''
       if (fp) {
         const cwd = await $.session.cwd()
-        await update($, lastEdited, () => (fp.startsWith('/') ? fp : `${cwd}/${fp}`))
+        const at = fp.startsWith('/') ? fp : `${cwd}/${fp}`
+        if ((await read($, lastEdited)) !== at) await update($, lastEdited, () => at) // no redraw for the same file
       }
       return result
     }).catch(($, e, next) => next(e))
@@ -368,7 +369,7 @@ export const register: Register = (on, options) => {
       ? <Text color="error" bold>✕</Text>
       : kind === 'assumption' ? <Text color="suggestion" bold>?</Text> : <Text dimColor bold>·</Text>
     // The mark sits on the first line at the top left; everything else, the actions included, hangs on the text's edge.
-    const lead = (key: string, kind: Entry['kind'] | 'blocking', text: string, lines: (string | undefined)[], below: (JSX.Element | null)[]) => (
+    const lead = (key: string, kind: Entry['kind'] | 'blocking', text: string, lines: (string | undefined)[], below: (JSX.Element | null)[], corner?: JSX.Element) => (
       <Box key={`lead:${key}`} flexDirection="row" gap={1} alignItems="flex-start">
         {mark(kind)}
         <Box flexDirection="column" flexGrow={1} flexShrink={1} gap="xs">
@@ -378,6 +379,7 @@ export const register: Register = (on, options) => {
           </Box>
           {below}
         </Box>
+        {corner ?? null}
       </Box>
     )
 
@@ -413,13 +415,14 @@ export const register: Register = (on, options) => {
           ]),
         ]))
       }
+      // Already done: nothing to approve. The ✕ in the corner dismisses it as fine; Edit or Correct changes it.
+      const dismiss = <Button key={`dismiss:${x.id}`} label="Dismiss, it's fine" plain dimColor onPress={() => { void setKept($, x.id, true) }}>✕</Button>
       return card(ui, `card:${x.id}`, lead(x.id, x.kind, x.text, [status, why], [
         proofs(x.id, x.proof),
         actions(x.id, [
-          action(`keep:${x.id}`, guess ? 'Confirm' : 'Approve', () => setKept($, x.id, true), 'primary'),
           action(`change:${x.id}`, guess ? 'Correct…' : 'Edit…', () => update($, draft, () => '').then(() => update($, noteScope, () => 'once')).then(() => update($, editing, () => x.id))),
         ]),
-      ]))
+      ], dismiss))
     }
 
     const handledRow = (x: Entry) => (
@@ -429,7 +432,7 @@ export const register: Register = (on, options) => {
           <Text wrap="wrap" dimColor><Text dimColor>{x.task ?? x.surface} · </Text>{x.text}</Text>
           {x.correction
             ? <Text wrap="wrap">Changed → {x.correction.note} <Text dimColor>· {x.correction.scope === 'once' ? 'just this time' : x.correction.scope === 'person' ? 'every project' : 'this project'}</Text></Text>
-            : <Text dimColor>Approved</Text>}
+            : <Text dimColor>Dismissed</Text>}
         </Box>
         {x.kept ? <Button key={`reopen:${x.id}`} plain dimColor label="Reopen" onPress={() => setKept($, x.id, false)} /> : null}
       </Box>
@@ -456,7 +459,7 @@ export const register: Register = (on, options) => {
         {groups.length ? (
           <Box key="decided" flexDirection="column">
             <Text bold>Claude decided <Text dimColor>{String(entries.length)}</Text></Text>
-            <Text wrap="wrap" dimColor>Already in the work. Approve to keep it as it is, or edit it and Claude changes it.</Text>
+            <Text wrap="wrap" dimColor>Already in the work. Dismiss what's fine with ✕, or edit it and Claude changes it.</Text>
           </Box>
         ) : null}
         {groups.length
