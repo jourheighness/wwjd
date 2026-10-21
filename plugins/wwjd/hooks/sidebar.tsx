@@ -1,23 +1,23 @@
-// The wwjd sidebar (/wwjd): what Strictness still wants before handover, as Blocking cards under Needs you, then the
-// design decisions and assumptions the agent logged, as cards grouped by task (else surface). A card's mark sits top
-// left; its actions are a row of buttons under the text: a problem's fix first, a decision's Keep and Change. A change is a note for you (~/.config/wwjd/taste.md)
-// or for this project (its decision log); either way it leaves the open list for Handled, with a toast saying what
-// happened. The dials sit behind Settings (dials.tsx). The agent logs through the `log` tool registered here
+// The wwjd sidebar (/wwjd), in plain words for someone who never read the skill. Two sections, each saying what it
+// holds: "Not done yet" (what Claude still does before calling the work finished, from the Strictness gate: Run it or
+// Skip) and "Claude decided" (choices and guesses already in the work, grouped by task: Approve or Confirm leaves it as
+// it is, Edit or Correct sends Claude the change, just this time or saved as a rule for this project or every project).
+// Every button says what it does and every toast says what happened. Proof opens inside the desktop app where it can:
+// an Artifact in its pane, a page in the built-in browser, a file in the Files pane; else as a link. The dials sit behind Settings (dials.tsx). The agent logs through the `log` tool registered here
 // (mcp__wwjd__log); entries live in .wwjd/decisions.jsonl at the root of the project being edited (artifactRoot below).
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Entry, Scope } from '../types'
+import type { Entry, NoteScope, Scope } from '../types'
 import { PANE, card, exportDials, loadProjectDials, settingsView } from './dials'
 
 const view = atom({ plugin: 'wwjd', key: 'view' } as const, 'log')
 const editing = atom({ plugin: 'wwjd', key: 'editing' } as const, '')
 const draft = atom({ plugin: 'wwjd', key: 'draft' } as const, '')
-const noteScope = atom({ plugin: 'wwjd', key: 'noteScope' } as const, 'project')
+const noteScope = atom({ plugin: 'wwjd', key: 'noteScope' } as const, 'once')
 const gate = atom({ plugin: 'wwjd', key: 'gate' } as const, null)
 const logVersion = atom({ plugin: 'wwjd', key: 'logVersion' } as const, 0)
 const showHandled = atom({ plugin: 'wwjd', key: 'showHandled' } as const, false)
-const detail = atom({ plugin: 'wwjd', key: 'detail' } as const, '')
 
 const TOOL = 'mcp__wwjd__log'
 const SHOWN = 60
@@ -106,18 +106,20 @@ async function target($: EngineInterface, where: Scope, root: string): Promise<{
 async function correct($: EngineInterface, id: string) {
   const note = (await read($, draft)).trim()
   if (!note) return
-  const where = await read($, noteScope)
+  const where = (await read($, noteScope)) as NoteScope
   const root = await shownRoot($)
-  const { file, head } = await target($, where, root)
+  const { file, head } = where === 'once' ? { file: '', head: '' } : await target($, where, root)
   const day = await today($)
   const entry = await serial(async () => {
     const entries = await readLog($, root)
     const entry = entries.find(x => x.id === id)
     if (!entry || entry.correction) return null
-    const line = `- ${day} · ${entry.surface}: ${note} (was: ${entry.text})\n`
-    let text = (await $.fs.exists(file)) ? await $.fs.read(file) : head
-    if (where === 'project' && file.endsWith('DESIGN.md') && !/^## Decisions$/m.test(text)) text = `${text.trimEnd()}\n\n## Decisions\n`
-    await $.fs.write(file, `${text.trimEnd()}\n${line}`)
+    if (where !== 'once') {
+      const line = `- ${day} · ${entry.surface}: ${note} (was: ${entry.text})\n`
+      let text = (await $.fs.exists(file)) ? await $.fs.read(file) : head
+      if (where === 'project' && file.endsWith('DESIGN.md') && !/^## Decisions$/m.test(text)) text = `${text.trimEnd()}\n\n## Decisions\n`
+      await $.fs.write(file, `${text.trimEnd()}\n${line}`)
+    }
     entry.correction = { note, scope: where, file, at: day }
     await writeLog($, root, entries)
     return entry
@@ -127,9 +129,9 @@ async function correct($: EngineInterface, id: string) {
   await update($, draft, () => '')
   await update($, logVersion, n => (n ?? 0) + 1)
   await $.session.append({ message: { type: 'user', content: [{ type: 'text', text:
-    `Design correction from the wwjd sidebar (${where === 'person' ? 'yours, every project' : 'this project'}; saved to ${file}): ` +
+    `Design correction from the wwjd sidebar (${where === 'once' ? 'just this time, not saved as a rule' : `${where === 'person' ? 'every project' : 'this project'}; saved to ${file}`}): ` +
     `${entry.surface}: "${note}". It replaces "${entry.text}". Apply it to the work in progress.` }] } })
-  $.ui.toast(`Changed · ${entry.surface} · saved to ${file.split('/').slice(-2).join('/')}`)
+  $.ui.toast(where === 'once' ? `Sent to Claude · ${entry.surface} · just this time` : `Sent to Claude · ${entry.surface} · saved as a rule in ${file.split('/').slice(-2).join('/')}`)
 }
 
 const settled = (x: Entry) => Boolean(x.correction || x.kept)
@@ -150,15 +152,39 @@ async function boardUrl($: EngineInterface): Promise<string | null> {
 const LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|[^/]+\.localhost|[^/]+\.test)(:\d+)?(\/|$)/
 export function proofLink(p: string, root: string): { href: string; label: string } {
   if (/^https?:\/\//.test(p)) {
-    if (LOCAL.test(p)) return { href: p, label: `▶ Try ${p.replace(/^https?:\/\/[^/]+/, '') || '/'}` }
-    if (/claude\.ai\/(code\/)?artifact\//.test(p)) return { href: p, label: '↗ Artifact' }
-    return { href: p, label: `↗ ${p.replace(/^https?:\/\//, '').split('/')[0]}` }
+    if (LOCAL.test(p)) return { href: p, label: `Try it: ${p.replace(/^https?:\/\/[^/]+/, '') || '/'}` }
+    if (/claude\.ai\/(code\/)?artifact\//.test(p)) return { href: p, label: 'Open Artifact' }
+    return { href: p, label: `Open ${p.replace(/^https?:\/\//, '').split('/')[0]}` }
   }
   const [path = p, line] = p.split(/:(?=\d+$)/)
   const abs = path.startsWith('/') ? path : `${root}/${path}`
   const name = abs.split('/').pop() ?? abs
-  if (/\.(png|jpe?g|webp|gif)$/i.test(name)) return { href: `file://${abs}`, label: `◩ ${name.replace(/\.\w+$/, '')}` }
-  return { href: `file://${abs}`, label: `‹› ${name}${line ? `:${line}` : ''}` }
+  if (/\.(png|jpe?g|webp|gif)$/i.test(name)) return { href: `file://${abs}`, label: `Screenshot: ${name.replace(/\.\w+$/, '')}` }
+  return { href: `file://${abs}`, label: `File: ${name}${line ? `:${line}` : ''}` }
+}
+
+// Opens a proof inside the desktop app: an Artifact in its pane, a web page in the built-in browser, a file in the
+// Files pane (at its line). Each goes through the tool the model would call, permission check included; when a tool
+// is missing or refuses, the system opener stands in, so a press never does nothing.
+async function openProof($: EngineInterface, p: string, root: string) {
+  const { href } = proofLink(p, root)
+  const tries: Record<string, unknown>[] = /claude\.ai\/(code\/)?artifact\//.test(href)
+    ? [{ tool: 'Artifact', action: 'open', url: href }]
+    : /^https?:/.test(href)
+      ? [{ tool: 'mcp__Claude_Browser__navigate', url: href }]
+      : (() => {
+          const line = /:(\d+)$/.exec(p)?.[1]
+          return [{ tool: 'mcp__ccd_view__show_pane', pane: 'file', path: href.replace(/^file:\/\//, ''), ...(line ? { line: Number(line) } : {}) }]
+        })()
+  for (const call of tries) {
+    try {
+      const r = (await $.tool.call(call as never)) as { isError?: boolean } | undefined
+      if (!r?.isError) return
+    } catch { /* no such tool here: next */ }
+  }
+  const target = href.replace(/^file:\/\//, '')
+  const run = await $.process.run(['open', target]).catch(() => null)
+  if (!run || run.exitCode !== 0) await $.process.run(['xdg-open', target]).catch(() => undefined)
 }
 
 // A problem's fix: one message to the agent, nothing run behind the person's back.
@@ -167,7 +193,7 @@ async function sendFix($: EngineInterface, label: string, ask: string) {
   $.ui.toast(`Sent · ${label}`)
 }
 
-// Keep: the decision stands. It leaves the open list; Reopen in Handled brings it back. The host's toast holds text
+// Approve (or Confirm): the decision stands. It leaves the open list; Reopen in Handled brings it back. The host's toast holds text
 // only, so the way back lives in Handled rather than an Undo in the toast.
 async function setKept($: EngineInterface, id: string, isKept: boolean) {
   const day = await today($)
@@ -183,7 +209,7 @@ async function setKept($: EngineInterface, id: string, isKept: boolean) {
   })
   if (!entry) return
   await update($, logVersion, n => (n ?? 0) + 1)
-  $.ui.toast(isKept ? `Kept · ${entry.surface}` : `Reopened · ${entry.surface}`)
+  $.ui.toast(isKept ? `Approved · ${entry.surface} · nothing changes` : `Reopened · ${entry.surface}`)
 }
 
 export const register: Register = (on, options) => {
@@ -200,8 +226,8 @@ export const register: Register = (on, options) => {
         properties: {
           surface: { type: 'string', description: 'The component, screen or layout it is about, in product words ("Task card", "Settings page")' },
           kind: { type: 'string', enum: ['assumption', 'choice'], description: 'assumption: a guess about product, data or intent; choice: a design call nobody asked for' },
-          text: { type: 'string', description: 'One line, what was assumed or chosen ("Dropped the comment count")' },
-          why: { type: 'string', description: 'One short reason ("over the card budget")' },
+          text: { type: 'string', description: 'One line in the past tense, what you already did or assumed, in plain words a non-designer reads ("Dropped the comment count from the card", "Assumed people sign up with a work email")' },
+          why: { type: 'string', description: 'One short reason in plain words, no jargon ("the card was too crowded to scan")' },
           path: { type: 'string', description: 'A file this is about, when the project being edited is not the session\'s folder; the entry goes to that project\'s log' },
           task: { type: 'string', description: 'The task this belongs to, the same words for every entry of it ("Signup flow", "Sidebar log")' },
           proof: { type: 'array', items: { type: 'string' }, description: 'What it is about: a screenshot or file path (file:line), the dev-server URL that shows the state, an artifact link' },
@@ -283,7 +309,7 @@ export const register: Register = (on, options) => {
     if (shown === 'settings') {
       return (
         <Box flexDirection="column" padding="md" gap="md">
-          {header('Settings', <Button key="to-log" plain dimColor label="‹ Decisions" onPress={() => update($, view, () => 'log')} />)}
+          {header('Settings', <Button key="to-log" plain dimColor label="‹ Back" onPress={() => update($, view, () => 'log')} />)}
           {await settingsView($, e, options)}
         </Box>
       )
@@ -292,15 +318,14 @@ export const register: Register = (on, options) => {
     await read($, logVersion)
     const Link = ui.Link
     const isHandledShown = await read($, showHandled)
-    const shownDetail = await read($, detail)
     const root = await shownRoot($).catch(() => '')
     const board = await boardUrl($).catch(() => null)
     // What Strictness still wants after the last UI edit, from the same gate state the hooks enforce: Blocking cards.
     const g = await read($, gate)
     const due = g?.hasEdits
       ? [
-          ...(g.sheet.due ? [{ key: 'sheet', text: 'Grade sheet due', fix: 'Write sheet', ask: `write the grade sheet before building${g.sheet.file ? ` ${g.sheet.file}` : ''} (references/budgets.md, Grade gate).`, how: g.sheet.file ?? '' }] : []),
-          ...g.checks.filter(c => !c.done).map(c => ({ key: c.key, text: c.label.charAt(0).toUpperCase() + c.label.slice(1), fix: 'Run', ask: `run this check before handover: ${c.label}. ${c.how}`, how: c.how })),
+          ...(g.sheet.due ? [{ key: 'sheet', text: 'Plan what the screen shows', what: 'Before building, Claude decides what each screen shows and what it leaves out, and writes it down.', fix: 'Plan it', ask: `write the grade sheet before building${g.sheet.file ? ` ${g.sheet.file}` : ''} (references/budgets.md, Grade gate).` }] : []),
+          ...g.checks.filter(c => !c.done).map(c => ({ key: c.key, text: c.label.charAt(0).toUpperCase() + c.label.slice(1), what: c.what ?? '', fix: 'Run it', ask: `run this check before handover: ${c.label}. ${c.how}` })),
         ]
       : []
     const all = await shownRoot($).then(root => readLog($, root), () => [] as Entry[])
@@ -322,64 +347,72 @@ export const register: Register = (on, options) => {
       <Button key={key} label={label} variant={kind === 'primary' ? 'primary' : undefined} dimColor={kind === 'dim'} onPress={() => { void onPress() }} />
     const actions = (key: string, list: JSX.Element[]) =>
       <Box key={`actions:${key}`} flexDirection="row" flexWrap="wrap" gap="xs" marginTop="xs">{list}</Box>
+    // Desktop: buttons that open inside the app (openProof); other surfaces: links.
+    const inApp = e.surface === 'desktop'
     const proofs = (key: string, list: string[] | undefined) => list?.length ? (
       <Box key={`proof:${key}`} flexDirection="row" flexWrap="wrap" gap="sm">
-        {list.map((p, i) => { const l = proofLink(p, root); return <Text key={`proof:${key}:${i}`}><Link href={l.href} label={l.label} /></Text> })}
+        {list.map((p, i) => {
+          const l = proofLink(p, root)
+          return inApp
+            ? <Button key={`proof:${key}:${i}`} plain label={l.label} onPress={() => { void openProof($, p, root) }} />
+            : <Text key={`proof:${key}:${i}`}><Link href={l.href} label={l.label} /></Text>
+        })}
       </Box>
     ) : null
     const mark = (kind: Entry['kind'] | 'blocking') => kind === 'blocking'
       ? <Text color="error" bold>✕</Text>
       : kind === 'assumption' ? <Text color="suggestion" bold>?</Text> : <Text dimColor bold>·</Text>
     // The mark sits on the first line at the top left; everything else, the actions included, hangs on the text's edge.
-    const lead = (key: string, kind: Entry['kind'] | 'blocking', text: string, why: string | undefined, below: (JSX.Element | null)[]) => (
+    const lead = (key: string, kind: Entry['kind'] | 'blocking', text: string, lines: (string | undefined)[], below: (JSX.Element | null)[]) => (
       <Box key={`lead:${key}`} flexDirection="row" gap={1} alignItems="flex-start">
         {mark(kind)}
         <Box flexDirection="column" flexGrow={1} flexShrink={1} gap="xs">
           <Box flexDirection="column">
             <Text wrap="wrap">{text}</Text>
-            {why ? <Text wrap="wrap" dimColor>{why}</Text> : null}
+            {lines.filter(Boolean).map((l, i) => <Text key={`line:${key}:${i}`} wrap="wrap" dimColor>{l}</Text>)}
           </Box>
           {below}
         </Box>
       </Box>
     )
 
-    const blockingCard = (d: (typeof due)[number]) => {
-      const isOpen = shownDetail === `due:${d.key}`
-      return card(ui, `due-card:${d.key}`, lead(d.key, 'blocking', d.text, 'Before handover', [
-        isOpen ? <Text key={`how:${d.key}`} wrap="wrap" dimColor>{d.how}</Text> : null,
+    const blockingCard = (d: (typeof due)[number]) =>
+      card(ui, `due-card:${d.key}`, lead(d.key, 'blocking', d.text, [d.what], [
         actions(d.key, [
           action(`fix:${d.key}`, d.fix, () => sendFix($, `${d.fix} · ${d.text}`, d.ask), 'primary'),
-          ...(d.how ? [action(`detail:${d.key}`, isOpen ? 'Hide details' : 'Details', () => update($, detail, v => (v === `due:${d.key}` ? '' : `due:${d.key}`)), 'dim')] : []),
+          action(`skip:${d.key}`, 'Skip', () => sendFix($, `Skipped · ${d.text}`, `skip "${d.text}" this time; don't run it, and say in your handover that I asked you to skip it.`)),
         ]),
       ]), 'error')
-    }
 
     const decisionCard = (x: Entry) => {
+      const guess = x.kind === 'assumption'
+      const status = guess ? 'Claude guessed this. Check that it is right.' : 'Claude chose this without asking you.'
+      const why = x.why ? `Why: ${x.why}` : undefined
       if (open === x.id) {
-        return card(ui, `card:${x.id}`, lead(x.id, x.kind, x.text, x.why, [
+        return card(ui, `card:${x.id}`, lead(x.id, x.kind, x.text, [why], [
+          <Text key={`ask:${x.id}`} wrap="wrap">What should it be instead? Claude redoes it in the current work.</Text>,
           Input ? (
-            <Input key={`note:${x.id}`} placeholder="What it should be" value={note} autoFocus
+            <Input key={`note:${x.id}`} placeholder="For example: keep the comment count, but smaller" value={note} autoFocus
               onInput={v => update($, draft, () => v)} onSubmit={v => update($, draft, () => v).then(() => correct($, x.id))} />
           ) : null,
           <Box key={`scope:${x.id}`} flexDirection="row" flexWrap="wrap" gap="xs" alignItems="center">
-            <Text dimColor>Save for</Text>
-            {(['project', 'person'] as const).map(sc => (
-              <Button key={`scope:${x.id}:${sc}`} label={sc === 'project' ? 'This project' : 'Every project'}
-                dimColor={where !== sc} onPress={() => update($, noteScope, () => sc)} />
+            <Text dimColor>Remember it</Text>
+            {(['once', 'project', 'person'] as const).map(sc => (
+              <Button key={`scope:${x.id}:${sc}`} label={sc === 'once' ? 'Just this time' : sc === 'project' ? 'This project' : 'Every project'}
+                variant={where === sc ? 'primary' : undefined} dimColor={where !== sc} onPress={() => update($, noteScope, () => sc)} />
             ))}
           </Box>,
           actions(x.id, [
-            action(`save:${x.id}`, 'Save', () => correct($, x.id), 'primary'),
+            action(`save:${x.id}`, 'Send to Claude', () => correct($, x.id), 'primary'),
             action(`cancel:${x.id}`, 'Cancel', () => update($, editing, () => ''), 'dim'),
           ]),
         ]))
       }
-      return card(ui, `card:${x.id}`, lead(x.id, x.kind, x.text, x.why, [
+      return card(ui, `card:${x.id}`, lead(x.id, x.kind, x.text, [status, why], [
         proofs(x.id, x.proof),
         actions(x.id, [
-          action(`keep:${x.id}`, 'Keep', () => setKept($, x.id, true)),
-          action(`change:${x.id}`, 'Change', () => update($, draft, () => '').then(() => update($, editing, () => x.id))),
+          action(`keep:${x.id}`, guess ? 'Confirm' : 'Approve', () => setKept($, x.id, true), 'primary'),
+          action(`change:${x.id}`, guess ? 'Correct…' : 'Edit…', () => update($, draft, () => '').then(() => update($, noteScope, () => 'once')).then(() => update($, editing, () => x.id))),
         ]),
       ]))
     }
@@ -390,8 +423,8 @@ export const register: Register = (on, options) => {
         <Box flexDirection="column" flexGrow={1} flexShrink={1}>
           <Text wrap="wrap" dimColor><Text dimColor>{x.task ?? x.surface} · </Text>{x.text}</Text>
           {x.correction
-            ? <Text wrap="wrap">→ {x.correction.note} <Text dimColor>· {x.correction.scope === 'person' ? 'yours' : 'project'}</Text></Text>
-            : <Text dimColor>Kept</Text>}
+            ? <Text wrap="wrap">Changed → {x.correction.note} <Text dimColor>· {x.correction.scope === 'once' ? 'just this time' : x.correction.scope === 'person' ? 'every project' : 'this project'}</Text></Text>
+            : <Text dimColor>Approved</Text>}
         </Box>
         {x.kept ? <Button key={`reopen:${x.id}`} plain dimColor label="Reopen" onPress={() => setKept($, x.id, false)} /> : null}
       </Box>
@@ -400,14 +433,25 @@ export const register: Register = (on, options) => {
     return (
       <Box flexDirection="column" padding="md" gap="md">
         <Box flexDirection="row" alignItems="center" gap="sm">
-          <Box flexGrow={1}><Text bold>Decisions</Text></Box>
-          {board ? <Text><Link href={board} label="↗ Board" /></Text> : null}
+          <Box flexGrow={1}><Text bold>wwjd</Text></Box>
+          {board ? (inApp
+            ? <Button key="board" plain label="Open board" onPress={() => { void openProof($, board, root) }} />
+            : <Text><Link href={board} label="Open board" /></Text>) : null}
           <Button key="to-settings" plain dimColor label="Settings" onPress={() => update($, view, () => 'settings')} />
         </Box>
         {due.length ? (
           <Box key="needs" flexDirection="column" gap="sm">
-            <Text bold color="error">Needs you <Text dimColor>{String(due.length)}</Text></Text>
+            <Box flexDirection="column">
+              <Text bold color="error">Not done yet <Text dimColor>{String(due.length)}</Text></Text>
+              <Text wrap="wrap" dimColor>Claude does these before it says the work is finished. Run one now, or skip it.</Text>
+            </Box>
             {due.map(blockingCard)}
+          </Box>
+        ) : null}
+        {groups.length ? (
+          <Box key="decided" flexDirection="column">
+            <Text bold>Claude decided <Text dimColor>{String(entries.length)}</Text></Text>
+            <Text wrap="wrap" dimColor>Already in the work. Approve to keep it as it is, or edit it and Claude changes it.</Text>
           </Box>
         ) : null}
         {groups.length

@@ -1,4 +1,6 @@
 export type Scope = 'person' | 'project'
+/** Where a correction from the sidebar is kept: nowhere (just this time), this project, or every project. */
+export type NoteScope = 'once' | Scope
 
 /** What `gate.mjs status` prints: the Strictness dial, the grade sheet and the checks before handover. */
 export type Gate = {
@@ -9,7 +11,8 @@ export type Gate = {
   lastFile: string | null
   /** due: the pre gate refused a new UI file this session and no sheet was written since. */
   sheet: { needed: boolean; file: string | null; due: boolean }
-  checks: { key: string; label: string; done: boolean; how: string }[]
+  /** label and what are for the person (plain words); how is the agent's command. */
+  checks: { key: string; label: string; what?: string; done: boolean; how: string }[]
 }
 
 /** One line of .wwjd/decisions.jsonl: a design assumption or choice the agent logged, and how the person settled it:
@@ -25,7 +28,7 @@ export type Entry = {
   task?: string
   /** What it is about: screenshot or file paths (a file may end in :line), live dev-server URLs, artifact links. */
   proof?: string[]
-  correction?: { note: string; scope: Scope; file: string; at: string }
+  correction?: { note: string; scope: NoteScope; file: string; at: string }
   kept?: { at: string }
 }
 
@@ -41,14 +44,13 @@ declare module 'claude-code' {
       view: 'log' | 'settings'
       editing: string
       draft: string
-      noteScope: Scope
+      noteScope: NoteScope
       logVersion: number
       showHandled: boolean
       /** The last file the session wrote or edited: names the project whose log the agent writes. */
       lastEdited: string
       /** The root whose .wwjd/decisions.jsonl the log tool last wrote; the sidebar reads it. */
       logRoot: string
-      detail: string
     }
   }
 }

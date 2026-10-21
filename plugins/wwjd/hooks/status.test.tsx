@@ -23,7 +23,7 @@ test('quiet until wwjd is used; then the status line, and Blocking cards in the 
   on('tool.call', () => ({ result: {} }) as never)
 
   const band = await $.ui.mount({ plugin: 'wwjd', surface: 'terminal', ...PANE, props })
-  expect(await band.find({ type: 'Text', text: /Before handover/ })).toBeUndefined()
+  expect(await band.find({ type: 'Text', text: /Not done yet/ })).toBeUndefined()
 
   await $.tool.call({ tool: 'Write', file_path: '/p/card.html' } as never)
   await $.tool.call({ tool: 'Bash', command: 'ls' } as never)
@@ -31,7 +31,7 @@ test('quiet until wwjd is used; then the status line, and Blocking cards in the 
 
   await $.tool.call({ tool: 'Skill', skill: 'wwjd:ux' } as never)
   expect(statuses.at(-1)).toBe('wwjd · Strictness 3')
-  expect(await band.find({ type: 'Text', text: 'Grade sheet due' })).toBeDefined()
+  expect(await band.find({ type: 'Text', text: 'Plan what the screen shows' })).toBeDefined()
   expect(await band.find({ type: 'Text', text: 'Shots at 2 widths' })).toBeDefined()
   expect(await band.find({ key: 'fix:shots' })).toBeDefined()
 
@@ -40,7 +40,7 @@ test('quiet until wwjd is used; then the status line, and Blocking cards in the 
   expect(runs).toBe(1)
   await $.tool.call({ tool: 'Bash', command: 'node render.mjs shoot card.html' } as never)
   expect(runs).toBe(2)
-  expect(await band.find({ type: 'Text', text: /Before handover/ })).toBeUndefined()
+  expect(await band.find({ type: 'Text', text: /Not done yet/ })).toBeUndefined()
 })
 
 test('editing existing files shows the checks, not a grade sheet', async ($, on) => {
@@ -60,10 +60,10 @@ test('editing existing files shows the checks, not a grade sheet', async ($, on)
   const band = await $.ui.mount({ plugin: 'wwjd', surface: 'terminal', ...PANE, props })
   await $.tool.call({ tool: 'Skill', skill: 'wwjd:ux' } as never)
   expect(await band.find({ type: 'Text', text: 'Shots at 2 widths' })).toBeDefined()
-  expect(await band.find({ type: 'Text', text: /Grade sheet/ })).toBeUndefined()
+  expect(await band.find({ type: 'Text', text: /Plan what the screen/ })).toBeUndefined()
 
   // Run sends the agent one message and says so; nothing runs from the sidebar itself.
   await band.press({ key: 'fix:shots' })
   expect(sent.at(-1)).toMatch(/run this check before handover: Shots at 2 widths/)
-  expect(toasts.at(-1)).toBe('Sent · Run · Shots at 2 widths')
+  expect(toasts.at(-1)).toBe('Sent · Run it · Shots at 2 widths')
 })

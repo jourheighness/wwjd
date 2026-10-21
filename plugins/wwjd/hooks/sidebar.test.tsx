@@ -59,6 +59,7 @@ test('a correction goes to the project decision log or your taste file, and back
   const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })
 
   await ui.press({ key: `change:${d1}` })
+  await ui.press({ key: `scope:${d1}:project` })
   await ui.input({ key: `note:${d1}`, text: 'Keep comments as a quiet count', kind: 'change' })
   await ui.press({ key: `save:${d1}` })
   expect(files['/p/DESIGN.md']).toMatch(/## Decisions\n- \d{4}-\d\d-\d\d · Task card: Keep comments as a quiet count \(was: Dropped the comment count\)/)
@@ -86,11 +87,13 @@ test('keep and change settle an entry: it leaves the open list for Handled with 
   const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })
 
   await ui.press({ key: `keep:${d1}` })
-  expect(toasts.at(-1)).toBe('Kept · Task card')
+  expect(toasts.at(-1)).toBe('Approved · Task card · nothing changes')
   expect(await ui.find({ key: `keep:${d1}` })).toBeUndefined()
   await ui.press({ key: `change:${d2}` })
   await ui.input({ key: `note:${d2}`, text: 'Columns by owner', kind: 'submit' })
-  expect(toasts.at(-1)).toMatch(/^Changed · Board · saved to/)
+  expect(toasts.at(-1)).toBe('Sent to Claude · Board · just this time')
+  expect(files['/p/DESIGN.md']).toBe('# Design\n')
+  expect(JSON.parse(files['/p/.wwjd/decisions.jsonl']?.trim().split('\n')[1] ?? '{}').correction.scope).toBe('once')
   expect(await ui.find({ type: 'Text', text: 'Nothing open.' })).toBeDefined()
 
   await ui.press({ key: 'handled' })
@@ -133,8 +136,11 @@ test('the log lands in the project being edited, not the session folder; the sid
   expect(await ui.find({ type: 'Text', text: 'In the session folder' })).toBeUndefined()
 })
 
-test('cards group by task with a surface label inside; proof shows as links; the board link comes from .wwjd.json', async ($, on) => {
+test('cards group by task with a surface label inside; proof opens in the app on desktop, as links elsewhere; the board comes from .wwjd.json', async ($, on) => {
   mock.store(on)
+  const opened: unknown[] = []
+  on('tool.call', { tool: 'Artifact' }, ((_$: unknown, e: { url: string }) => { opened.push(['Artifact', e.url]); return { result: {} } }) as never)
+  on('tool.call', { tool: 'mcp__ccd_view__show_pane' }, ((_$: unknown, e: { path: string; line?: number }) => { opened.push(['file', e.path, e.line]); return { result: {} } }) as never)
   const files: Record<string, string> = { '/p/.wwjd.json': JSON.stringify({ board: 'https://claude.ai/artifact/abc' }) }
   disk(on as never, files)
   on('ui.open', () => ({ value: { isPlaced: true } }) as never)
@@ -147,10 +153,17 @@ test('cards group by task with a surface label inside; proof shows as links; the
   expect(await ui.find({ type: 'Text', text: 'Signup flow' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: 'Email step' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: 'Board' })).toBeDefined()
-  expect(await ui.find({ type: 'Link', label: '▶ Try /signup?step=email' })).toBeDefined()
-  expect(await ui.find({ type: 'Link', label: '◩ signup-390-light', href: 'file:///p/.wwjd/shots/signup-390-light.png' })).toBeDefined()
-  expect(await ui.find({ type: 'Link', label: '‹› Signup.tsx:42' })).toBeDefined()
-  expect(await ui.find({ type: 'Link', label: '↗ Board', href: 'https://claude.ai/artifact/abc' })).toBeDefined()
+  expect(await ui.find({ type: 'Button', label: 'Try it: /signup?step=email' })).toBeDefined()
+  expect(await ui.find({ type: 'Button', label: 'Screenshot: signup-390-light' })).toBeDefined()
+  expect(await ui.find({ type: 'Button', label: 'File: Signup.tsx:42' })).toBeDefined()
+  await ui.press({ key: 'board' })
+  expect(opened.at(-1)).toEqual(['Artifact', 'https://claude.ai/artifact/abc'])
+  const [firstId] = ids(files)
+  await ui.press({ key: `proof:${firstId}:2` })
+  expect(opened.at(-1)).toEqual(['file', '/p/src/Signup.tsx', 42])
+  const term = await $.ui.mount({ plugin: 'wwjd', surface: 'terminal', ...PANE, props })
+  expect(await term.find({ type: 'Link', label: 'Screenshot: signup-390-light', href: 'file:///p/.wwjd/shots/signup-390-light.png' })).toBeDefined()
+  expect(await term.find({ type: 'Link', label: 'Open board', href: 'https://claude.ai/artifact/abc' })).toBeDefined()
   // The mark sits top left on the first line, never centred against a wrapped text; actions hang under the text.
   const [first] = ids(files)
   const lead = await ui.find({ key: `lead:${first}` }) as unknown as { props: { alignItems?: string } } | undefined
