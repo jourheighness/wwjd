@@ -365,6 +365,15 @@ test("stop: a Design canvas board (.dc.html) asks for no shots or fit, only the 
   assert.deepEqual(p.run("status", {}).checks.map((c) => c.key), ["log"]);
 });
 
+test("stop: a file inside a Claude Code plugin is not a web page: no shots, fit, dark or runtime, only the log", () => {
+  const p = project(4);
+  p.file("plug/.claude-plugin/plugin.json", "{}");
+  p.edit("plug/hooks/Pane.tsx");
+  assert.deepEqual(p.run("status", {}).checks.map((c) => c.key), ["log"]);
+  assert.equal(p.ledger().lastPage, undefined);
+  assert.doesNotMatch(p.run("stop", { stop_hook_active: false }).reason, /render\.mjs/);
+});
+
 test("Hooks setting: quiet never blocks (no start question, sheet or stop), off runs nothing; .wwjd.json beats the option", () => {
   const p = project(4);
   p.edit("card.html");
@@ -381,17 +390,55 @@ test("Hooks setting: quiet never blocks (no start question, sheet or stop), off 
   assert.equal(p.run("pre", write(join(app, "App.tsx")), { CLAUDE_PLUGIN_OPTION_HOOKMODE: "quiet" }), null);
 });
 
-test("stop: with a board and the setting on, a handover asks to add the round; an ArtifactData write to it counts; off asks nothing", () => {
+// A stand-in for skills/flow/scripts/flow.mjs check --json: prints the report next to it, exits 1 on errors.
+function flowStub(findings) {
+  const dir = mkdtempSync(join(tmpdir(), "wwjd-flow-"));
+  writeFileSync(join(dir, "report.json"), JSON.stringify({ screens: 3, journeys: 1, findings }));
+  writeFileSync(join(dir, "flow.mjs"), `import { readFileSync } from "node:fs";
+const r = readFileSync(${JSON.stringify(join(dir, "report.json"))}, "utf8");
+console.log(r);
+process.exit(JSON.parse(r).findings.some((f) => f.severity === "error") ? 1 : 0);`);
+  return { WWJD_FLOW_SCRIPT: join(dir, "flow.mjs"), set: (f) => writeFileSync(join(dir, "report.json"), JSON.stringify({ screens: 3, journeys: 1, findings: f })) };
+}
+
+test("stop: with wwjd.flow.json and Flow on, its check must be clean and the file newer than the last page edit; off asks nothing", () => {
   const p = project(2);
-  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, board: "https://claude.ai/artifact/AbC123" }));
   p.edit("card.html");
   const keys = (extra) => p.run("status", {}, extra).checks.map((c) => c.key);
-  assert.ok(keys({}).includes("board"));
-  assert.ok(!keys({ CLAUDE_PLUGIN_OPTION_BOARDMODE: "off" }).includes("board"));
-  appendFileSync(p.transcript, JSON.stringify({ timestamp: new Date(Date.now() + 5000).toISOString(), message: { content: [{ type: "tool_use", name: "ArtifactData", input: { action: "batch", url: "https://claude.ai/artifact/AbC123" } }] } }) + "\n");
-  assert.equal(p.run("status", {}).checks.find((c) => c.key === "board").done, true);
-  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, board: "https://claude.ai/artifact/AbC123", boardMode: "off" }));
-  assert.ok(!keys({}).includes("board"));
+  assert.ok(!keys({}).includes("flow")); // no wwjd.flow.json: nothing to check
+  p.file("wwjd.flow.json", "{}", -3600); // older than the edit
+  const stub = flowStub([{ rule: "dead-end", severity: "error", what: "Receipt has no way out", fix: "add a way back" }, { rule: "trap", severity: "warn", what: "a warning", fix: "" }]);
+  const env = { WWJD_FLOW_SCRIPT: stub.WWJD_FLOW_SCRIPT };
+  const flow = (extra = {}) => p.run("status", {}, { ...env, ...extra }).checks.find((c) => c.key === "flow");
+  assert.equal(flow().label, "Check how the app flows");
+  assert.equal(flow().done, false);
+  assert.match(flow().how, /update wwjd\.flow\.json for what you changed, then: node .*flow\.mjs" check; fix: Receipt has no way out$/);
+  stub.set([]);
+  assert.equal(flow().done, false); // clean, but not updated since the edit
+  p.file("wwjd.flow.json", "{}", 5);
+  assert.equal(flow().done, true);
+  assert.equal(flow({ WWJD_FLOW_SCRIPT: "/nonexistent/flow.mjs" }).done, false); // can't run: not done
+  assert.equal(flow({ CLAUDE_PLUGIN_OPTION_FLOWMODE: "off" }), undefined);
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ start: "build", dials: { strictness: 2 }, flowMode: "off" }));
+  assert.equal(flow(), undefined);
+});
+
+test("stop: with a canvas and Canvas on, a handover asks to update it; only an Artifact publish to it counts; off asks nothing", () => {
+  const p = project(2);
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, canvas: "https://claude.ai/artifact/AbC123" }));
+  p.edit("card.html");
+  const canvas = (extra) => p.run("status", {}, extra).checks.find((c) => c.key === "canvas");
+  assert.equal(canvas({}).label, "Update the project canvas");
+  assert.match(canvas({}).how, /skills\/flow\/references\/canvas\.md/);
+  assert.equal(canvas({ CLAUDE_PLUGIN_OPTION_CANVASMODE: "off" }), undefined);
+  const use = (name, input) => appendFileSync(p.transcript, JSON.stringify({ timestamp: new Date(Date.now() + 5000).toISOString(), message: { content: [{ type: "tool_use", name, input }] } }) + "\n");
+  use("Artifact", { action: "read", url: "https://claude.ai/artifact/AbC123" });
+  use("ArtifactData", { action: "batch", url: "https://claude.ai/artifact/AbC123" });
+  assert.equal(canvas({}).done, false);
+  use("Artifact", { url: "https://claude.ai/artifact/AbC123", file_path: "/x/canvas.json" });
+  assert.equal(canvas({}).done, true);
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, canvas: "https://claude.ai/artifact/AbC123", canvasMode: "off" }));
+  assert.equal(canvas({}), undefined);
 });
 
 test("pre: no start question for styles, docs or emails in a repo with no front end", () => {
@@ -404,14 +451,14 @@ test("pre: no start question for styles, docs or emails in a repo with no front 
   }
 });
 
-test("status: a session in one repo editing another uses that project's board and settings, not its own", () => {
+test("status: a session in one repo editing another uses that project's canvas and settings, not its own", () => {
   const p = project(2);
-  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, board: "https://claude.ai/artifact/MINE1" }));
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, canvas: "https://claude.ai/artifact/MINE1" }));
   const app = mkdtempSync(join(tmpdir(), "wwjd-other-"));
-  writeFileSync(join(app, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, board: "https://claude.ai/artifact/THEIRS" }));
+  writeFileSync(join(app, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, canvas: "https://claude.ai/artifact/THEIRS" }));
   writeFileSync(join(app, "Card.tsx"), "<div/>");
   p.run("post", { tool_name: "Write", tool_input: { file_path: join(app, "Card.tsx") } });
-  const how = p.run("status", {}).checks.find((c) => c.key === "board").how;
+  const how = p.run("status", {}).checks.find((c) => c.key === "canvas").how;
   assert.match(how, /THEIRS/);
   assert.doesNotMatch(how, /MINE1/);
 });
@@ -436,13 +483,13 @@ test("a check skipped in the sidebar (.wwjd/skipped.json) is done for this run o
   assert.equal(shots().done, false);
 });
 
-test("status: what the status band saw (a board write, a critic run) counts without a transcript", () => {
+test("status: what the status band saw (a canvas publish, a critic run) counts without a transcript", () => {
   const p = project(5);
-  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 5 }, board: "https://claude.ai/artifact/BRD1" }));
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 5 }, canvas: "https://claude.ai/artifact/CNV1" }));
   p.edit("card.html");
   const later = Date.now() + 5000;
-  const c = p.run("status", { transcript_path: undefined, seen: { critic: later, board: { BRD1: later } } }).checks;
-  assert.equal(c.find((x) => x.key === "board").done, true);
+  const c = p.run("status", { transcript_path: undefined, seen: { critic: later, artifact: { CNV1: later } } }).checks;
+  assert.equal(c.find((x) => x.key === "canvas").done, true);
   assert.equal(c.find((x) => x.key === "critic").done, true);
 });
 

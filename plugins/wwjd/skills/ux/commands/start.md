@@ -6,10 +6,10 @@ For `scratch`, or UI without baseline files. An existing design system wins: rea
 wwjd owns the design side, so a new product never starts as code by default. One AskUserQuestion batch, each with a default:
 - **How to begin:** lettered variants in an Artifact first (default; `explore.md`), or straight to build; ask how many (default 3).
 - **The look:** a board of options (`wwjd:look` §2, default for Look 4–5) or quick mode.
-- **A project board** (only while the Project board setting is on): one shareable Artifact that collects directions, decisions, screenshots and handovers (`references/board.md`); default yes.
+- **A project canvas** (only while the Canvas setting is on): one Figma-like Artifact with every screen per journey, the flow and the decisions (`../flow/references/canvas.md`); default yes.
 - **Anything the brief leaves open** that would change the variants: register, the one job of the first screen, the benchmark product.
 
-Record the answer in `.wwjd.json`: `"start": "variants"` or `"build"`, plus `"register"`, and `"board"` (the project board's link, `references/board.md`) once it exists. The pre hook holds the first UI file of a new project until `.wwjd.json` has `"start"`. Nobody to ask (an unattended run, a subagent): take each default and log it as an assumption. Steps 1–5 follow; each is skippable, and showing work never waits on them.
+Record the answer in `.wwjd.json`: `"start": "variants"` or `"build"`, plus `"register"`, and `"canvas"` (the project canvas's link, `../flow/references/canvas.md`) once it exists. The pre hook holds the first UI file of a new project until `.wwjd.json` has `"start"`. Nobody to ask (an unattended run, a subagent): take each default and log it as an assumption. Steps 1–5 follow; each is skippable, and showing work never waits on them.
 
 ## 1. PRODUCT.md (short; infer, then ask the rest in one batch, each with a default)
 - **Product type** (`references/product-types.md`): core objects, top 3 jobs.
@@ -27,7 +27,7 @@ Record the answer in `.wwjd.json`: `"start": "variants"` or `"build"`, plus `"re
 - **CSS:** copy `kit/tokens.css`, `kit/base.css`, `kit/layouts.css` into the project's styles, in that order, plus `kit/table-scroll.js` once a table can be wider than its pane; set `<html data-profile>` from the register file's Profile line.
 - **Components:** no kit yet → Base UI primitives (or the stack's equivalent, `references/baseline.md`) wrapped as the project's own components, styled with base.css classes. What the first screen needs goes in the kit, never inline on the page.
 - **Workshop:** Storybook or Ladle, with a tokens story and a contrast matrix (every text token on every surface it sits on, AA).
-- **`.wwjd.json`** (committed, repo-relative only): `start`, `board`, `boardMode`, `hooks`, `dials`, `register`, `locale`, `kitDirs`, `golden`, `legacy`, `storybook`, `tags`, `rules`. Never preview URLs or hosts: those come from `WWJD_PREVIEW` or an untracked `AGENTS.local.md`.
+- **`.wwjd.json`** (committed, repo-relative only): `start`, `canvas`, `flowMode`, `canvasMode`, `hooks`, `dials`, `register`, `locale`, `kitDirs`, `golden`, `legacy`, `storybook`, `tags`, `rules`. Never preview URLs or hosts: those come from `WWJD_PREVIEW` or an untracked `AGENTS.local.md`.
 - **`.gitignore`:** `.wwjd/` (shots, refs, look.json).
 - **Existing UI:** `wwjd.mjs check --baseline` writes `.wwjd-baseline.json`. Commit it: the hook then reports only new findings, and counts only go down. Delete it to accept new debt on purpose.
 
@@ -36,4 +36,4 @@ Record the answer in `.wwjd.json`: `"start": "variants"` or `"build"`, plus `"re
 - **RATCHET.md** is shared with ig-ratchet. wwjd writes only: Backlog items tagged `[design]` or `[eng]` (the suspicion, not the target), Gotchas, Tells. Never Config or Scheduler. Create it with the first finding to park.
 
 ## 5. Hand over
-Links to the Board, PRODUCT.md, DESIGN.md and the tokens story; every choice made for the user, one line why, vetoable before anything builds on it.
+Links to the project canvas, PRODUCT.md, DESIGN.md and the tokens story; every choice made for the user, one line why, vetoable before anything builds on it.

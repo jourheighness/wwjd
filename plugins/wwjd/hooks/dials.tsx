@@ -1,5 +1,5 @@
-// The Settings view of the wwjd sidebar (sidebar.tsx): Hooks (on, quiet, off), Project board (on, off) and one card per
-// dial, for you (the plugin options) or for this project (.wwjd.json "hooks", "boardMode" and "dials"). A card names the dial and what its current stop does, then the five stops as a row of
+// The Settings view of the wwjd sidebar (sidebar.tsx): Hooks (on, quiet, off), Flow and Canvas (on, off) and one card
+// per dial, for you (the plugin options) or for this project (.wwjd.json "hooks", "flowMode", "canvasMode" and "dials"). A card names the dial and what its current stop does, then the five stops as a row of
 // buttons (native on the desktop, [ ] on the terminal), the picked one primary, so Tab, Enter and the pointer all work.
 // The stops and what each does come from skills/ux/scripts/dials-spec.mjs. Scripts read WWJD_DIALS, then .wwjd.json.
 import { atom, read, update } from 'claude-code'
@@ -15,14 +15,20 @@ export const PANE = 'wwjd'
 const scope = atom({ plugin: 'wwjd', key: 'scope' } as const, 'person')
 const project = atom({ plugin: 'wwjd', key: 'project' } as const, {})
 const projectHooks = atom({ plugin: 'wwjd', key: 'projectHooks' } as const, '')
-const projectBoard = atom({ plugin: 'wwjd', key: 'projectBoard' } as const, '')
+const projectFlow = atom({ plugin: 'wwjd', key: 'projectFlow' } as const, '')
+const projectCanvas = atom({ plugin: 'wwjd', key: 'projectCanvas' } as const, '')
 
-// The Project board setting (skills/ux/scripts/paths.mjs boardMode): on or off.
-const BOARD = [
-  ['on', 'On', 'A new project offers a shareable board, and each handover adds its decisions, screenshots and checks to it.'],
-  ['off', 'Off', 'No board. Everything stays in this panel.'],
+// The Flow setting (skills/ux/scripts/paths.mjs flowMode): on or off.
+const FLOW = [
+  ['on', 'On', 'Claude writes how the app works (screens, ways between them, journeys) and checks it for dead ends and traps before building.'],
+  ['off', 'Off', 'No flow model. Claude builds screens without checking the ways between them.'],
 ] as const
-const boardOf = (v: unknown) => (BOARD.some(([k]) => k === v) ? (v as string) : '')
+// The Canvas setting (skills/ux/scripts/paths.mjs canvasMode): on or off.
+const CANVAS = [
+  ['on', 'On', 'A Figma-like project canvas stays current: every screen per journey, the flow, and the decisions as sticky notes.'],
+  ['off', 'Off', 'No canvas. Everything stays in this panel.'],
+] as const
+const onOff = (v: unknown) => (v === 'on' || v === 'off' ? v : '')
 
 // The Hooks setting (skills/ux/scripts/paths.mjs hooksMode): on, quiet (never blocks) or off.
 const HOOKS = [
@@ -36,7 +42,7 @@ const dialOf = (key: string) => DIALS.find(d => d.key === key) as Dial | undefin
 const mine = (options: PluginOptions, dial: Dial) => stopOf(dial, options[dial.key] ?? dial.default)
 
 // The project's .wwjd.json: the nearest one up from the working directory, else a new one there.
-// The project's root comes from the sidebar (the project being edited, the same one the log and board read).
+// The project's root comes from the sidebar (the project being edited, the same one the log and canvas link read).
 let projectRoot = ''
 export function setProjectRoot(root: string) { projectRoot = root }
 async function projectFile($: EngineInterface): Promise<string> {
@@ -98,19 +104,21 @@ async function pick($: EngineInterface, key: string, stop: number) {
   await update($, project, () => dials)
 }
 
-/** The project's dials, Hooks and Project board settings into state, before Settings shows. */
+/** The project's dials, Hooks, Flow and Canvas settings into state, before Settings shows. */
 export async function loadProjectDials($: EngineInterface) {
   const { json = {} } = await readProject($)
   await update($, project, () => (json.dials && typeof json.dials === 'object' ? (json.dials as Record<string, string | number>) : {}))
   await update($, projectHooks, () => hooksOf(json.hooks))
-  await update($, projectBoard, () => boardOf(json.boardMode))
+  await update($, projectFlow, () => onOff(json.flowMode))
+  await update($, projectCanvas, () => onOff(json.canvasMode))
 }
 
-// A Hooks or Project board pick: the plugin option for you (plus the env the scripts read this session), the project's
+// A Hooks, Flow or Canvas pick: the plugin option for you (plus the env the scripts read this session), the project's
 // .wwjd.json key for the project; '' hands the project back to yours.
 const SETTINGS = {
   hooks: { option: 'wwjd.hookmode', json: 'hooks' },
-  board: { option: 'wwjd.boardmode', json: 'boardMode' },
+  flow: { option: 'wwjd.flowmode', json: 'flowMode' },
+  canvas: { option: 'wwjd.canvasmode', json: 'canvasMode' },
 } as const
 async function pickSetting($: EngineInterface, which: keyof typeof SETTINGS, value: string) {
   const { option, json: key } = SETTINGS[which]
@@ -118,7 +126,8 @@ async function pickSetting($: EngineInterface, which: keyof typeof SETTINGS, val
     const { deny } = await $.config.set({ key: option, value })
     if (deny) $.ui.toast(`Not saved: ${deny}`)
     else if (which === 'hooks') await $.env.set('WWJD_HOOKS', value) // the engine lists env names, so each is literal
-    else await $.env.set('WWJD_BOARD', value)
+    else if (which === 'flow') await $.env.set('WWJD_FLOW', value)
+    else await $.env.set('WWJD_CANVAS', value)
     return
   }
   const { file, json, error } = await readProject($)
@@ -131,7 +140,8 @@ async function pickSetting($: EngineInterface, which: keyof typeof SETTINGS, val
   else delete next[key]
   await $.fs.write(file, JSON.stringify(next, null, 2) + '\n')
   if (which === 'hooks') await update($, projectHooks, () => value)
-  else await update($, projectBoard, () => value)
+  else if (which === 'flow') await update($, projectFlow, () => value)
+  else await update($, projectCanvas, () => value)
 }
 
 /** The sidebar's one card: a rounded border around its content (sidebar.tsx draws decisions with it). A desktop button
@@ -193,16 +203,18 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
     HOOKS.find(([k]) => k === hooksAt)?.[2] ?? '',
     HOOKS.map(([k, label]) => stop(`hooks:${k}`, label, k === hooksAt && !(where === 'project' && !hooksOwn), () => pickSetting($, 'hooks', k))))
 
-  // Project board: the same card shape, two stops
-  const projBoard = (await read($, projectBoard)) as string
-  const myBoard = boardOf(options.boardmode) || 'on'
-  const boardOwn = where === 'project' && projBoard !== ''
-  const boardAt = boardOwn ? projBoard : myBoard
-  const boardCard = dialCard('card-board', 'Project board',
-    boardOwn ? <Button key="board:reset" plain dimColor label="Use mine" onPress={() => pickSetting($, 'board', '')} />
-      : where === 'project' ? <Text dimColor>Same as yours</Text> : null,
-    BOARD.find(([k]) => k === boardAt)?.[2] ?? '',
-    BOARD.map(([k, label]) => stop(`board:${k}`, label, k === boardAt && !(where === 'project' && !boardOwn), () => pickSetting($, 'board', k))))
+  // Flow and Canvas: the same card shape, two stops
+  const onOffCard = (which: 'flow' | 'canvas', name: string, stops: typeof FLOW | typeof CANVAS, projValue: string, myValue: unknown) => {
+    const own = where === 'project' && projValue !== ''
+    const at = own ? projValue : onOff(myValue) || 'on'
+    return dialCard(`card-${which}`, name,
+      own ? <Button key={`${which}:reset`} plain dimColor label="Use mine" onPress={() => pickSetting($, which, '')} />
+        : where === 'project' ? <Text dimColor>Same as yours</Text> : null,
+      stops.find(([k]) => k === at)?.[2] ?? '',
+      stops.map(([k, label]) => stop(`${which}:${k}`, label, k === at && !(where === 'project' && !own), () => pickSetting($, which, k))))
+  }
+  const flowCard = onOffCard('flow', 'Flow', FLOW, (await read($, projectFlow)) as string, options.flowmode)
+  const canvasCard = onOffCard('canvas', 'Canvas', CANVAS, (await read($, projectCanvas)) as string, options.canvasmode)
 
   const dialCards = DIALS.map(dial => {
     const { at, isOwn, isInherited } = state(dial)
@@ -217,7 +229,8 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
     <Box flexDirection="column" gap="sm">
       {scopeCard}
       {hooksCard}
-      {boardCard}
+      {flowCard}
+      {canvasCard}
       {dialCards}
     </Box>
   )

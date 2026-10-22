@@ -148,9 +148,9 @@ test('the log lands in the project being edited, not the session folder; the sid
   expect(await ui.find({ type: 'Button', text: 'In the session folder' })).toBeUndefined()
 })
 
-test('typed proofs: each kind says what it opens and opens in its place; variants on one board merge; a refusal says so', async ($, on) => {
+test('typed proofs: each kind says what it opens and opens in its place; variants on the canvas merge; a refusal says so; screen and aspect are kept', async ($, on) => {
   mock.store(on)
-  const files: Record<string, string> = { '/p/.wwjd.json': JSON.stringify({ board: 'https://claude.ai/artifact/abc' }) }
+  const files: Record<string, string> = { '/p/.wwjd.json': JSON.stringify({ canvas: 'https://claude.ai/artifact/abc' }) }
   const opened: unknown[] = []
   const toasts: string[] = []
   disk(on as never, files)
@@ -160,7 +160,7 @@ test('typed proofs: each kind says what it opens and opens in its place; variant
   on('tool.call', { tool: 'mcp__ccd_view__show_pane' }, ((_$: unknown, e: { pane: string; path: string; line?: number }) => { opened.push(e.pane === 'artifact' ? ['pane', 'artifact'] : ['file', e.path, e.line]); return { result: {} } }) as never)
   on('tool.call', { tool: 'mcp__Claude_Browser__navigate' }, (() => ({ deny: 'not allowed here' })) as never)
   on('process.run', () => ({ value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }) as never)
-  await $.tool.call({ tool: 'mcp__wwjd__log', task: 'Signup flow', surface: 'Email step', kind: 'assumption', text: 'Assumed a work email',
+  await $.tool.call({ tool: 'mcp__wwjd__log', task: 'Signup flow', surface: 'Email step', kind: 'assumption', text: 'Assumed a work email', screen: 'signup-email', aspect: 'ux',
     proof: [
       { kind: 'variant', name: 'A · Deck', url: 'https://claude.ai/artifact/abc', board: 'Main.dc.html' },
       { kind: 'variant', name: 'C · Park times', url: 'https://claude.ai/artifact/abc' },
@@ -169,12 +169,15 @@ test('typed proofs: each kind says what it opens and opens in its place; variant
       '.wwjd/shots/signup-390-light.png',
       'src/Signup.tsx:42',
     ] } as never)
-  await $.tool.call({ tool: 'mcp__wwjd__log', task: 'Signup flow', surface: 'Password step', kind: 'choice', text: 'Showed the rules before typing' } as never)
+  await $.tool.call({ tool: 'mcp__wwjd__log', task: 'Signup flow', surface: 'Password step', kind: 'choice', text: 'Showed the rules before typing', aspect: 'vibes' } as never)
+  const [logged, other] = (files['/p/.wwjd/decisions.jsonl'] ?? '').split('\n').filter(Boolean).map(l => JSON.parse(l) as { screen?: string; aspect?: string })
+  expect([logged?.screen, logged?.aspect]).toEqual(['signup-email', 'ux'])
+  expect(other?.aspect).toBeUndefined()
   await $.command.run({ command: 'wwjd' } as never)
   const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })
   const [id] = ids(files)
   await ui.press({ key: `row:${id}` })
-  expect(await ui.find({ type: 'Button', text: 'Open board: A · Deck, C · Park times' })).toBeDefined()
+  expect(await ui.find({ type: 'Button', text: 'Open canvas: A · Deck, C · Park times' })).toBeDefined()
   expect(await ui.find({ type: 'Button', text: 'Open Copy deck' })).toBeDefined()
   expect(await ui.find({ type: 'Button', text: 'Try it: /signup?step=email' })).toBeDefined()
   expect(await ui.find({ type: 'Button', text: 'Screenshot: signup-390-light' })).toBeDefined()
@@ -186,11 +189,11 @@ test('typed proofs: each kind says what it opens and opens in its place; variant
   expect(opened.at(-1)).toEqual(['file', '/p/src/Signup.tsx', 42])
   await ui.press({ key: `proof:${id}:2` })
   expect(toasts.at(-1)).toBe("Couldn't open Try it: /signup?step=email: not allowed here")
-  await ui.press({ key: 'board' })
+  await ui.press({ key: 'canvas' })
   expect(opened.slice(-2)).toEqual([['Artifact', 'https://claude.ai/artifact/abc'], ['pane', 'artifact']])
   const term = await $.ui.mount({ plugin: 'wwjd', surface: 'terminal', ...PANE, props })
   expect(await term.find({ type: 'Link', text: 'Screenshot: signup-390-light' })).toBeDefined()
-  expect(await term.find({ type: 'Link', text: 'Board' })).toBeDefined()
+  expect(await term.find({ type: 'Link', text: 'Canvas' })).toBeDefined()
   // The mark sits top left on the first line, never centred against a wrapped text; actions hang under the text.
   const lead = await ui.find({ key: `item:${id}` }) as unknown as { props: { alignItems?: string } } | undefined
   expect(lead?.props.alignItems).toBe('flex-start')

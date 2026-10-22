@@ -1,7 +1,7 @@
 // The wwjd sidebar (/wwjd), drawn as Claude's own sidebar is: quiet rounded cards that fold, rows of an icon and a short
 // title. Not done yet (red: what Claude still owes before it hands over, from the Strictness gate: Run it or Skip),
 // Johannes stepped in (saves: a wwjd rule changed what Claude was about to do), Claude decided (choices and guesses
-// already in the work; a row opens to why, proof, Edit and Dismiss), Directions, Handled, and Project (board, Settings).
+// already in the work; a row opens to why, proof, Edit and Dismiss), Directions, Handled, and Project (canvas, Settings).
 // Icons are Svg on the desktop (icons.ts), text marks on the terminal. Proof opens inside the desktop app where it can.
 // The agent logs through the `log` tool registered here (mcp__wwjd__log); entries live in .wwjd/decisions.jsonl at the
 // root of the project being edited (artifactRoot below).
@@ -70,7 +70,7 @@ async function artifactRoot($: EngineInterface, file?: string): Promise<string> 
 const shownRoot = async ($: EngineInterface) => (await read($, logRoot)) || artifactRoot($)
 const logFile = (root: string) => `${root}/.wwjd/decisions.jsonl`
 // The pane's last read of disk (see the render), at a log version; a file edit clears it.
-let snap: { ver: number; root: string; board: string | null; dirs: Direction[]; all: Entry[] } | null = null
+let snap: { ver: number; root: string; canvas: string | null; dirs: Direction[]; all: Entry[] } | null = null
 
 async function readLog($: EngineInterface, root: string): Promise<Entry[]> {
   try {
@@ -148,8 +148,8 @@ const settled = (x: Entry) => Boolean(x.correction || x.kept)
 // A row's label: the entry's title, else its text up to the first clause break, at most seven words (older entries).
 const titleOf = (x: Entry) => x.title || (x.text.split(/[,;:(]|\s[—–]\s/)[0] ?? x.text).trim().split(/\s+/).slice(0, 7).join(' ')
 
-// The project's board artifact, when .wwjd.json names one ("board"): the same link every session.
-// The directions explored, from .wwjd/directions.json (written with the board; local, never committed):
+// The project canvas artifact, when .wwjd.json names one ("canvas"): the same link every session.
+// The directions explored, from .wwjd/directions.json (written when directions are explored; local, never committed):
 // [{ name, url, board?, note? }]. Directions that share one canvas open it with one button.
 type Direction = { name: string; url: string; board?: string }
 async function directions($: EngineInterface, root: string): Promise<Direction[]> {
@@ -165,10 +165,10 @@ async function directions($: EngineInterface, root: string): Promise<Direction[]
   }
 }
 
-async function boardUrl($: EngineInterface, root: string): Promise<string | null> {
+async function canvasUrl($: EngineInterface, root: string): Promise<string | null> {
   const f = `${root}/.wwjd.json`
   try {
-    const url = (JSON.parse(await $.fs.read(f)) as { board?: unknown }).board
+    const url = (JSON.parse(await $.fs.read(f)) as { canvas?: unknown }).canvas
     return typeof url === 'string' && /^https:\/\//.test(url) ? url : null
   } catch {
     return null
@@ -215,11 +215,11 @@ function toProof(raw: unknown, root: string): Proof | null {
 }
 
 const base = (path: string) => path.split('/').pop() ?? path
-/** What the button says. `board` is the project's board link, so the board reads as "Open board". */
-function proofLabel(p: Proof, board: string | null): string {
+/** What the button says. `canvas` is the project canvas link, so the canvas reads as "Open canvas". */
+function proofLabel(p: Proof, canvas: string | null): string {
   switch (p.kind) {
     case 'variant': return p.name ?? p.board ?? 'Variant'
-    case 'artifact': return p.target === board ? 'Open board' : `Open ${p.name ?? 'Artifact'}`
+    case 'artifact': return p.target === canvas ? 'Open canvas' : `Open ${p.name ?? 'Artifact'}`
     case 'page': return `Try it: ${p.name ?? (p.target.replace(/^https?:\/\/[^/]+/, '') || '/')}`
     case 'screenshot': return `Screenshot: ${p.name ?? base(p.target).replace(/\.\w+$/, '')}`
     case 'file': return `File: ${p.name ?? base(p.target)}${p.line ? `:${p.line}` : ''}`
@@ -317,6 +317,8 @@ export const register: Register = (on, options) => {
           rule: { type: 'string', description: 'save only: the wwjd rule that stepped in, by its name ("Floor: tooltips", "One primary action")' },
           path: { type: 'string', description: 'A file this is about, when the project being edited is not the session\'s folder; the entry goes to that project\'s log' },
           task: { type: 'string', description: 'The task this belongs to, the same words for every entry of it ("Signup flow", "Sidebar log")' },
+          screen: { type: 'string', description: 'The screen this is about, by its id in wwjd.flow.json ("checkout"), when the project keeps one' },
+          aspect: { type: 'string', enum: ['ux', 'ui'], description: 'ux: the reason is about how it works (flow, structure, copy); ui: about how it looks' },
           proof: { type: 'array', description: 'What shows it, one entry per thing to open. An object { kind, name, url or path, board, line }: kind variant (one design on a board canvas: url is the board, name the variant, board its frame), artifact (an Artifact of its own), page (a running dev-server URL), screenshot (an image path), file (a source path, with line), link (other web page). Or a string "Name | target", whose kind is read from the target. Name every entry the way the person would ("Variant A · Deck")',
             items: { anyOf: [{ type: 'string' }, { type: 'object', properties: {
               kind: { type: 'string', enum: ['variant', 'artifact', 'page', 'screenshot', 'file', 'link'] }, name: { type: 'string' },
@@ -339,7 +341,7 @@ export const register: Register = (on, options) => {
   })
 
   on('tool.call', { tool: TOOL }, async ($, e) => {
-    const x = e as unknown as { surface?: unknown; kind?: unknown; title?: unknown; text?: unknown; why?: unknown; rule?: unknown; path?: unknown; task?: unknown; proof?: unknown }
+    const x = e as unknown as { surface?: unknown; kind?: unknown; title?: unknown; text?: unknown; why?: unknown; rule?: unknown; path?: unknown; task?: unknown; screen?: unknown; aspect?: unknown; proof?: unknown }
     if (typeof x.surface !== 'string' || typeof x.text !== 'string' || (x.kind !== 'assumption' && x.kind !== 'choice' && x.kind !== 'save')) {
       return { deny: 'Needs surface, kind (assumption, choice or save) and text.' }
     }
@@ -365,6 +367,8 @@ export const register: Register = (on, options) => {
       ...(why ? { why } : {}),
       ...(x.kind === 'save' && typeof x.rule === 'string' && x.rule.trim() ? { rule: x.rule.trim() } : {}),
       ...(typeof x.task === 'string' && x.task.trim() ? { task: x.task.trim() } : {}),
+      ...(typeof x.screen === 'string' && x.screen.trim() ? { screen: x.screen.trim().slice(0, 80) } : {}),
+      ...(x.aspect === 'ux' || x.aspect === 'ui' ? { aspect: x.aspect as Entry['aspect'] } : {}),
       ...(proof.length ? { proof } : {}),
     }
     const now = await $.clock.now()
@@ -435,15 +439,15 @@ export const register: Register = (on, options) => {
     const ver = await read($, logVersion)
     const Link = ui.Link
     // What the pane reads from disk, cached, so the redraws a click causes (press.ts) stay quick. A log write bumps the
-    // version; any file edit clears it (the board link and directions are files Claude writes).
+    // version; any file edit clears it (the canvas link and directions are files Claude writes).
     if (!snap || snap.ver !== ver) {
       const root = await shownRoot($).catch(() => '')
       snap = { ver, root,
-        board: root ? await boardUrl($, root).catch(() => null) : null,
+        canvas: root ? await canvasUrl($, root).catch(() => null) : null,
         dirs: root ? await directions($, root).catch(() => [] as Direction[]) : [],
         all: root ? await readLog($, root).catch(() => [] as Entry[]) : [] }
     }
-    const { root, board, dirs } = snap
+    const { root, canvas, dirs } = snap
     // What Strictness still wants after the last UI edit, from the same gate state the hooks enforce: Blocking cards.
     const g = await read($, gate)
     const due = g?.hasEdits
@@ -507,7 +511,7 @@ export const register: Register = (on, options) => {
       : inApp
         ? <Button key={key} plain label={label} onPress={() => { void openProof($, p, label, toast) }} />
         : <Text key={key} wrap="wrap"><Link href={proofHref(p)} label={label} /></Text>
-    // One button per place: proofs that open the same thing merge ("Open board: A · Deck, C · Park times").
+    // One button per place: proofs that open the same thing merge ("Open canvas: A · Deck, C · Park times").
     const proofs = (key: string, list: unknown[] | undefined) => {
       const ps = (list ?? []).map(x => toProof(x, root)).filter((x): x is Proof => x !== null)
       if (!ps.length) return null
@@ -520,8 +524,8 @@ export const register: Register = (on, options) => {
         <Box key={`proof:${key}`} flexDirection="column" gap="xs">
           {[...groups.values()].map((g, i) => {
             const first = g[0] as Proof
-            const variants = g.filter(p => p.kind === 'variant').map(p => proofLabel(p, board))
-            const label = variants.length ? `${first.target === board ? 'Open board' : 'Open'}: ${variants.join(', ')}` : proofLabel(first, board)
+            const variants = g.filter(p => p.kind === 'variant').map(p => proofLabel(p, canvas))
+            const label = variants.length ? `${first.target === canvas ? 'Open canvas' : 'Open'}: ${variants.join(', ')}` : proofLabel(first, canvas)
             const kind: IconName = first.kind === 'screenshot' ? 'image' : first.kind === 'page' ? 'globe' : first.kind === 'file' ? 'file' : first.kind === 'link' ? 'link' : 'layout'
             return (
               <Box key={`proof:${key}:${i}`} flexDirection="row" alignItems="center" gap="xs">
@@ -617,7 +621,7 @@ export const register: Register = (on, options) => {
     })
 
     const projectRows = [
-      board ? row('board', icon('layout', ''), [opener('board', 'Board', { kind: 'artifact', target: board })]) : null,
+      canvas ? row('canvas', icon('layout', ''), [opener('canvas', 'Canvas', { kind: 'artifact', target: canvas })]) : null,
       row('settings', icon('gear', ''), [<Button key="to-settings" plain label="Settings" onPress={() => { setProjectRoot(root); void update($, view, () => 'settings').then(() => loadProjectDials($)) }} />]),
     ]
 

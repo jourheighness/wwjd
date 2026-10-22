@@ -30,7 +30,7 @@ import { join, extname, resolve, relative, dirname, basename, sep } from "node:p
 import { homedir } from "node:os";
 import { DIALS, stopOf, isDefault, isGated } from "./dials-spec.mjs";
 import { noteEdit } from "./ledger.mjs";
-import { STORY, TEST, UI_EXT, boardMode, dialsFor, hooksMode, nearestConfig } from "./paths.mjs";
+import { STORY, TEST, UI_EXT, canvasMode, dialsFor, flowMode, hooksMode, nearestConfig } from "./paths.mjs";
 
 const [major, minor] = process.versions.node.split(".").map(Number);
 if (major < 20 || (major === 20 && minor < 10)) { console.error("wwjd needs Node 20.10 or newer"); process.exit(2); }
@@ -456,9 +456,11 @@ if (cmd === "status") {
     console.log(`legacy: ${[].concat(cfg.legacy || []).join(", ") || "none"}  (never imitate)`);
     console.log(isGated(dd.strictness) ? "grade gate: before building an over-budget surface, write .wwjd/grade/<surface>.json, run grade.mjs on it and answer its sheet" : "grade light: grade over-budget surfaces in your head; the handover lists what moved and where");
     console.log(dialLine());
-    const bm = boardMode(startDir);
-    console.log(bm === "off" ? "board: off (don't create or update a project board)"
-      : cfg.board ? `board: on, ${cfg.board} (each handover adds its round: references/board.md)` : "board: on, none yet (a new project offers one at start §0: references/board.md)");
+    const flowFile = [PROJECT_CFG && dirname(PROJECT_CFG), ROOT].some((d) => d && existsSync(join(d, "wwjd.flow.json")));
+    console.log(flowMode(startDir) === "off" ? "flow: off (no wwjd.flow.json kept or checked)"
+      : flowFile ? "flow: on, wwjd.flow.json (new apps and screens go through wwjd:flow first; update it with what you change)" : "flow: on, none yet (a new app or screen starts with wwjd:flow)");
+    console.log(canvasMode(startDir) === "off" ? "canvas: off (don't create or update a project canvas)"
+      : cfg.canvas ? `canvas: on, ${cfg.canvas} (each round updates it: ../flow/references/canvas.md)` : "canvas: on, none yet (a new project offers one at start §0: ../flow/references/canvas.md)");
     console.log(`read: ${read.join("; ")}`);
   }
   process.exit(0);
