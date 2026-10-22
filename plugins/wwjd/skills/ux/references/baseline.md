@@ -37,6 +37,7 @@ For a project with no design system, so a screen never comes out as raw HTML or 
 | `.table`, `.row`, `.group-header` | Plain; sticky headers, `.num` end-aligned |
 | `.card`, `.empty`, `.skeleton`, `kbd` | Plain; skeletons static, no shimmer |
 | `.flow`, `.breakout` | Prose rhythm; reading column with feature/full breakouts |
+| `.chrome`, `.material`, `.t-accent-2` | Only with the look tokens behind them (wwjd:look surface chrome / translucent, accent dual): a dark sidebar or bar, one frosted Native bar or sheet, one secondary category |
 
 ## Faces
 - **Product UI:** Inter variable (opsz 14–32, 400–600) or the system stack when it should feel native. **Reading:** Source Serif 4 (`data-profile="reading"`). **Persuade/Showcase:** the brand face; choosing one is `wwjd:look`. **Mono:** only code, IDs, hashes.

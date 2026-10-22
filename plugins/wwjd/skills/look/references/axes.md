@@ -4,12 +4,12 @@ Ten axes. Light and dark are always both generated, so mode is not an axis. **bo
 
 | Axis | Presets | Changes |
 |---|---|---|
-| type | **grotesk** (Inter) · native (system-ui) · humanist (Source Sans 3) · serif-display ★ (Source Serif 4 headings, Inter body) · mono-label (IBM Plex Mono for IDs, codes and data cells only) | `--font-*`, heading weight, display tracking. `"fonts"` in look.json overrides with any open face (Google Fonts link emitted); quick mode uses it for a subject-chosen display face |
+| type | **grotesk** (Inter) · native (system-ui) · humanist (Source Sans 3) · serif-display ★ (Source Serif 4 headings, Inter body) · mono-label (IBM Plex Mono for IDs, codes and data cells only) | `--font-*`, heading weight, display tracking. `"fonts"` in look.json overrides with any open face (Google Fonts link emitted); quick mode uses it for a subject-chosen display face. The reading profile (Editorial) sets body text in Source Serif 4; `"fonts": {"reading": …}` names another (`--font-reading`) |
 | neutral | temperature **stone** 70 · cool 255 · warm 55 · sage 165 · mauve 310, by chroma achromatic 0 · **quiet** .004 · tinted .012. Written `cool/quiet` | `--n`, chroma per role (text ≤.03, the rest ≤.02) |
 | accent | **quiet** · mono (accent = ink) · wash (grays take the accent hue) · vivid ★ (gamut-max chroma, P3) · dual ★ (second hue at +60°) | accent roles, `--selected`, state layers |
 | surface | **tonal** (ground darker than panes) · flat (one surface) · raised (white cards on a pale ground) · chrome (dark sidebar, `--chrome-*`) · translucent (Native only) | surface L steps |
 | shape | sharp 0/2/2/4 · crisp 2/4/6/8 · **standard** 4/6/8/12 · soft 6/8/12/16 · round ★ 8/10/16/24 + pill buttons | `--r-1…4`, `--r-button` |
-| density | compact 28/32, 13px · **regular** 32/36, 14px · comfortable 36/44, 14px · spacious 40/52, 16px, fluid display | `<html data-density>` (kit base.css owns the scale; tokens.css carries a fallback) |
+| density | compact 28/32, 13px · **regular** 32/36, 14px · comfortable 36/44, 14px · spacious: the register's page profile as is (marketing, reading, docs, consumer) | `<html data-density>` steps app heights 4px and other profiles' from their own base; the register's profile owns the type ramp (kit base.css owns the scale; tokens.css carries a fallback) |
 | contrast | soft · **standard** · high (text-3 = text-2, 4.5:1 borders, 3px focus) | L-table offsets; floors always hold |
 | elevation | flat (1px ring on overlays) · **hairline** (shadows on overlays only) · soft (card shadow, light mode) · layered (multi-layer, neutral-tinted) | `--shadow-*`, `--shadow-card` |
 | motion | instant · **crisp** · smooth · springy ★ | name only: wwjd:motion's `motion.css` owns the values |
@@ -28,7 +28,7 @@ Ten axes. Light and dark are always both generated, so mode is not an axis. **bo
 | raised-flat · layered-flat | raised + flat elevation · layered + flat surface |
 | chrome-wash | chrome + wash |
 | round-compact · sharp-shadow | round + compact · sharp + soft/layered |
-| spacious-work · compact-read | spacious in Operate or Monitor · compact in Persuade, Editorial or Showcase |
+| spacious-work · spacious-app · compact-read | spacious in Operate or Monitor · spacious in Converse (the app profile has no spacious step) · compact in Persuade, Editorial or Showcase |
 | soft-monitor · soft-tinted | soft contrast in Monitor · soft + tinted |
 | springy-work | springy in Operate, Monitor, Flow or Transact |
 | brand-shape · photo-mono · imagery-product | brand-shape without `"brandAsset": true` · photo + mono-label · non-ui imagery in product registers |
