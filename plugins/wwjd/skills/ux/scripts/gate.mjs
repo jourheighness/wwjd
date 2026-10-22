@@ -152,7 +152,9 @@ function checks(ledger, s) {
   // gets none: a canvas renders only inside its own runtime (the handover says it was looked at there), plugin code is
   // not a web page.
   const pageSince = ledger.lastPageEdit || 0;
-  const noPage = !ledger.lastPageEdit;
+  // A page edit the gate already asked about (askedFor) is not owed again: when the newer edits are canvases only,
+  // render checks for that old page would block a canvas round forever.
+  const noPage = !ledger.lastPageEdit || ((ledger.lastEdit || 0) > ledger.lastPageEdit && (ledger.askedFor || 0) >= ledger.lastPageEdit);
   const fresh = roots(ledger).flatMap((r) => { const dir = join(r, ".wwjd", "shots"); return existsSync(dir) ? readdirSync(dir).filter((f) => mtime(join(dir, f)) > pageSince) : []; });
   const unavailable = fresh.includes("UNAVAILABLE");
   const pngs = fresh.filter((f) => f.endsWith(".png"));

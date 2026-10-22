@@ -545,3 +545,13 @@ test("review fixes: quiet still reports checks as suggestions with hooks: quiet;
   p.run("post", { tool_name: "Write", tool_input: { file_path: join(p.root, "card.html") }, agent_id: "ag2" });
   assert.ok(!p.run("status", { agent_id: "ag2" }).checks.some((c) => c.key === "critic"));
 });
+
+test("a page edit already asked about is not owed again when the newer edits are canvases only", () => {
+  const p = project(3);
+  p.edit("card.html");
+  assert.match(p.run("stop", { stop_hook_active: false }).reason, /render/); // asked once for the page
+  p.edit("canvas/project/Main.dc.html");
+  const r = p.run("stop", { stop_hook_active: false });
+  assert.doesNotMatch(r?.reason || "", /render\.mjs/);
+  assert.deepEqual(p.run("status", {}).checks.map((c) => c.key), ["log"]);
+});
