@@ -95,7 +95,7 @@ test("build: artboards at half width, the diagram, stickies, row titles, and mis
   const r = p.run("build");
   assert.equal(r.root, join(p.root, ".wwjd", "canvas"));
   assert.equal(r.file_path, join(p.root, ".wwjd", "canvas", "project", "canvas.json"));
-  assert.deepEqual(Object.keys(r.files).sort(), ["project/Borrow.dc.html", "project/Catalogue.dc.html", "project/Main.dc.html", "project/MyLoans.dc.html", "project/ToolDetail.dc.html"]);
+  assert.deepEqual(Object.keys(r.files).sort(), ["project/Borrow.dc.html", "project/Catalogue.dc.html", "project/Main.dc.html", "project/MyLoans.dc.html", "project/ToolDetail.dc.html", "project/WhyBorrow.dc.html", "project/WhyProject.dc.html"]);
   assert.equal(r.files["project/Catalogue.dc.html"], "project/Catalogue.dc.html");
   assert.deepEqual(r.missing, ["cancel"]);
   assert.deepEqual(r.removed, []);
@@ -123,24 +123,22 @@ test("build: artboards at half width, the diagram, stickies, row titles, and mis
 
   // row titles
   const t1 = c.notes["w-j-borrow"], t2 = c.notes["w-j-return"];
-  assert.deepEqual([t1.kind, t1.text, t1.maxW], ["title1", "Borrow a tool", 720 + 80 + 720 + 80 + 390]);
+  assert.deepEqual([t1.kind, t1.text, t1.maxW], ["title1", "Borrow a tool", 720 + 80 + 720 + 80 + 390 + 80 + 480]);
   assert.ok(cat.y - t1.y >= 223);
   assert.ok(loans.y - t2.y >= 223);
   assert.equal(t2.maxW, 720);
 
-  // stickies
-  const n = c.notes;
-  assert.deepEqual([n["w-d-d1"].fill, n["w-d-d1"].text], ["orange", "Johannes stepped in\nKept prices visible\npeople compare"]);
-  assert.deepEqual([n["w-d-d2"].fill, n["w-d-d2"].text], ["gray", "UX: One filter row\nless to scan"]);
-  assert.deepEqual([n["w-d-d3"].fill, n["w-d-d3"].text], ["blue", "Check: Members are local"]);
-  assert.equal(n["w-d-d4"], undefined);
-  assert.equal(n["w-d-d5"].text, "Decided: Big photo\nChanged to: Small photo");
-  assert.deepEqual([n["w-d-d1"].x, n["w-d-d1"].y, n["w-d-d1"].w, n["w-d-d1"].maxH], [0, cat.y + cat.h + 40, 360, 400]);
-  assert.ok(n["w-d-d2"].y > n["w-d-d1"].y + 24);
-  assert.equal(n["w-d-d3"].w, 360);
-  // an unknown screen: a column right of the diagram
-  assert.equal(n["w-d-d6"].x, c.boards["Main.dc.html"].w + 80);
-  assert.ok(Object.keys(n).every((id) => /^[A-Za-z0-9_-]{1,40}$/.test(id)));
+  // a Why card ends each row that has decisions; the project's loose ones sit beside the diagram; no stickies
+  const why = c.boards["WhyBorrow.dc.html"];
+  assert.deepEqual([why.x, why.y, why.w, why.title], [bor.x + 390 + 80, cat.y, 480, "Why: Borrow a tool"]);
+  assert.deepEqual([c.boards["WhyProject.dc.html"].x, c.boards["WhyProject.dc.html"].y], [c.boards["Main.dc.html"].w + 80, 0]);
+  assert.ok(Object.keys(c.notes).every((id) => !id.startsWith("w-d-")));
+  const card = p.art(r, "WhyBorrow.dc.html");
+  const order = ["Johannes stepped in", "Kept prices visible", "people compare", "Claude decided", ">UX</span>", "One filter row", "less to scan", "Changed to: Small photo", "Claude guessed, check these", "Members are local"].map((t) => card.indexOf(t));
+  assert.ok(order.every((i, k) => i > 0 && (k === 0 || i > order[k - 1])), String(order));
+  assert.doesNotMatch(card, /Dropped the map/); // dismissed
+  assert.match(p.art(r, "WhyProject.dc.html"), /Settings in a sheet/); // its screen is unknown
+  assert.ok(Object.keys(c.notes).every((id) => /^[A-Za-z0-9_-]{1,40}$/.test(id)));
 
   // an artboard is exactly the skeleton, the shot at half size
   const html = p.art(r, "Catalogue.dc.html");
@@ -172,14 +170,14 @@ test("second build: only changed artboards; --current keeps the person's moves a
   const first = p.run("build");
   const again = p.run("build");
   assert.deepEqual(again.files, {});
-  assert.deepEqual(Object.keys(p.run("build", "--all").files).length, 5);
+  assert.deepEqual(Object.keys(p.run("build", "--all").files).length, 7);
 
   const live = p.read(first);
   live.title = "Toolshed canvas";
   live.createdOnFiles = { v: 1, at: "2026-01-01T00:00:00Z" };
   live.boards["Catalogue.dc.html"].x = 5000;
   live.boards["Catalogue.dc.html"].y = 6000;
-  live.notes["w-d-d1"].x = 7000;
+  live.boards["WhyBorrow.dc.html"].x = 7000;
   live.notes.mine = { x: 1, y: 2, text: "Ask Sara", w: 200, fill: "pink" };
   live.notes["w-d-gone"] = { x: 3, y: 4, text: "old", w: 200, fill: "gray" };
   live.boards["Sketch.dc.html"] = { x: 9000, y: 0, w: 100, h: 100, title: "Sketch" };
@@ -193,7 +191,7 @@ test("second build: only changed artboards; --current keeps the person's moves a
   const r = p.run("build", "--current", cur);
   assert.deepEqual(r.removed, ["project/Borrow.dc.html"]);
   assert.equal(existsSync(join(r.root, "project", "Borrow.dc.html")), false);
-  assert.deepEqual(Object.keys(r.files), ["project/Main.dc.html"]); // the diagram changed, the artboards did not
+  assert.deepEqual(Object.keys(r.files).sort(), ["project/Main.dc.html", "project/WhyBorrow.dc.html", "project/WhyProject.dc.html"]); // the diagram and the cards changed (the borrow guess moved to the project card), the screens did not
   const c = p.read(r);
   assert.equal(c.title, "Toolshed canvas");
   assert.equal(c.createdOnFiles.at, "2026-01-01T00:00:00Z");
@@ -203,8 +201,7 @@ test("second build: only changed artboards; --current keeps the person's moves a
   assert.deepEqual(c.boards["Sketch.dc.html"], live.boards["Sketch.dc.html"]);
   assert.ok(c.order.includes("Sketch.dc.html"));
   assert.deepEqual(c.notes.mine, live.notes.mine);
-  assert.equal(c.notes["w-d-gone"], undefined);
-  assert.equal(c.notes["w-d-d1"].x, 7000);
-  assert.equal(c.notes["w-d-d1"].text, "Johannes stepped in\nKept prices visible\npeople compare prices");
-  assert.deepEqual([c.notes["w-d-d3"].x, c.notes["w-d-d3"].y], [live.notes["w-d-d3"].x, live.notes["w-d-d3"].y]); // a sticky stays where it was
+  assert.equal(c.notes["w-d-gone"], undefined); // stickies from older builds go
+  assert.equal(c.boards["WhyBorrow.dc.html"].x, 7000); // a moved card keeps its place
+  assert.match(readFileSync(join(r.root, "project", "WhyBorrow.dc.html"), "utf8"), /people compare prices/);
 });

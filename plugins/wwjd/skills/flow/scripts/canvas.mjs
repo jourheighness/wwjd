@@ -217,54 +217,70 @@ try {
     try { const x = JSON.parse(l); if (x && x.id) decisions.set(String(x.id), x); } catch { /* a torn line */ }
   }
 } catch { /* no log yet */ }
-const stickyText = (x) => {
-  // An entry without a title shows its text up to the first clause break, at most seven words (as the sidebar does).
-  const head = x.title || String(x.text || "").split(/[,;:(]|\s[—–]\s/)[0].trim().split(/\s+/).slice(0, 7).join(" "), why = x.why ? `\n${x.why}` : "";
-  let t = x.kind === "save" ? `Johannes stepped in\n${head}${why}`
-    : x.kind === "assumption" ? `Check: ${head}${why}`
-    : `${x.aspect === "ux" ? "UX" : x.aspect === "ui" ? "UI" : "Decided"}: ${head}${why}`;
-  if (x.correction?.note) t += `\nChanged to: ${x.correction.note}`;
-  return t;
-};
-const FILL = { save: "orange", assumption: "blue" };
+// ── "Why it looks like this": one summary card per journey row, beside its screens ──
+// Johannes stepped in first (the saves), then what Claude decided (UX or UI, one line why), then its guesses to check.
+const short = (x) => x.title || String(x.text || "").split(/[,;:(]|\s[—–]\s/)[0].trim().split(/\s+/).slice(0, 7).join(" ");
+const live = [...decisions.values()].filter((x) => !x.kept && (x.title || x.text));
+const CARD = 480, INNER = CARD - 64;
+const lines = (t, w, px) => Math.max(1, Math.ceil((String(t).length * px) / w));
+const SHIELD = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b5532f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>';
+const label = (t) => `<div style="font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6a65">${esc(t)}</div>`;
+const item = (lead, x) => `<div style="display: flex; gap: 12px; align-items: flex-start">
+${lead}
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 15px; line-height: 20px; font-weight: 600">${esc(short(x))}</div>
+${x.why ? `<div style="font-size: 14px; line-height: 20px; color: #5c5a55">${esc(x.why)}</div>` : ""}
+${x.correction?.note ? `<div style="font-size: 14px; line-height: 20px; color: #1f1e1c">Changed to: ${esc(x.correction.note)}</div>` : ""}
+</div>
+</div>`;
+const tag = (x) => `<span style="flex-shrink: 0; width: 28px; padding: 2px 0; border-radius: 6px; background: #f1efea; color: #4a4944; font-size: 11px; line-height: 14px; font-weight: 600; text-align: center">${x.aspect === "ui" ? "UI" : x.aspect === "ux" ? "UX" : "·"}</span>`;
+const itemH = (x, lead) => 20 * lines(short(x), INNER - lead, 8.6) + (x.why ? 2 + 20 * lines(x.why, INNER - lead, 7.4) : 0) + (x.correction?.note ? 20 * lines(`Changed to: ${x.correction.note}`, INNER - lead, 7.4) : 0);
+function whyCard(where, list) {
+  const saves = list.filter((x) => x.kind === "save"), choices = list.filter((x) => x.kind === "choice"), guesses = list.filter((x) => x.kind === "assumption");
+  const parts = [], hs = [];
+  if (saves.length) { parts.push(`<div style="display: flex; flex-direction: column; gap: 16px">\n${label("Johannes stepped in")}\n${saves.map((x) => item(SHIELD, x)).join("\n")}\n</div>`); hs.push(18 + saves.reduce((n, x) => n + 16 + itemH(x, 28), 0)); }
+  if (choices.length) { parts.push(`<div style="display: flex; flex-direction: column; gap: 16px">\n${label("Claude decided")}\n${choices.map((x) => item(tag(x), x)).join("\n")}\n</div>`); hs.push(18 + choices.reduce((n, x) => n + 16 + itemH(x, 40), 0)); }
+  if (guesses.length) { parts.push(`<div style="display: flex; flex-direction: column; gap: 12px">\n${label("Claude guessed, check these")}\n${guesses.map((x) => `<div style="font-size: 14px; line-height: 20px; color: #3d3c38">${esc(short(x))}</div>`).join("\n")}\n</div>`); hs.push(18 + guesses.reduce((n, x) => n + 12 + 20 * lines(short(x), INNER, 7.4), 0)); }
+  const rule = '<div style="height: 1px; background: #ebe8e1"></div>';
+  const h = Math.ceil(64 + 50 + hs.reduce((n, x) => n + x + 28, 0) + (hs.length - 1) * 29 + 24);
+  const body = `<div style="width: ${CARD}px; height: ${h}px; box-sizing: border-box; padding: 32px; display: flex; flex-direction: column; gap: 28px; background: #ffffff; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; color: #1f1e1c">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="font-size: 13px; line-height: 18px; color: #6b6a65">${esc(where)}</div>
+<h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 600">Why it looks like this</h1>
+</div>
+${parts.join(`\n${rule}\n`)}
+</div>`;
+  return { w: CARD, h, html: page(`Why: ${where}`, body, CARD, h) };
+}
 const noteId = (prefix, id) => {
   const s = id.replace(/[^A-Za-z0-9_-]/g, "_");
   return prefix.length + s.length <= 40 ? prefix + s : `${prefix}${s.slice(0, 40 - prefix.length - 9)}-${createHash("sha1").update(id).digest("hex").slice(0, 8)}`;
 };
-const estimate = (text, w) => Math.min(400, 32 + 22 * text.split("\n").reduce((n, l) => n + Math.max(1, Math.ceil((l.length * 7.5) / Math.max(40, w - 24))), 0));
-const live = [...decisions.values()].filter((x) => !x.kept && (x.title || x.text));
 
-// ── the canvas: Main at the top, one row per journey, stickies under each screen ──
+// ── the canvas: Main at the top, one row per journey: its screens, then its Why card ──
 const curBoards = current?.boards && typeof current.boards === "object" ? current.boards : {};
 const curNotes = current?.notes && typeof current.notes === "object" ? current.notes : {};
-const boards = {}, order = [], notes = {};
+const boards = {}, order = [], notes = {}, why = new Map(); // why: file -> html
 const mainBox = { x: 0, y: 0, w: MW, h: MH, ...(curBoards["Main.dc.html"] ? pick(curBoards["Main.dc.html"], ["x", "y", "w", "h"]) : {}), title: "Flow" };
 boards["Main.dc.html"] = mainBox;
 order.push("Main.dc.html");
 function pick(o, keys) { const r = {}; for (const k of keys) if (Number.isFinite(o?.[k])) r[k] = o[k]; return r; }
-
-/** Lays out a stack of stickies from (x, y): a note already on the canvas keeps its place, new ones go below. */
-const noteAt = new Map(); // sticky id -> its decision's time, so the oldest give way first
-const stack = (list, x, y, w) => {
-  let cursor = y;
-  for (const d of list) {
-    const id = noteId("w-d-", String(d.id)), text = stickyText(d), h = estimate(text, w), was = curNotes[id];
-    const at = was && Number.isFinite(was.x) && Number.isFinite(was.y) ? { x: was.x, y: was.y } : { x, y: cursor };
-    notes[id] = { ...at, text, w, maxH: 400, fill: FILL[d.kind] || "gray" };
-    noteAt.set(id, String(d.at || ""));
-    cursor = Math.max(cursor, (was ? at.y : cursor) + h + 24);
-  }
-  return cursor - y;
+const putWhy = (file, where, list, x, y) => {
+  const c = whyCard(where, list), was = curBoards[file];
+  boards[file] = { x, y, w: c.w, h: c.h, ...(was ? pick(was, ["x", "y"]) : {}), title: `Why: ${where}` };
+  order.push(file);
+  why.set(file, c.html);
+  return c.h;
 };
 
 const placed = new Map(); // screen id -> board box
 const onBoard = (d) => d.screen && art.has(d.screen) && screenOf.has(d.screen);
 const loose = live.filter((d) => !onBoard(d));
-const looseH = stack(loose, mainBox.x + mainBox.w + 80, mainBox.y, 360);
+const looseH = loose.length ? putWhy("WhyProject.dc.html", flow.app || "The project", loose, mainBox.x + mainBox.w + 80, mainBox.y) : 0;
 let rowTop = Math.max(mainBox.y + mainBox.h, mainBox.y + looseH) + 120 + 240;
 const inJourney = new Set(journeys.flatMap((j) => j.steps));
-const rows = [...journeys.map((j) => ({ id: noteId("w-j-", String(j.id)), title: j.title || j.id, steps: j.steps })),
-  { id: "w-o", title: "Other screens", steps: screens.map((s) => s.id).filter((id) => !inJourney.has(id)) }];
+const rows = [...journeys.map((j) => ({ key: String(j.id), id: noteId("w-j-", String(j.id)), title: j.title || j.id, steps: j.steps })),
+  { key: "other", id: "w-o", title: "Other screens", steps: screens.map((s) => s.id).filter((id) => !inJourney.has(id)) }];
 for (const r of rows) {
   const fresh = [...new Set(r.steps)].filter((id) => art.has(id) && !placed.has(id));
   if (!fresh.length) continue;
@@ -275,32 +291,25 @@ for (const r of rows) {
     boards[a.file] = box;
     order.push(a.file);
     placed.set(id, box);
-    const w = Math.min(a.w, 360);
-    const sh = stack(live.filter((d) => d.screen === id && onBoard(d)), box.x, box.y + a.h + 40, w);
-    rowH = Math.max(rowH, a.h + (sh ? 40 + sh - 24 : 0));
+    rowH = Math.max(rowH, a.h);
     x += a.w + 80;
   }
+  const mine = live.filter((d) => onBoard(d) && fresh.includes(d.screen));
+  if (mine.length) { rowH = Math.max(rowH, putWhy(`Why${pascal(r.key)}.dc.html`, r.title, mine, x, rowTop)); x += CARD + 80; }
   const was = curNotes[r.id];
   notes[r.id] = { kind: "title1", x: Number.isFinite(was?.x) ? was.x : 0, y: Number.isFinite(was?.y) ? was.y : rowTop - 240, text: r.title, maxW: x - 80 };
   rowTop += rowH + 120 + 240;
 }
 
 // The person's own boards and notes stay as they are; boards for screens gone from the flow are removed.
-const ours = new Set(["Main.dc.html", ...[...art.values()].map((a) => a.file)]);
+const ours = new Set(["Main.dc.html", ...[...art.values()].map((a) => a.file), ...why.keys()]);
 const removed = [];
+// A Why card wwjd sent before that has nothing to say now (or a sticky from an older build) goes too.
+for (const p of Object.keys(sent.files)) if (/^project\/Why[\w-]*\.dc\.html$/.test(p) && !why.has(p.slice(8)) && !ours.has(p.slice(8))) removed.push(p);
 for (const [file, id] of Object.entries(sent.screens)) if (!ours.has(file) && !screenOf.has(id)) removed.push(`project/${file}`);
-for (const [file, b] of Object.entries(curBoards)) if (!ours.has(file) && !(file in sent.screens)) boards[file] = b;
+for (const [file, b] of Object.entries(curBoards)) if (!ours.has(file) && !(file in sent.screens) && !removed.includes(`project/${file}`)) boards[file] = b;
 for (const [file, id] of Object.entries(sent.screens)) if (!ours.has(file) && screenOf.has(id) && curBoards[file]) boards[file] = curBoards[file]; // its shot is gone: keep what is there
 for (const [id, n] of Object.entries(curNotes)) if (!id.startsWith("w-")) notes[id] = n;
-// Under 200 notes: the oldest decision stickies give way.
-const cut = [];
-for (const id of Object.keys(notes)
-  .filter((id) => id.startsWith("w-d-"))
-  .sort((a, b) => noteAt.get(a).localeCompare(noteAt.get(b)))) {
-  if (Object.keys(notes).length < 200) break;
-  delete notes[id];
-  cut.push(id);
-}
 const curOrder = Array.isArray(current?.order) ? current.order.filter((f) => f in boards) : [];
 const allOrder = [...new Set([...curOrder, ...order, ...Object.keys(boards)])];
 
@@ -321,7 +330,7 @@ const canvas = {
 // ── write, and list only what changed since the last build ──
 mkdirSync(projDir, { recursive: true });
 const files = {}, hash = (s) => createHash("sha1").update(s).digest("hex");
-const out = [["Main.dc.html", mainHtml], ...[...art.values()].map((a) => [a.file, a.html])];
+const out = [["Main.dc.html", mainHtml], ...[...art.values()].map((a) => [a.file, a.html]), ...why.entries()];
 const nextFiles = {};
 for (const [file, html] of out) {
   writeFileSync(join(projDir, file), html);
@@ -335,4 +344,4 @@ writeFileSync(canvasFile, JSON.stringify(canvas, null, 2));
 const screensSent = Object.fromEntries([...art.entries()].map(([id, a]) => [a.file, id]));
 for (const [file, id] of Object.entries(sent.screens)) if (!removed.includes(`project/${file}`) && !(file in screensSent)) { screensSent[file] = id; if (sent.files[`project/${file}`]) nextFiles[`project/${file}`] = sent.files[`project/${file}`]; }
 writeFileSync(sentFile, JSON.stringify({ files: nextFiles, screens: screensSent }, null, 2));
-print({ root: outDir, file_path: canvasFile, files, removed, missing, ...(cut.length ? { notesCut: cut.length } : {}) });
+print({ root: outDir, file_path: canvasFile, files, removed, missing });
