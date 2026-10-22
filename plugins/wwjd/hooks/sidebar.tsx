@@ -1,8 +1,7 @@
 // The wwjd sidebar (/wwjd), drawn as Claude's own sidebar is: quiet rounded cards that fold, rows of an icon and a short
-// title. Not done yet (red: what Claude still owes before it hands over, from the Strictness gate: Run it or Skip; with
-// Hooks quiet the same rows are Suggested checks, neutral, since nothing blocks),
-// Johannes stepped in (saves: a wwjd rule changed what Claude was about to do), Claude decided (choices and guesses
-// already in the work; a row opens to why, proof, Edit and Dismiss), Directions, Handled, and Project (canvas, Settings).
+// title: Johannes stepped in (saves: a wwjd rule changed what Claude was about to do), Claude decided (choices and guesses
+// already in the work; a row opens to why, proof, Edit and Dismiss), Directions, Handled, and Project (canvas, Settings). The checks the
+// Strictness gate asks Claude for never show here: they are between the gate and Claude.
 // Icons are Svg on the desktop (icons.ts), text marks on the terminal. Proof opens inside the desktop app where it can.
 // The agent logs through the `log` tool registered here (mcp__wwjd__log); entries live in .wwjd/decisions.jsonl at the
 // root of the project being edited (artifactRoot below).
@@ -21,7 +20,6 @@ const editing = atom({ plugin: 'wwjd', key: 'editing' } as const, '')
 // The correction being typed: kept out of state, so a keystroke never redraws the pane (a redraw mid-typing drops keys).
 let draftText = ''
 const noteScope = atom({ plugin: 'wwjd', key: 'noteScope' } as const, 'once')
-const gate = atom({ plugin: 'wwjd', key: 'gate' } as const, null)
 const logVersion = atom({ plugin: 'wwjd', key: 'logVersion' } as const, 0)
 const foldsAtom = atom({ plugin: 'wwjd', key: 'folds' } as const, {})
 const openRow = atom({ plugin: 'wwjd', key: 'openRow' } as const, '')
@@ -285,29 +283,6 @@ async function openProof($: EngineInterface, p: Proof, what: string, note?: stri
   $.ui.toast(`Couldn't open ${what}${why ? `: ${why.split('\n')[0]?.slice(0, 120)}` : ''}`)
 }
 
-// Skip: the gate counts the check as done until the next edit (.wwjd/skipped.json), the card leaves at once, and Claude
-// is told so it says so in the handover. The file goes to the root of the gate's last edited file, where the gate reads
-// it; else the shown root.
-async function skipCheck($: EngineInterface, shown: string, key: string, text: string) {
-  const last = (await read($, gate))?.lastFile
-  const cwd = await $.session.cwd()
-  const root = (last ? await rootOf($, parent(last.startsWith('/') ? last : `${cwd}/${last}`)) : null) || shown
-  if (root) {
-    const file = `${root}/.wwjd/skipped.json`
-    let map: Record<string, number> = {}
-    try { map = JSON.parse(await $.fs.read(file)) as Record<string, number> } catch { /* first skip */ }
-    map[key] = await $.clock.now()
-    await $.fs.write(file, JSON.stringify(map) + '\n').catch(() => undefined)
-  }
-  await update($, gate, g => (g ? { ...g, checks: g.checks.map(c => (c.key === key ? { ...c, done: true } : c)) } : g))
-  await sendFix($, `Skipped · ${text}`, `skip "${text}" this time; don't run it, and say in your handover that I asked you to skip it.`)
-}
-
-// A problem's fix: one message to the agent, nothing run behind the person's back.
-async function sendFix($: EngineInterface, label: string, ask: string) {
-  await $.session.append({ message: { type: 'user', content: [{ type: 'text', text: `From the wwjd sidebar: ${ask}` }] } })
-  $.ui.toast(`Sent · ${label}`)
-}
 
 // Dismiss: the decision stands. It leaves the open list; Reopen in Handled brings it back. The host's toast holds text
 // only, so the way back lives in Handled rather than an Undo in the toast.
@@ -486,16 +461,6 @@ export const register: Register = (on, options) => {
         all: root ? await readLog($, root).catch(() => [] as Entry[]) : [] }
     }
     const { root, canvas, dirs } = snap
-    // What Strictness still wants after the last UI edit, from the same gate state the hooks enforce: Blocking cards.
-    const g = await read($, gate)
-    const due = g?.hasEdits
-      ? [
-          ...(g.sheet.due ? [{ key: 'sheet', text: 'Plan what the screen shows', what: 'Before building, Claude decides what each screen shows and what it leaves out, and writes it down.', fix: 'Plan it', ask: `write the grade sheet before building${g.sheet.file ? ` ${g.sheet.file}` : ''} (references/budgets.md, Grade gate).` }] : []),
-          ...g.checks.filter(c => !c.done).map(c => ({ key: c.key, text: c.label.charAt(0).toUpperCase() + c.label.slice(1), what: c.what ?? '', fix: 'Run it', ask: `run this check before handover: ${c.label}. ${c.how}` })),
-        ]
-      : []
-    // Hooks quiet: the gate still reports the checks, but nothing blocks, so they are suggestions, without the red.
-    const isQuiet = g?.hooks === 'quiet'
     const all = snap.all
     const entries = all.filter(x => x.kind !== 'save' && !settled(x)).slice(-SHOWN)
     const handled = all.filter(x => x.kind !== 'save' && settled(x)).slice(-SHOWN).reverse()
@@ -577,9 +542,8 @@ export const register: Register = (on, options) => {
         </Box>
       )
     }
-    const mark = (kind: Entry['kind'] | 'blocking' | 'suggested') => Svg
-      ? (kind === 'blocking' ? icon('alert', 'Not done yet', TONE.error) : kind === 'suggested' ? icon('list', 'Suggested') : kind === 'assumption' ? icon('help', 'Claude guessed') : kind === 'save' ? icon('shield', 'Johannes stepped in') : icon('dot', 'Claude chose'))
-      : kind === 'blocking' ? <Text color="error" bold>✕</Text>
+    const mark = (kind: Entry['kind']) => Svg
+      ? (kind === 'assumption' ? icon('help', 'Claude guessed') : kind === 'save' ? icon('shield', 'Johannes stepped in') : icon('dot', 'Claude chose'))
       : kind === 'assumption' ? <Text color="suggestion" bold>?</Text> : <Text dimColor bold>·</Text>
 
     // Johannes stepped in: the hero. Each line opens the Artifact (or file) it happened in.
@@ -594,14 +558,6 @@ export const register: Register = (on, options) => {
       }),
       saves.length > SAVES ? <Button key="saves-all" plain dimColor label={isAllSaves ? 'Show less' : 'Show more'} onPress={() => update($, showSaves, v => !v)} /> : null,
     ]
-
-    const dueRows = due.map(d => row(`due:${d.key}`, mark(isQuiet ? 'suggested' : 'blocking'), [
-      <Text key={`due-text:${d.key}`} wrap="wrap">{d.text}</Text>,
-      actions(d.key, [
-        action(`fix:${d.key}`, d.fix, () => sendFix($, `${d.fix} · ${d.text}`, d.ask), 'primary'),
-        d.key === 'sheet' ? null : action(`skip:${d.key}`, 'Skip', () => skipCheck($, root, d.key, d.text)),
-      ]),
-    ]))
 
     // A decision is one line; pressing it opens why, what shows it, and Edit or Dismiss.
     const decisionRow = (x: Entry) => {
@@ -667,10 +623,9 @@ export const register: Register = (on, options) => {
 
     return (
       <Box flexDirection="column" padding="md" gap="md">
-        {due.length ? panel('needs', isQuiet ? 'Suggested checks' : 'Not done yet', String(due.length), dueRows) : null}
         {saves.length ? panel('saves', 'Johannes stepped in', String(saves.length), saveRows) : null}
         {entries.length ? panel('decided', 'Claude decided', String(entries.length), decided) : null}
-        {!entries.length && !due.length && !saves.length ? <Box paddingX="md" paddingY="sm"><Text dimColor>{handled.length ? 'Nothing open.' : 'Nothing logged in this project yet.'}</Text></Box> : null}
+        {!entries.length && !saves.length ? <Box paddingX="md" paddingY="sm"><Text dimColor>{handled.length ? 'Nothing open.' : 'Nothing logged in this project yet.'}</Text></Box> : null}
         {dirs.length ? panel('directions', 'Directions', String(dirs.length), dirRows, { isOpen: false }) : null}
         {handled.length ? panel('handled', 'Handled', String(handled.length), handledRows, { isOpen: false }) : null}
         {panel('project', 'Project', root ? root.split('/').pop() ?? '' : '', projectRows)}

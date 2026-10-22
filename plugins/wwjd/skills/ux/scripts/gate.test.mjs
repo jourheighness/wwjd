@@ -162,7 +162,7 @@ test("status reports the dial, the sheet and each check", () => {
   p.edit("card.html");
   s = p.run("status", {});
   assert.equal(s.sheet.file, "task-card.md");
-  assert.deepEqual(s.checks.map((c) => [c.key, c.done]), [["shots", false], ["fit", false], ["dark", false], ["runtime", false], ["log", false]]);
+  assert.deepEqual(s.checks.map((c) => [c.key, c.done]), [["shots", false], ["fit", false], ["dark", false], ["runtime", false]]);
   p.file(".wwjd/shots/card-390-light.png", "png", 5);
   p.file(".wwjd/shots/card-1440-light.png", "png", 5);
   assert.equal(p.run("status", {}).checks[0].done, true);
@@ -219,17 +219,19 @@ test("artifacts live at the nearest folder with .wwjd.json, as render.mjs writes
   assert.equal(inApp("stop", { stop_hook_active: false }), null);
 });
 
-test("shot commands point at an edited page, else WWJD_PREVIEW, never a source file or .wwjd.json", () => {
+test("shot commands point at an edited page, else WWJD_PREVIEW; a source edit with neither asks for no render checks", () => {
   const p = project(2);
   p.edit("card.html");
   assert.match(p.run("stop", { stop_hook_active: false }).reason, /shoot "?\S*card\.html/);
   p.edit("src/Card.tsx");
-  const how = (extra) => p.run("status", {}, extra).checks[0].how;
-  assert.match(how({}), /shoot <your running page URL>/);
+  const keys = (extra) => p.run("status", {}, extra).checks.map((c) => c.key);
+  const how = (extra) => p.run("status", {}, extra).checks.map((c) => c.how).join("\n");
+  assert.ok(!keys({}).includes("shots")); // nothing to point at: not asked
+  assert.doesNotMatch(how({}), /<your running page URL>/);
   assert.match(how({ WWJD_PREVIEW: "http://localhost:5173/board" }), /shoot "?http:\/\/localhost:5173\/board/);
   // a preview URL in the committed .wwjd.json is local setup and is ignored
   writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ start: "build", dials: { strictness: 2 }, preview: "http://localhost:3000" }));
-  assert.match(how({}), /shoot <your running page URL>/);
+  assert.ok(!keys({}).includes("shots"));
 });
 
 test("status: the sheet is due only after the pre gate refused a new file", () => {
@@ -243,18 +245,19 @@ test("status: the sheet is due only after the pre gate refused a new file", () =
   assert.equal(p.run("status", {}).sheet.due, false);
 });
 
-test("stop: from Strictness 2 asks once per run of edits for logged decisions", () => {
+test("stop: never asks for logged decisions, at any Strictness", () => {
+  for (const s of [2, 5]) {
+    const p = project(s);
+    p.edit("card.html");
+    assert.ok(!p.run("status", {}).checks.some((c) => c.key === "log"));
+    const r = p.run("stop", { stop_hook_active: false });
+    assert.doesNotMatch(r?.reason || "", /mcp__wwjd__log/);
+    assert.equal(p.ledger().logAsked, undefined);
+  }
   const p = project(2);
   p.edit("card.html");
   p.file(".wwjd/shots/UNAVAILABLE", "no renderer", 5);
-  const r = p.run("stop", { stop_hook_active: false });
-  assert.match(r.reason, /mcp__wwjd__log/);
-  assert.equal(p.run("stop", { stop_hook_active: false }), null); // asked once: a turn with nothing to log may end
-  p.edit("card.html");
-  p.file(".wwjd/shots/UNAVAILABLE", "no renderer", 5);
-  p.file(".wwjd/decisions.jsonl", JSON.stringify({ id: "d1", at: new Date(Date.now() + 5000).toISOString(), surface: "Card", kind: "choice", text: "x" }));
-  assert.equal(p.run("stop", { stop_hook_active: false }), null);
-  assert.equal(project(1).run("stop", { stop_hook_active: false }), null);
+  assert.equal(p.run("stop", { stop_hook_active: false }), null); // nothing else owed, nothing logged: the turn may end
 });
 
 test("stop: from Strictness 3 a fit report with errors blocks and names them", () => {
@@ -267,19 +270,6 @@ test("stop: from Strictness 3 a fit report with errors blocks and names them", (
   assert.match(p.run("stop", { stop_hook_active: false }).reason, /orphan-item: Assignee/);
   p.file(".wwjd/fit.json", JSON.stringify({ findings: [] }), 6);
   assert.equal(p.run("stop", { stop_hook_active: false }), null);
-});
-
-test("status: decisions logged in the edited project count, not only the session's", () => {
-  const p = project(3);
-  const other = mkdtempSync(join(tmpdir(), "wwjd-other-"));
-  execFileSync("git", ["init", "-q", other]);
-  writeFileSync(join(other, "card.html"), "<div></div>");
-  p.run("post", { tool_name: "Write", tool_input: { file_path: join(other, "card.html") } });
-  const log = () => p.run("status", {}).checks.find((c) => c.key === "log").done;
-  assert.equal(log(), false);
-  mkdirSync(join(other, ".wwjd"));
-  writeFileSync(join(other, ".wwjd", "decisions.jsonl"), JSON.stringify({ id: "d1", at: new Date(Date.now() + 5000).toISOString(), surface: "Card", kind: "choice", text: "x" }) + "\n");
-  assert.equal(log(), true);
 });
 
 test("stop: an edited file that is gone again asks for no checks", () => {
@@ -350,29 +340,41 @@ test("stop: render commands write to the edited project with --root when it is n
   writeFileSync(join(app, ".wwjd.json"), "{}");
   writeFileSync(join(app, "Card.tsx"), "<div/>");
   p.run("post", { tool_name: "Write", tool_input: { file_path: join(app, "Card.tsx") } });
-  const how = p.run("status", {}).checks.map((c) => c.how).join("\n");
+  const how = p.run("status", {}, { WWJD_PREVIEW: "http://localhost:5173/" }).checks.map((c) => c.how).join("\n");
   assert.match(how, new RegExp(`shoot .* --root "?${app.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
   assert.match(how, /fit .* --root /);
   p.edit("card.html");
   assert.doesNotMatch(p.run("status", {}).checks.map((c) => c.how).join("\n"), /--root/);
 });
 
-test("stop: a Design canvas board (.dc.html) asks for no shots or fit, only the log", () => {
+test("stop: a Design canvas board (.dc.html) asks for no checks and does not block", () => {
   const p = project(4);
   p.edit("canvas/project/Main.dc.html");
-  const r = p.run("stop", { stop_hook_active: false });
-  assert.match(r.reason, /mcp__wwjd__log/);
-  assert.doesNotMatch(r.reason, /render\.mjs/);
-  assert.deepEqual(p.run("status", {}).checks.map((c) => c.key), ["log"]);
+  assert.equal(p.run("stop", { stop_hook_active: false }), null);
+  assert.deepEqual(p.run("status", {}).checks, []);
 });
 
-test("stop: a file inside a Claude Code plugin is not a web page: no shots, fit, dark or runtime, only the log", () => {
+test("stop: a file inside a Claude Code plugin is not a web page: no checks and no block", () => {
   const p = project(4);
   p.file("plug/.claude-plugin/plugin.json", "{}");
   p.edit("plug/hooks/Pane.tsx");
-  assert.deepEqual(p.run("status", {}).checks.map((c) => c.key), ["log"]);
+  assert.deepEqual(p.run("status", {}).checks, []);
   assert.equal(p.ledger().lastPage, undefined);
-  assert.doesNotMatch(p.run("stop", { stop_hook_active: false }).reason, /render\.mjs/);
+  assert.equal(p.run("stop", { stop_hook_active: false }), null);
+});
+
+test("fit is asked only for products with phone screens: Operate or Monitor skip it unless devices names phone", () => {
+  const p = project(3);
+  p.edit("card.html");
+  const keys = () => p.run("status", {}).checks.map((c) => c.key);
+  assert.ok(keys().includes("fit")); // no register: asked
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ start: "build", dials: { strictness: 3 }, register: "operate" }));
+  assert.ok(!keys().includes("fit"));
+  assert.ok(keys().includes("shots"));
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ start: "build", dials: { strictness: 3 }, register: "monitor" }));
+  assert.ok(!keys().includes("fit"));
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ start: "build", dials: { strictness: 3 }, register: "operate", devices: ["desktop", "phone"] }));
+  assert.ok(keys().includes("fit"));
 });
 
 test("Hooks setting: quiet never blocks (no start question, sheet or stop), off runs nothing; .wwjd.json beats the option", () => {
@@ -402,7 +404,7 @@ process.exit(JSON.parse(r).findings.some((f) => f.severity === "error") ? 1 : 0)
   return { WWJD_FLOW_SCRIPT: join(dir, "flow.mjs"), set: (f) => writeFileSync(join(dir, "report.json"), JSON.stringify({ screens: 3, journeys: 1, findings: f })) };
 }
 
-test("stop: with wwjd.flow.json and Flow on, its check must be clean and the file newer than the last page edit; off asks nothing", () => {
+test("stop: with wwjd.flow.json and Flow on, the flow check is owed only while it reports errors; off asks nothing", () => {
   const p = project(2);
   p.edit("card.html");
   const keys = (extra) => p.run("status", {}, extra).checks.map((c) => c.key);
@@ -415,7 +417,7 @@ test("stop: with wwjd.flow.json and Flow on, its check must be clean and the fil
   assert.equal(flow().done, false);
   assert.match(flow().how, /update wwjd\.flow\.json for what you changed, then: node .*flow\.mjs" check; fix: Receipt has no way out$/);
   stub.set([]);
-  assert.equal(flow().done, false); // clean, but not updated since the edit
+  assert.equal(flow().done, true); // clean: done, though the file is older than the page edit
   p.file("wwjd.flow.json", "{}", 5);
   assert.equal(flow().done, true);
   assert.equal(flow({ WWJD_FLOW_SCRIPT: "/nonexistent/flow.mjs" }).done, false); // can't run: not done
@@ -551,7 +553,6 @@ test("a page edit already asked about is not owed again when the newer edits are
   p.edit("card.html");
   assert.match(p.run("stop", { stop_hook_active: false }).reason, /render/); // asked once for the page
   p.edit("canvas/project/Main.dc.html");
-  const r = p.run("stop", { stop_hook_active: false });
-  assert.doesNotMatch(r?.reason || "", /render\.mjs/);
-  assert.deepEqual(p.run("status", {}).checks.map((c) => c.key), ["log"]);
+  assert.equal(p.run("stop", { stop_hook_active: false }), null);
+  assert.deepEqual(p.run("status", {}).checks, []);
 });

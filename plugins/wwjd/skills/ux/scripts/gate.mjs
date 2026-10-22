@@ -130,16 +130,7 @@ function skippedAt(ledger) {
   return out;
 }
 
-// Whether the sidebar's log (.wwjd/decisions.jsonl) gained an entry after `since`, in either root.
-function loggedSince(since, ledger) {
-  return roots(ledger).some((r) => {
-    try {
-      return readFileSync(join(r, ".wwjd", "decisions.jsonl"), "utf8").split("\n").some((line) => {
-        try { return Date.parse(JSON.parse(line).at) > since; } catch { return false; }
-      });
-    } catch { return false; }
-  });
-}
+
 
 // The checks Strictness `s` asks for after the last UI edit, each with whether it is done and how to do it.
 const q = (v) => JSON.stringify(String(v)); // a path with spaces stays one argument
@@ -163,10 +154,17 @@ function checks(ledger, s) {
   const target = raw.startsWith("<") ? raw : q(raw);
   const R = q(RENDER);
   const out = [];
-  if (s >= 2 && !noPage) out.push(s >= 3
+  // Only what can run: render checks need a page to point at (an edited .html file or WWJD_PREVIEW). Without one the
+  // agent can't take them, so the gate doesn't ask; the handover says they were not run (SKILL.md Checks).
+  const canRender = !noPage && !raw.startsWith("<");
+  // Phone-width fit only where the product has phone screens: an Operate or Monitor app (desktop or tablet) skips it
+  // unless .wwjd.json "devices" names "phone".
+  const register = String(config.register || "").toLowerCase();
+  const phone = Array.isArray(config.devices) ? config.devices.includes("phone") : !["operate", "monitor"].includes(register);
+  if (s >= 2 && canRender) out.push(s >= 3
     ? { key: "shots", label: "Look at it on desktop and phone", what: "Claude takes screenshots at both sizes and looks at them before saying the work is done.", done: unavailable || widths.size >= 2, how: `screenshots at desktop and phone width: node ${R} shoot ${target} --theme light${at}` }
     : { key: "shots", label: "Look at it", what: "Claude takes a screenshot and looks at it before saying the work is done.", done: unavailable || pngs.length > 0, how: `a screenshot: node ${R} shoot ${target} --one${at}, then look at it` });
-  if (s >= 3 && !noPage) {
+  if (s >= 3 && canRender && phone) {
     // Fit runs at 320–720px and must come back clean: wrapping, clipping and lone items are layout bugs, not taste.
     let fit = null;
     const fitFile = roots(ledger).map((r) => join(r, ".wwjd", "fit.json")).filter((f) => mtime(f) > pageSince).sort((a, b) => mtime(b) - mtime(a))[0];
@@ -175,26 +173,23 @@ function checks(ledger, s) {
     out.push({ key: "fit", label: errs.length ? "Fix layout on small screens" : "Check layout on small screens", what: errs.length ? `${new Set(errs).size} layout ${new Set(errs).size === 1 ? "problem" : "problems"} on phone-width screens (something clips, overflows or wraps badly). Claude fixes them before handing over.` : "Claude opens the page at phone widths and checks that nothing clips, overflows or wraps badly.", done: unavailable || (fit !== null && errs.length === 0),
       how: errs.length ? `fix the fit errors, then rerun fit: ${[...new Set(errs)].slice(0, 4).join("; ")}` : `the fit check: node ${R} fit ${target} --widths 320,480,720${at}` });
   }
-  if (s >= 4 && !noPage) {
+  if (s >= 4 && canRender) {
     out.push({ key: "dark", label: "Look at it in dark mode", what: "Claude takes a dark-mode screenshot and checks that colours and contrast still work.", done: unavailable || pngs.some((f) => f.includes("-dark.")), how: `a dark-mode shot: node ${R} shoot ${target} --theme dark${at}` });
     out.push({ key: "runtime", label: "Test it in a real browser", what: "Claude runs the page and checks for clipped text, small tap targets, hidden focus, layout jumps and broken images.", done: unavailable || roots(ledger).some((r) => mtime(join(r, ".wwjd", "runtime.json")) > pageSince), how: `the runtime checks: node ${R} runtime ${target}${at}` });
   }
-  // Asked once per run of edits: an agent that made no unasked choice says so in the handover and may stop.
-  if (s >= 2) out.push({ key: "log", label: "List the choices Claude made", what: "Claude writes down what it decided without asking you, so you can approve or change each one here.", done: (ledger.logAsked || 0) >= since || loggedSince(since, ledger),
-    how: "the design assumptions and choices you made without being told: one mcp__wwjd__log call each (surface, kind, a 2-6 word title, one-line text, why, proof: the shot path, the page URL or the Artifact link that shows it); none? say so in the handover" });
+  // Logging decisions is the skill's job (SKILL.md Loop), never a gate: a round with no unasked choice is fine.
   // The flow model (skills/flow), when the setting is on and the edited project keeps a wwjd.flow.json: its check comes
   // back without errors and the file was updated after the last page edit.
   const flowRoot = [configFile && dirname(configFile), edited].find((d) => d && existsSync(join(d, "wwjd.flow.json")));
   if (s >= 2 && flowRoot && flowMode(projectDir) === "on") {
-    const flowFile = join(flowRoot, "wwjd.flow.json");
     let report = null;
     try { report = JSON.parse(execFileSync(process.execPath, [FLOW, "check", "--json", "--root", flowRoot], { encoding: "utf8", timeout: 4000, stdio: ["ignore", "pipe", "ignore"] })); }
     catch (e) { try { report = JSON.parse(e.stdout); } catch { /* can't run: not done */ } } // exit 1 on errors, the report still on stdout
     // A report without a findings list is no report: the check is not done.
     const errs = report && Array.isArray(report.findings) ? report.findings.filter((f) => f.severity === "error").map((f) => f.what) : null;
-    const fresh = mtime(flowFile) > pageSince;
+    // Owed only while the model has errors: a page edit that changes no screen or way needs no flow update.
     out.push({ key: "flow", label: "Check how the app flows", what: "Claude checks the app's screens and the ways between them for dead ends, traps and missing states.",
-      done: fresh && errs !== null && errs.length === 0,
+      done: errs !== null && errs.length === 0,
       how: `update wwjd.flow.json for what you changed, then: node ${q(FLOW)} check${flowRoot !== root() ? ` --root ${q(flowRoot)}` : ""}${errs?.length ? `; fix: ${errs.slice(0, 3).join("; ")}` : ""}` });
   }
   // The project canvas (skills/flow/references/canvas.md), when the setting is on and the project links one
@@ -271,7 +266,6 @@ if (mode === "stop") {
     block = missing.length > 0 && fresh && prior < 2;
     l.blocks = block ? prior + 1 : 0;
     if (block) l.askedFor = l.lastEdit;
-    if (block && missing.some((m) => m.includes("mcp__wwjd__log"))) l.logAsked = l.lastEdit;
   });
   if (!block) process.exit(0);
   say({ decision: "block", reason:

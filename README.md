@@ -79,7 +79,6 @@ Six dials tune how wwjd designs, never the floor: **Look** (plain ↔ expressive
 
 ## Decisions and corrections
 `/wwjd` opens the sidebar. It reopens every session until you close it, and opens by itself on a project's first logged decision.
-- **Not done yet:** the Strictness checks still owed before handover; **Run** asks the agent, **Skip** marks it done.
 - **Johannes stepped in:** where a wwjd rule changed what the agent was about to do.
 - **Claude decided:** every design assumption and choice made without being told, grouped by task (else surface). A row opens to why and what shows it (screenshot, page, Artifact, file).
 - **Correct… / Edit…** with a note, remembered **Just this time**, for **This project** (`docs/decisions/design.md` when `docs/decisions/` exists, else a Decisions section in `DESIGN.md`) or **Every project** (your taste file); **Send to Claude** passes it straight to the agent. **Dismiss** keeps the decision as it is.

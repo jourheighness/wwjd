@@ -11,7 +11,7 @@ function gateJson(over: object) {
     checks: [{ key: 'shots', label: 'Shots at 2 widths', done: false, how: '' }], ...over })
 }
 
-test('quiet until wwjd is used; then the status line, and Blocking cards in the sidebar for what Strictness still wants', async ($, on) => {
+test('quiet until wwjd is used; then the status line and fresh gate state, never the checks in the sidebar', async ($, on) => {
   mock.store(on)
   mock.env(on, { HOME: '/home/j' })
   let out = gateJson({})
@@ -26,7 +26,6 @@ test('quiet until wwjd is used; then the status line, and Blocking cards in the 
   on('tool.call', () => ({ result: {} }) as never)
 
   const band = await $.ui.mount({ plugin: 'wwjd', surface: 'terminal', ...PANE, props })
-  expect(await band.find({ type: 'Text', text: /Not done yet/ })).toBeUndefined()
 
   await $.tool.call({ tool: 'Write', file_path: '/p/card.html' } as never)
   await $.tool.call({ tool: 'Bash', command: 'ls' } as never)
@@ -35,9 +34,8 @@ test('quiet until wwjd is used; then the status line, and Blocking cards in the 
   await $.tool.call({ tool: 'Skill', skill: 'wwjd:ux' } as never)
   await settle()
   expect(statuses.at(-1)).toBe('wwjd · Strictness 3')
-  expect(await band.find({ type: 'Text', text: 'Plan what the screen shows' })).toBeDefined()
-  expect(await band.find({ type: 'Text', text: 'Shots at 2 widths' })).toBeDefined()
-  expect(await band.find({ key: 'fix:shots' })).toBeDefined()
+  // The checks are between the gate and Claude: the sidebar never lists them.
+  expect(await band.find({ type: 'Text', text: 'Shots at 2 widths' })).toBeUndefined()
 
   out = gateJson({ sheet: { needed: true, file: 'card.md', due: false }, checks: [{ key: 'shots', label: 'Shots at 2 widths', done: true, how: '' }] })
   await $.tool.call({ tool: 'Bash', command: 'git status' } as never)
@@ -46,33 +44,6 @@ test('quiet until wwjd is used; then the status line, and Blocking cards in the 
   await $.tool.call({ tool: 'Bash', command: 'node render.mjs shoot card.html' } as never)
   await settle()
   expect(runs).toBe(2)
-  expect(await band.find({ type: 'Text', text: /Not done yet/ })).toBeUndefined()
-})
-
-test('editing existing files shows the checks, not a grade sheet', async ($, on) => {
-  mock.store(on)
-  mock.env(on, { HOME: '/home/j' })
-  on('session.cwd', () => ({ value: '/p' }))
-  on('session.root', () => ({ value: '/p' }))
-  on('session.id', () => ({ value: 's1' }))
-  on('fs.exists', () => ({ value: false }))
-  on('process.run', () => ({ value: { exitCode: 0, stdout: gateJson({ sheet: { needed: true, file: null, due: false } }), stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }))
-  const sent: string[] = []
-  const toasts: string[] = []
-  on('session.append', ((_$: unknown, e: { message: { content: { text: string }[] } }, next: (x: unknown) => unknown) => { sent.push(e.message.content[0]?.text ?? ''); return next(e) }) as never)
-  on('ui.toast', (_$, e) => { toasts.push(String(e.text ?? '')); return { value: undefined } })
-  on('ui.status', () => ({ value: undefined }))
-  on('tool.call', () => ({ result: {} }) as never)
-  const band = await $.ui.mount({ plugin: 'wwjd', surface: 'terminal', ...PANE, props })
-  await $.tool.call({ tool: 'Skill', skill: 'wwjd:ux' } as never)
-  await settle()
-  expect(await band.find({ type: 'Text', text: 'Shots at 2 widths' })).toBeDefined()
-  expect(await band.find({ type: 'Text', text: /Plan what the screen/ })).toBeUndefined()
-
-  // Run sends the agent one message and says so; nothing runs from the sidebar itself.
-  await band.press({ key: 'fix:shots' })
-  expect(sent.at(-1)).toMatch(/run this check before handover: Shots at 2 widths/)
-  expect(toasts.at(-1)).toBe('Sent · Run it · Shots at 2 widths')
 })
 
 test('a logged decision and edits to .wwjd.json, wwjd.flow.json and a grade sheet refresh the gate; other files do not', async ($, on) => {
