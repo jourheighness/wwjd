@@ -26,9 +26,10 @@ test("base.css reads every token wwjd:look adds (display face, card shadow, chro
   const looks = [
     { register: "native", hue: 150, axes: { type: "serif-display", surface: "translucent", accent: "dual", elevation: "soft", shape: "round" } },
     { register: "operate", hue: 150, axes: { surface: "chrome" } },
+    { register: "editorial", hue: 150, fonts: { reading: '"Newsreader", Georgia, serif' } },
   ];
   const added = new Set(looks.flatMap((l) => [...declared(tokens(l))]).filter((k) => !kit.has(k)));
-  for (const k of ["--font-display", "--weight-heading", "--tracking-display", "--shadow-card", "--r-button", "--focus-width", "--accent-2", "--surface-material", "--chrome-bg"])
+  for (const k of ["--font-display", "--weight-heading", "--tracking-display", "--shadow-card", "--r-button", "--focus-width", "--accent-2", "--surface-material", "--chrome-bg", "--font-reading"])
     assert.ok(added.has(k), `look.mjs no longer writes ${k}`);
   const unread = [...added].filter((k) => !BASE.includes(`var(${k}`));
   assert.deepEqual(unread, [], `base.css never reads ${unread.join(", ")}`);
@@ -36,7 +37,7 @@ test("base.css reads every token wwjd:look adds (display face, card shadow, chro
 
 test("each look token falls back to the kit's own value", () => {
   const fallback = { "--r-button": "var(--r-2)", "--font-display": "inherit", "--weight-heading": "600", "--tracking-display": "-.02em",
-    "--shadow-card": "none", "--focus-width": "2px" };
+    "--shadow-card": "none", "--focus-width": "2px", "--font-reading": '"Source Serif 4", ui-serif, Georgia, serif' };
   for (const [k, v] of Object.entries(fallback)) assert.ok(BASE.includes(`var(${k}, ${v})`), `${k} without its fallback ${v}`);
   // title tracking stays -.012em: half the display fallback
   assert.match(BASE, /\.t-title \{[^}]*letter-spacing: calc\(var\(--tracking-display, -\.024em\) \/ 2\)/);

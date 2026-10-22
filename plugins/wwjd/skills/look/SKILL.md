@@ -39,7 +39,7 @@ wwjd:ux runs this before the first build in a project without a look; a new proj
 Gather 6–8 references, board them, pick, run look.mjs, variants: `references/board.md`.
 
 ## 3. Hand back
-- `tokens.css` uses the wwjd kit's names (`--surface-1`, `--text`, `--accent`) and replaces the kit's `:root` block. A repo with its own names (shadcn `--background`, `--foreground`, `--primary`) keeps them: map each value onto its existing token, never ship a second set. New tokens are only additions (`--font-display`, `--weight-heading`, `--tracking-display`, `--shadow-card`, `--r-button`, `--focus-width`, plus `--chrome-*`, `--surface-material` and `--accent-2` when the axis uses them). Components stay untouched.
+- `tokens.css` uses the wwjd kit's names (`--surface-1`, `--text`, `--accent`) and replaces the kit's `:root` block. A repo with its own names (shadcn `--background`, `--foreground`, `--primary`) keeps them: map each value onto its existing token, never ship a second set. New tokens are only additions (`--font-display`, `--weight-heading`, `--tracking-display`, `--shadow-card`, `--r-button`, `--focus-width`, plus `--chrome-*`, `--surface-material`, `--accent-2` and `--font-reading` when the axis or profile uses them). Components stay untouched.
 - Density is applied with `<html data-density="compact|comfortable">` (kit `base.css` owns the scale), as the tokens.css header says.
 - Load the font with the `<link>` in the tokens.css header. Licensed reference fonts map to the open preset with the same job.
 - **Motion:** name the theme only. Set `<html data-motion="…">` with wwjd:motion's `motion.css`; the theme owns the durations and easings.

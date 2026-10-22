@@ -52,7 +52,7 @@ test("fonts: a single-weight display face is linked without a weight range and n
 });
 
 test("fonts: a display override replaces the preset's serif in the link, the token and the prose", () => {
-  const r = run({ register: "editorial", hue: 150, axes: { type: "serif-display" }, fonts: { display: '"Newsreader", Georgia, serif' } });
+  const r = run({ register: "showcase", hue: 150, axes: { type: "serif-display" }, fonts: { display: '"Newsreader", Georgia, serif' } });
   assert.equal(r.status, 0, r.stderr + r.stdout);
   const css = readFileSync(join(r.dir, "tokens.css"), "utf8");
   assert.deepEqual(font(css).split("&family="), ["Inter:opsz,wght@14..32,400..600", "Newsreader:wght@400..700"]);
@@ -114,6 +114,35 @@ test("profile: a look without a register takes the project's from PRODUCT.md", (
   assert.equal(r.status, 0, r.stderr + r.stdout);
   assert.match(r.stdout, /\(persuade\)/);
   assert.match(readFileSync(join(r.dir, "DESIGN.md"), "utf8"), /- Register: persuade/);
+});
+
+test("reading: Editorial body text is the reading face, named in DESIGN.md and loaded; labels stay sans", () => {
+  const r = run({ register: "editorial", hue: 150 });
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  const css = readFileSync(join(r.dir, "tokens.css"), "utf8"), md = readFileSync(join(r.dir, "DESIGN.md"), "utf8");
+  assert.deepEqual(font(css).split("&family="), ["Inter:opsz,wght@14..32,400..600", "Source+Serif+4:opsz,wght@8..60,400..600"]);
+  assert.doesNotMatch(css, /--font-reading/); // the kit's own reading face: base.css falls back to it
+  for (const k of ["heading", "body-md", "caption"]) assert.match(md, new RegExp(`  ${k}:\\n    fontFamily: "Source Serif 4"`));
+  assert.match(md, /label-md:\n    fontFamily: "Inter"/);
+  assert.match(md, /Source Serif 4 for display, titles and body text; Inter for labels and buttons/);
+});
+
+test("reading: a reading face override is the --font-reading token and the only serif loaded", () => {
+  const r = run({ register: "editorial", hue: 150, fonts: { reading: '"Newsreader", Georgia, serif' } });
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  const css = readFileSync(join(r.dir, "tokens.css"), "utf8");
+  assert.match(css, /--font-reading: "Newsreader", Georgia, serif;/);
+  assert.deepEqual(font(css).split("&family="), ["Inter:opsz,wght@14..32,400..600", "Newsreader:wght@400..700"]);
+  assert.match(readFileSync(join(r.dir, "DESIGN.md"), "utf8"), /body-md:\n    fontFamily: "Newsreader"/);
+});
+
+test("spacious: an app-profile register rejects it (base.css has no spacious step); a page profile renders its own scale", () => {
+  const app = run({ register: "converse", hue: 150, axes: { density: "spacious" } });
+  assert.equal(app.status, 1);
+  assert.match(app.stderr + app.stdout, /spacious-app/);
+  const page = run({ register: "persuade", hue: 150, axes: { density: "spacious" } });
+  assert.equal(page.status, 0, page.stderr + page.stdout);
+  assert.match(readFileSync(join(page.dir, "tokens.css"), "utf8"), /--control-h: 44px; --row-h: 48px;/);
 });
 
 test("fonts: no display face, no --font-display (headings keep the profile's text face)", () => {

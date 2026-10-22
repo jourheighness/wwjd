@@ -49,25 +49,28 @@ const W = { type: 1, neutral: 1, accent: 1, surface: 1, shape: .5, density: 1, c
 const TEMP = { stone: 70, cool: 255, warm: 55, sage: 165, mauve: 310 }, CHROMA = { quiet: .004, achromatic: 0, tinted: .012 };
 const SYS = 'system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 const INTER = `"Inter", ui-sans-serif, ${SYS}`, MONO = 'ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace';
-const GF_INTER = 'Inter:opsz,wght@14..32,400..600';
+const GF_INTER = 'Inter:opsz,wght@14..32,400..600', GF_SERIF = 'Source+Serif+4:opsz,wght@8..60,400..600';
+// The reading profile's text face (kit/base.css); "fonts": {"reading": …} names another
+const READING = '"Source Serif 4", ui-serif, Georgia, serif';
 const TYPE = {
   grotesk: { sans: INTER, w: 600, tr: -.02, gf: GF_INTER, d: 'Inter for everything; optical sizing tightens display sizes' },
   native: { sans: SYS, w: 600, tr: -.01, d: 'the platform system face (SF, Segoe, Roboto), so it feels part of the OS' },
   humanist: { sans: `"Source Sans 3", "IBM Plex Sans", ${SYS}`, w: 600, tr: 0, gf: 'Source+Sans+3:wght@400..600', d: 'Source Sans 3: open, friendly letterforms for reading and forms' },
-  'serif-display': { sans: INTER, disp: '"Source Serif 4", ui-serif, Georgia, "Times New Roman", serif', w: 500, tr: -.01, gf: `${GF_INTER}&family=Source+Serif+4:opsz,wght@8..60,400..600`, d: 'Source Serif 4 for display and titles over an Inter body' },
+  'serif-display': { sans: INTER, disp: '"Source Serif 4", ui-serif, Georgia, "Times New Roman", serif', w: 500, tr: -.01, gf: `${GF_INTER}&family=${GF_SERIF}`, d: 'Source Serif 4 for display and titles over an Inter body' },
   'mono-label': { sans: INTER, mono: `"IBM Plex Mono", ${MONO}`, w: 600, tr: -.02, gf: `${GF_INTER}&family=IBM+Plex+Mono:wght@400;500`, d: 'Inter, with IBM Plex Mono for IDs, codes and data cells (never as a label voice)' } };
 // Custom faces ("fonts": {"display": "\"Archivo\", sans-serif"}) load from Google Fonts; an override replaces the preset's face
-// for its role, and only faces in use are loaded.
+// for its role, and only faces in use are loaded. The reading profile adds its text face (role "reading").
 const famOf = f => (String(f || '').match(/^\s*"([^"]+)"/) || [])[1];
 // Google Fonts families with one weight (400): a wght range makes Google drop the family, and a 600 heading would be faux bold.
 const SINGLE = new Set(['young serif', 'dm serif display', 'dm serif text', 'abril fatface', 'alfa slab one', 'bebas neue', 'instrument serif',
   'anton', 'archivo black', 'gloock', 'calistoga', 'fjalla one', 'staatliches', 'ultra', 'shrikhand', 'titan one', 'russo one', 'bungee',
   'rubik mono one', 'righteous', 'lobster', 'pacifico', 'monoton', 'rammetto one', 'bowlby one', 'black ops one']);
 const wt = (f, w) => SINGLE.has(String(famOf(f) || '').toLowerCase()) ? 400 : w;
-const faces = (T, fonts = {}) => ({ sans: fonts.sans || T.sans, display: fonts.display || T.disp, mono: fonts.mono || T.mono });
-const gfLink = (T, fonts = {}) => {
-  const preset = T.gf ? T.gf.split('&family=') : [], plus = n => n.replace(/ /g, '+');
-  return [...new Set(Object.values(faces(T, fonts)).map(famOf).filter(Boolean).map(n => preset.find(p => p.split(':')[0] == plus(n))
+const faces = (T, fonts = {}, prof) => ({ sans: fonts.sans || T.sans, display: fonts.display || T.disp, mono: fonts.mono || T.mono,
+  reading: prof == 'reading' ? fonts.reading || READING : undefined });
+const gfLink = (T, fonts = {}, prof) => {
+  const preset = [...(T.gf ? T.gf.split('&family=') : []), GF_SERIF], plus = n => n.replace(/ /g, '+');
+  return [...new Set(Object.values(faces(T, fonts, prof)).map(famOf).filter(Boolean).map(n => preset.find(p => p.split(':')[0] == plus(n))
     || (SINGLE.has(n.toLowerCase()) ? plus(n) : `${plus(n)}:wght@400..700`)))].join('&family=');
 };
 const VALUES = { type: Object.keys(TYPE), neutral: Object.keys(TEMP).flatMap(t => Object.keys(CHROMA).map(c => `${t}/${c}`)),
@@ -80,8 +83,7 @@ const LOUD = new Set(['vivid', 'dual', 'round', 'springy', 'serif-display']);
 const SHAPE = { sharp: [0, 2, 2, 4], crisp: [2, 4, 6, 8], standard: [4, 6, 8, 12], soft: [6, 8, 12, 16], round: [8, 10, 16, 24] };
 const DENS = { // app profile: control, row, [size, line-height] for caption, body, heading, title, display (kit/base.css; compact moves body only)
   compact: [28, 32, [[12, 16], [13, 20], [16, 24], [20, 28], [28, 34]]], regular: [32, 36, [[12, 16], [14, 20], [16, 24], [20, 28], [28, 34]]],
-  comfortable: [36, 44, [[12, 16], [14, 20], [16, 24], [20, 28], [28, 34]]],
-  spacious: [40, 52, [[14, 20], [16, 24], [20, 28], ['clamp(24px, 1.5vw + 18px, 32px)', 1.25], ['clamp(32px, 4vw + 16px, 56px)', 1.1]]] };
+  comfortable: [36, 44, [[12, 16], [14, 20], [16, 24], [20, 28], [28, 34]]] };
 // The register's data-profile (ux registers/<name>.md) owns type and heights at runtime; each mirrors its kit/base.css block
 // (control base, row base, ramp; a ratio line height is a multiple of its size). Density steps heights 4px, as base.css does.
 const PROFILE = { persuade: 'marketing', showcase: 'marketing', editorial: 'reading', reference: 'docs', operate: 'app', monitor: 'app', converse: 'app',
@@ -92,8 +94,9 @@ const PROF = {
   reading: [40, 36, [[FLUID.caption, 1.45], [FLUID.body, 1.6], [FLUID.heading, 1.25], ['clamp(1.5313rem, 1.25rem + 1.25vw, 2.2188rem)', 1.2], ['clamp(2.25rem, 1.6364rem + 2.7273vw, 3.75rem)', 1.1]]],
   marketing: [44, 48, [[FLUID.caption, 1.45], [FLUID.body, 1.55], [FLUID.heading, 1.25], ['clamp(1.8375rem, 1.3773rem + 2.0455vw, 2.9625rem)', 1.15], ['clamp(2.75rem, 1.8295rem + 4.0909vw, 5rem)', 1.05]]] };
 const STEP = { compact: -1, comfortable: 1 };
-// [control, row, ramp, profile] as the page renders them; app keeps the density table
-const scale = x => { const p = PROFILE[x.register] || 'app'; if (p == 'app') return [...DENS[x.density], p];
+// [control, row, ramp, profile] as the page renders them; spacious is a page profile's own scale (base.css has no spacious step),
+// so an app register allowed spacious renders regular
+const scale = x => { const p = PROFILE[x.register] || 'app'; if (p == 'app') return [...(DENS[x.density] || DENS.regular), p];
   const [cb, rb, sc] = PROF[p], st = STEP[x.density] || 0; return [cb + st * 4, rb + st * 4 + Math.max(st, 0) * 4, sc, p]; };
 // px of a ramp size: a number, or a clamp()'s [min, max] in px (rem = 16px)
 const pxs = q => typeof q == 'number' ? [q, q] : [...String(q).matchAll(/([\d.]+)(px|rem)(?=\s*[,)])/g)].filter((m, i, a) => i == 0 || i == a.length - 1).map(m => Math.round(m[2] == 'rem' ? m[1] * 16 : +m[1]));
@@ -118,6 +121,7 @@ const CLASH = [
   ['round-compact', x => x.shape == 'round' && x.density == 'compact', 'large radii on 28px controls turn every control into a pill'],
   ['sharp-shadow', x => x.shape == 'sharp' && /soft|layered/.test(x.elevation), 'soft shadows on square corners read as a rendering bug'],
   ['spacious-work', x => x.density == 'spacious' && /operate|monitor/.test(x.register), 'spacious density hides the data in a work tool'],
+  ['spacious-app', x => x.density == 'spacious' && x.register == 'converse', 'spacious is a page profile\'s own scale (marketing, reading, docs, consumer); the app profile has no spacious step, so it would not render'],
   ['compact-read', x => x.density == 'compact' && /persuade|editorial|showcase/.test(x.register), 'compact density on a page meant to be read or to sell'],
   ['soft-monitor', x => x.contrast == 'soft' && x.register == 'monitor', 'soft contrast fails long glances at a monitor'],
   ['soft-tinted', x => x.contrast == 'soft' && x.chroma == 'tinted', 'soft contrast on tinted grays goes muddy'],
@@ -252,8 +256,8 @@ function css(look, x, B) {
   const px = q => typeof q == 'number' ? q + 'px' : q, lh = (q, k) => typeof q == 'number' && q > 3 ? q + 'px' : `calc(var(--text-${k}) * ${q})`;
   const L = [`/* tokens.css: generated by wwjd:look (scripts/look.mjs). Change .wwjd/look.json and regenerate; never hand-edit a colour.`,
     `   Look: ${AXES.map(k => x[k]).join(' · ')}${look.ref ? `\n   Reference: ${look.ref.id || ''} ${look.ref.name || ''} ${look.ref.url || ''}`.trimEnd() : ''}`,
-    gfLink(T, look.fonts) ? `   Font: <link href="https://fonts.googleapis.com/css2?family=${gfLink(T, look.fonts)}&display=swap" rel="stylesheet">` : '   Font: system faces, nothing to load.',
-    `   Profile: ${prof == 'app' ? 'app (default, no attribute)' : `<html data-profile="${prof}">`} (${x.register}); density: ${{ compact: '<html data-density="compact">', comfortable: '<html data-density="comfortable">', regular: 'default, no attribute', spacious: prof == 'app' ? 'the register\'s data-profile (marketing, reading) from wwjd' : 'the profile\'s own, no attribute' }[x.density]}; kit/base.css owns the scale, the values below are its fallback.`,
+    gfLink(T, look.fonts, prof) ? `   Font: <link href="https://fonts.googleapis.com/css2?family=${gfLink(T, look.fonts, prof)}&display=swap" rel="stylesheet">` : '   Font: system faces, nothing to load.',
+    `   Profile: ${prof == 'app' ? 'app (default, no attribute)' : `<html data-profile="${prof}">`} (${x.register}); density: ${{ compact: '<html data-density="compact">', comfortable: '<html data-density="comfortable">', regular: 'default, no attribute', spacious: 'the profile\'s own, no attribute' }[x.density]}; kit/base.css owns the scale, the values below are its fallback.`,
     `   Motion: <html data-motion="${x.motion}"> with wwjd:motion's motion.css; the --dur/--ease values below are the crisp defaults. */`,
     `:root[data-theme="light"] { color-scheme: light; }`, `:root[data-theme="dark"] { color-scheme: dark; }`, `:root {`, `  color-scheme: light dark;`,
     `  --n: ${Math.round(n)};   /* neutral hue */`, `  --a: ${Math.round(a)};  /* accent hue */`, '',
@@ -273,7 +277,7 @@ function css(look, x, B) {
     `  --space-0-5: 2px; --space-1: 4px; --space-1-5: 6px; --space-2: 8px; --space-3: 12px; --space-4: 16px;`,
     `  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px; --space-16: 64px;`, '',
     `  --font-sans: ${look.fonts?.sans || T.sans};`, `  --font-mono: ${look.fonts?.mono || T.mono || MONO};`,
-    ...(look.fonts?.display || T.disp ? [`  --font-display: ${look.fonts?.display || T.disp};`] : []), `  --weight-heading: ${wt(look.fonts?.display || T.disp || look.fonts?.sans || T.sans, T.w)}; --tracking-display: ${T.tr}em;`,
+    ...(look.fonts?.display || T.disp ? [`  --font-display: ${look.fonts?.display || T.disp};`] : []), ...(look.fonts?.reading && prof == 'reading' ? [`  --font-reading: ${look.fonts.reading};`] : []), `  --weight-heading: ${wt(look.fonts?.display || T.disp || look.fonts?.sans || T.sans, T.w)}; --tracking-display: ${T.tr}em;`,
     ...['caption', 'body', 'heading', 'title', 'display'].map((k, i) => `  --text-${k}: ${px(sc[i][0])}; --lh-${k}: ${lh(sc[i][1], k)};`), '',
     `  --ease-out: cubic-bezier(.23, 1, .32, 1); --ease-move: cubic-bezier(.77, 0, .175, 1); --ease-drawer: cubic-bezier(.32, .72, 0, 1);`,
     `  --dur-fast: 120ms; --dur-pop: 160ms; --dur-modal: 220ms;`, '',
@@ -291,16 +295,17 @@ function designMd(look, x, B, au) {
   const cols = DMD.filter(([, role]) => R[role]).map(([k, role]) => `  ${k}: "${hex(R[role].l)}"`)
     .concat(DARK.filter(k => R[toRole(k)]).map(k => `  dark-${k}: "${hex(R[toRole(k)].d)}"`));
   const pxv = s => pxs(s)[1]; // fluid sizes at their widest
-  const F = faces(T, look.fonts), dS = F.display || F.sans, sans = fam(F.sans), disp = fam(dS), mono = fam(F.mono || MONO), dw = wt(dS, T.w), hw = wt(F.sans, T.w);
+  // reading: body, captions and headings set in the reading face (base.css --font-text); labels and buttons stay sans
+  const F = faces(T, look.fonts, prof), tS = F.reading || F.sans, dS = F.display || tS, sans = fam(F.sans), txt = fam(tS), disp = fam(dS), mono = fam(F.mono || MONO), dw = wt(dS, T.w), hw = wt(tS, T.w);
   // the preset's prose names its own faces; with any override, name the faces actually in use
-  const td = !['sans', 'display', 'mono'].some(k => look.fonts?.[k]) ? T.d
-    : (disp != sans ? `${disp} for display and titles, ${sans} for body text` : `${sans} for everything`) + (F.mono ? `; ${mono} for IDs, codes and data cells` : '');
+  const td = !['sans', 'display', 'mono'].some(k => look.fonts?.[k]) && !F.reading ? T.d
+    : (disp != txt ? `${disp} for display and titles, ${txt} for body text` : `${txt} for display, titles and body text`) + (txt != sans ? `; ${sans} for labels and buttons` : '') + (F.mono ? `; ${mono} for IDs, codes and data cells` : '');
   const ty = (k, fm, i, w, ls, lhv) => [`  ${k}:`, `    fontFamily: ${q(fm)}`, `    fontSize: ${pxv(sc[i][0])}px`, `    fontWeight: ${w}`,
     `    lineHeight: ${lhv ?? (typeof sc[i][1] == 'number' && sc[i][1] > 3 ? sc[i][1] + 'px' : sc[i][1])}`, ...(ls ? [`    letterSpacing: ${ls}em`] : [])].join('\n');
   const comp = (k, o) => `  ${k}:\n` + Object.entries(o).map(([p, v]) => `    ${p}: ${q(v)}`).join('\n');
   const fm = ['---', 'version: alpha', `name: ${q(look.name || 'Look')}`, `description: ${q(look.identity || 'Generated by wwjd:look')}`, 'colors:', ...cols, 'typography:',
-    ty('display', disp, 4, dw, T.tr), ty('title', disp, 3, dw, T.tr / 2), ty('heading', sans, 2, hw), ty('body-md', sans, 1, 400), ty('body-sm', sans, 0, 400),
-    ty('label-md', sans, 1, wt(F.sans, 500), 0, 1), ty('caption', sans, 0, 400), ty('mono', mono, 0, 400),
+    ty('display', disp, 4, dw, T.tr), ty('title', disp, 3, dw, T.tr / 2), ty('heading', txt, 2, hw), ty('body-md', txt, 1, 400), ty('body-sm', txt, 0, 400),
+    ty('label-md', sans, 1, wt(F.sans, 500), 0, 1), ty('caption', txt, 0, 400), ty('mono', mono, 0, 400),
     'rounded:', `  sm: ${r[0]}px`, `  md: ${r[1]}px`, `  lg: ${r[2]}px`, `  xl: ${r[3]}px`, '  full: 9999px',
     'spacing:', '  xs: 4px', '  sm: 8px', '  md: 16px', '  lg: 24px', '  xl: 40px', `  control: ${c}px`, `  row: ${row}px`, 'components:',
     comp('button-primary', { backgroundColor: '{colors.primary}', textColor: '{colors.on-primary}', rounded: x.shape == 'round' ? '{rounded.full}' : '{rounded.md}', height: `${c}px`, padding: '0 12px' }),

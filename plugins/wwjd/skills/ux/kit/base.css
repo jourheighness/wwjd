@@ -44,7 +44,7 @@
   --measure: 72ch; --sidebar-w: 256px; --header-h: 56px;
 }
 [data-profile="reading"] {
-  --font-text: "Source Serif 4", ui-serif, Georgia, serif;
+  --font-text: var(--font-reading, "Source Serif 4", ui-serif, Georgia, serif);  /* wwjd:look may name another reading face */
   --text-caption: clamp(0.875rem, 0.8494rem + 0.1136vw, 0.9375rem);  --lh-caption: calc(var(--text-caption) * 1.45);
   --text-body: clamp(1.0625rem, 0.9858rem + 0.3409vw, 1.25rem);      --lh-body: calc(var(--text-body) * 1.6);
   --text-heading: clamp(1.275rem, 1.1139rem + 0.7159vw, 1.6687rem);  --lh-heading: calc(var(--text-heading) * 1.25);
