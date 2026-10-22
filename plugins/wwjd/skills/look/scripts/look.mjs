@@ -8,6 +8,7 @@
 // Exit 1: a clash or ban rejected the look, or a contrast floor failed. Exit 2: usage.
 import fs from 'node:fs';
 import path from 'node:path';
+import { artifactRoot } from '../../ux/scripts/paths.mjs';
 
 // ── Colour math: OKLCH, gamut fit by chroma bisection, WCAG on XYZ Y, APCA as a warning ──
 const D = Math.PI / 180, WHITE = [1, 0, 0];
@@ -425,9 +426,8 @@ if (args.card) { console.log(JSON.stringify(cardLook(card(args.card), args), nul
 if (args.pick) { pick(+args.pick, args.rest); process.exit(0); }
 if (!args.look) die('usage: node look.mjs --look look.json [--out .] [--tokens file] [--design DESIGN.md] [--variants N --sweep a,b] [--force]\n       node look.mjs --card refs/B.yaml [--brand #hex]  |  node look.mjs --pick N refs/*.yaml');
 // Own state goes to the project root's .wwjd/, never under --out: a nested .wwjd/ would stop the decision log's root finder
-// there. Root: the nearest ancestor of cwd with .wwjd.json, .wwjd/ or .git, else cwd. A look written elsewhere is .wwjd/look.<out>.json.
-const rootOf = d => { for (let p = d; ; p = path.dirname(p)) { if (['.wwjd.json', '.wwjd', '.git'].some(q => fs.existsSync(path.join(p, q)))) return p; if (p == path.dirname(p)) return d; } };
-const look = readLook(args.look), out = args.out || '.', root = rootOf(process.cwd()), wdir = path.join(root, '.wwjd'), rel = path.relative(root, fs.existsSync(out) ? fs.realpathSync(out) : path.resolve(out));
+// there. Root: paths.mjs artifactRoot (as the gate and the sidebar find it). A look written elsewhere is .wwjd/look.<out>.json.
+const look = readLook(args.look), out = args.out || '.', root = artifactRoot(process.cwd()), wdir = path.join(root, '.wwjd'), rel = path.relative(root, fs.existsSync(out) ? fs.realpathSync(out) : path.resolve(out));
 const state = path.join(wdir, rel ? `look.${path.basename(path.resolve(out)).replace(/[^\w.-]+/g, '-').replace(/^\.+/, '') || 'out'}.json` : 'look.json');
 if (args.design) look.fixed = { ...designColors(args.design), ...(look.fixed || {}) };
 const fp = look.fixed?.primary || look.fixed?.accent; if (/^#/.test(fp || '')) look.brand = fp; // a pinned primary is the brand: dark, hover and link derive from it

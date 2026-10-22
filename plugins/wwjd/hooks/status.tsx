@@ -10,46 +10,34 @@ import type { Gate } from '../types'
 const gate = atom({ plugin: 'wwjd', key: 'gate' } as const, null)
 const isActive = atom({ plugin: 'wwjd', key: 'isActive' } as const, false)
 
-// What can change the gate's state: UI and wwjd.flow.json edits, the critic, an Artifact publish (the canvas), and the
-// Bash runs of render.mjs, grade.mjs and flow.mjs.
+// What can change the gate's state: UI, wwjd.flow.json, .wwjd.json and grade sheet (.wwjd/grade/*.md) edits, the
+// critic, an Artifact publish (the canvas), and the Bash runs of render.mjs, grade.mjs and flow.mjs. A logged decision
+// too, through gateMayHaveChanged below.
 const EDITS = new Set(['Write', 'Edit', 'MultiEdit'])
-const UI = /(\.(tsx|jsx|vue|svelte|astro|html|mdx|css|scss)|(^|\/)wwjd\.flow\.json)$/
+const UI = /(\.(tsx|jsx|vue|svelte|astro|html|mdx|css|scss)|(^|\/)wwjd\.flow\.json|(^|\/)\.wwjd\.json|(^|\/)\.wwjd\/grade\/[^/]+\.md)$/
 const changesGate = (e: { tool: string; command?: unknown; file_path?: unknown }) =>
   (EDITS.has(e.tool) && UI.test(String(e.file_path ?? ''))) || e.tool === 'Agent' || e.tool === 'Task' ||
   e.tool === 'Artifact' || (e.tool === 'Bash' && /\b(render|grade|flow)\.mjs\b/.test(String(e.command ?? '')))
 
-// The dials as the scripts see them: the plugin options, then the nearest .wwjd.json.
-async function dials($: EngineInterface, options: PluginOptions): Promise<Record<string, number>> {
+// The dials as the plugin options hold them. The gate applies the edited project's .wwjd.json itself (paths.mjs
+// dialsFor), as the Stop hook does; folding the cwd's file in here would make the two disagree.
+function dials(options: PluginOptions): Record<string, number> {
   const out: Record<string, number> = {}
   for (const d of DIALS) out[d.key] = stopOf(d, options[d.key] ?? d.default) + 1
-  const cwd = await $.session.cwd()
-  for (let dir = cwd; ; ) {
-    const f = `${dir}/.wwjd.json`
-    if (await $.fs.exists(f)) {
-      try {
-        const json = JSON.parse(await $.fs.read(f)) as { dials?: Record<string, number> }
-        for (const [k, v] of Object.entries(json.dials ?? {})) out[k] = Number(v)
-      } catch { /* a bad file: the options stand */ }
-      break
-    }
-    const up = dir.replace(/\/[^/]+$/, '')
-    if (!up || up === dir) break
-    dir = up
-  }
   return out
 }
 
 // What the gate can't read without the transcript: when a wwjd-critic ran and when each Artifact was published (by id;
-// the gate's canvas check). A read, open or pin is not a publish.
+// the gate's canvas check). A read, open, pin or asset upload is not a publish.
 const seen: { critic: number; artifact: Record<string, number> } = { critic: 0, artifact: {} }
-async function note($: EngineInterface, e: { tool: string; subagent_type?: unknown; action?: unknown; url?: unknown }) {
+async function note($: EngineInterface, e: { tool: string; subagent_type?: unknown; action?: unknown; url?: unknown; asset?: unknown }) {
   if ((e.tool === 'Agent' || e.tool === 'Task') && /wwjd-critic/.test(String(e.subagent_type ?? ''))) seen.critic = await $.clock.now()
   const id = /artifact\/([\w-]+)/.exec(String(e.url ?? ''))?.[1]
-  if (e.tool === 'Artifact' && id && (e.action === undefined || e.action === 'publish')) seen.artifact[id] = await $.clock.now()
+  if (e.tool === 'Artifact' && id && (e.action === undefined || e.action === 'publish') && !e.asset) seen.artifact[id] = await $.clock.now()
 }
 
 async function refresh($: EngineInterface, options: PluginOptions) {
-  const d = await dials($, options)
+  const d = dials(options)
   const env = { WWJD_DIALS: Object.entries(d).map(([k, v]) => `${k}=${v}`).join(' '),
     WWJD_HOOKS: String(options.hookmode ?? 'on'),
     WWJD_FLOW: String(options.flowmode ?? 'on'), WWJD_CANVAS: String(options.canvasmode ?? 'on') }
@@ -62,7 +50,33 @@ async function refresh($: EngineInterface, options: PluginOptions) {
   const prev = await read($, gate)
   if (JSON.stringify(prev) !== JSON.stringify(next)) await update($, gate, () => next)
   const off = DIALS.filter(x => x.key !== 'strictness' && !isDefault(x, stopOf(x, d[x.key]))).map(x => `${x.name} ${x.stops[stopOf(x, d[x.key])]?.[0]}`)
-  $.ui.status(['wwjd', `Strictness ${d.strictness ?? 3}`, ...off].join(' · '))
+  // Strictness as the gate read it for the edited project (its .wwjd.json wins), else yours.
+  $.ui.status(['wwjd', `Strictness ${next && next.strictness > 0 ? next.strictness : d.strictness ?? 3}`, ...off].join(' · '))
+}
+
+// The refresh runs beside the tool call, never in front of its result: one at a time, and a call that asks while one
+// runs gets one more run after it (that one reads the newest state). A failure stays quiet.
+let running = false
+let isAgain = false
+function kick($: EngineInterface, options: PluginOptions) {
+  if (running) { isAgain = true; return }
+  running = true
+  void (async () => {
+    try {
+      do {
+        isAgain = false
+        await refresh($, options).catch(() => undefined)
+      } while (isAgain)
+    } finally {
+      running = false
+    }
+  })()
+}
+
+/** A gate refresh from outside this module's tool.call hook: the log tool (sidebar.tsx) answers its own calls, so this
+ *  hook, nested beneath it, never sees them. Waits for nothing. */
+export async function gateMayHaveChanged($: EngineInterface, options: PluginOptions) {
+  if (await read($, isActive)) kick($, options)
 }
 
 export const register: Register = (on, options) => {
@@ -73,9 +87,9 @@ export const register: Register = (on, options) => {
     const skill = e.tool === 'Skill' ? String((e as { skill?: unknown }).skill ?? '') : ''
     if (/^wwjd(:|$)/.test(skill)) {
       await update($, isActive, () => true)
-      await refresh($, options)
+      kick($, options)
     } else if ((await read($, isActive)) && changesGate(e as { tool: string; command?: unknown; file_path?: unknown })) {
-      await refresh($, options)
+      kick($, options)
     }
     return result
   }).catch(($, e, next) => next(e))

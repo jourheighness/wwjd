@@ -21,7 +21,7 @@ For anything that doesn't exist yet, "show me options", or a redesign of what ex
 | Transact | buy path: listing → product → cart → checkout | gallery model, buy box | product page at 390 |
 | Flow | step map (one question per step), fields the system can derive | chunking: one page, stepper, progressive | longest step in its error state at 390 |
 
-- Check every flow for dead ends and circles before drawing it.
+- Check every flow for dead ends and circles before drawing it (`wwjd:flow` while the Flow setting is on).
 - **Must-requirements first,** one per concern, written down before any variant.
 
 ## 3. Variants
@@ -29,7 +29,7 @@ For anything that doesn't exist yet, "show me options", or a redesign of what ex
 - **Interaction concepts ship clickable:** a concept that changes how something is done (edit in place, pickers, drag) is shown as clickable variants before asking "which one". Static mocks only for layout and look questions.
 - **The intended flow, not today's API:** every step, state and transition; note what needs backend support.
 - **Real material:** the project's tokens and kit, realistic messy data (long names, one, many, empty), shown where it lives at its real sizes next to its neighbours. Light and dark when visual; interactive when the feel matters.
-- **One comparison page** (an HTML file, an Artifact, a story, a sandbox): a letter and a short name per variant, no prose on the page (reasoning goes in the message), screens on a neutral dark surround. Cluttered → a fresh page with only the live candidates.
+- **One comparison page** (an HTML file, an Artifact, a story, a sandbox): a letter and a short name per variant, no prose on the page (reasoning goes in the message), screens on a neutral dark surround. Cluttered → a fresh page with only the live candidates. List each variant in `.wwjd/directions.json` (`[{ "name": "A · Calm", "url": "<Artifact link>", "board": "<its frame, on a canvas>" }]`) so the `/wwjd` sidebar opens it.
 - **Each variant meets every must-requirement and the surface budgets** (`references/budgets.md`), or it's cut. A requirement no variant meets is the brief for a new one.
 - **Before sharing:** `wwjd.mjs check` on each variant's source before publishing. Lint only: a Design canvas renders only on claude.ai, so it is never shot or verified; the full checks wait for the build.
 

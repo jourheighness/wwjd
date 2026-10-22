@@ -18,14 +18,14 @@ Motion explains a change, or it goes. Refines wwjd:ux's motion rules; never loos
 ## 2. Pick one theme per product
 | Theme | fast / pop / modal | Feel | Default for |
 |---|---|---|---|
-| `instant` | 80 / 100 / 160ms | fade only, no scale or travel | Monitor, Reference, dense Operate, power tools |
-| `crisp` | 120 / 160 / 220ms | ease-out from .97 (baseline, = kit/tokens.css) | Operate, Converse, Flow, checkout |
-| `smooth` | 180 / 240 / 320ms | drawer curve, more travel | consumer apps, commerce browse, Editorial chrome |
-| `springy` | 120 / 180 / 320ms + 420ms spring | M3 Expressive spatial spring, ≈1.2% overshoot on transform only | Persuade, Showcase, Native, playful consumer |
+| `instant` | 80 / 100 / 160ms | fade only, no scale or travel | Monitor, Reference, dense Operate, power tools, public-service forms |
+| `crisp` | 120 / 160 / 220ms | ease-out from .97 (baseline, = kit/tokens.css) | Operate, Converse, checkout, Editorial chrome |
+| `smooth` | 180 / 240 / 320ms | drawer curve, more travel | consumer apps, commerce browse, signup and onboarding (Flow) |
+| `springy` | 120 / 180 / 320ms + 420ms spring | M3 Expressive spatial spring, ≈1.2% overshoot on transform only | Persuade, Showcase, playful consumer |
 - **Read the Motion dial** (`wwjd.mjs dials`; wwjd:ux `references/dials.md`): 1 Still = `instant`; 2 one step calmer than this table's theme; 3 this table; 4 one step livelier; 5 Lively = `springy`, capped at `smooth` in Operate, Monitor, Flow and Transact. Steps run instant, crisp, smooth, springy. A theme DESIGN.md records wins.
 - Set once: `<html data-motion="…">` with `motion.css` after the kit's `base.css`; record `motion:` in DESIGN.md.
 - `springy` never in Operate, Monitor, Flow or Transact. One theme per surface.
-- Per product type and signature moments: `references/themes.md`.
+- Per product type and signature moments: `references/themes.md` (it wins over this table). Native: the platform's own motion (`references/platform.md`).
 
 ## 3. Rules
 - **Duration by size and distance:** press 100–160ms; tooltip, popover 125–200; dropdown 150–250; dialog, drawer 200–320; full-screen 300–400. UI feedback never over 500ms; a landing hero may run 400–1200ms once.

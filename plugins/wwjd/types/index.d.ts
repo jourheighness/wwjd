@@ -5,14 +5,15 @@ export type NoteScope = 'once' | Scope
 /** What `gate.mjs status` prints: the Strictness dial, the grade sheet and the checks before handover. */
 export type Gate = {
   strictness: number
-  /** The Hooks setting when it is not "on": quiet or off; the gate then reports nothing due. */
-  hooks?: string
+  /** The Hooks setting. quiet: the checks still come, as suggestions (nothing blocks); off: nothing due. */
+  hooks?: 'on' | 'quiet' | 'off'
   hasEdits: boolean
   lastFile: string | null
   /** due: the pre gate refused a new UI file this session and no sheet was written since. */
   sheet: { needed: boolean; file: string | null; due: boolean }
-  /** label and what are for the person (plain words); how is the agent's command. */
-  checks: { key: string; label: string; what?: string; done: boolean; how: string }[]
+  /** label and what are for the person (plain words); how is the agent's command; skipped: done because the person
+   *  skipped it in the sidebar. */
+  checks: { key: string; label: string; what?: string; done: boolean; how: string; skipped?: boolean }[]
 }
 
 /** One line of .wwjd/decisions.jsonl: a design assumption or choice the agent logged, and how the person settled it:

@@ -9,7 +9,7 @@ compatibility: scripts need Node 20.10+, no dependencies.
 Screens built one at a time leave gaps between them. Write the app's structure first, let the checker find the flow bugs, then build.
 
 ## When
-On with the Flow setting (`flowMode`, default on): `/wwjd` → Settings, for you or this project. `"flowMode": "off"` in `.wwjd.json` wins. Off: skip this skill.
+On with the Flow setting (default on): `/wwjd` → Settings, for you (the `flowmode` option) or this project. `"flowMode": "off"` in `.wwjd.json` wins. Off: skip this skill.
 
 ## Before building or changing screens
 1. Name the product type, grep `### <type>` in `references/patterns.md` and read that block only (plus `### Across all types`).
@@ -23,4 +23,5 @@ On with the Flow setting (`flowMode`, default on): `/wwjd` → Settings, for you
 
 ## Lookups
 - Full schema and every rule with its source: `references/model.md`.
+- The research behind the rules and patterns (NN/g, Baymard, GOV.UK, WCAG 2.2, platform guides, cancel and consent law): `references/sources.md`.
 - Keeping the project canvas current: `references/canvas.md`, when the Canvas setting is on.

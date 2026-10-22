@@ -2,7 +2,7 @@
 name: look
 description: 'Use for how a product looks: palette, theme, colours, type face, shape, density, depth, brand and visual identity, chosen from live references and turned into contrast-checked tokens.css + DESIGN.md. Pairs with wwjd:ux, which owns structure, flow and copy. Not for layout, copy or chart colours.'
 when_to_use: '"make it look like…", "change the theme/palette/font", brand colours, dark mode colours, a moodboard or reference board, look variants, writing DESIGN.md.'
-compatibility: scripts/look.mjs needs Node 20.10+, no dependencies. Reference screenshots need Playwright.
+compatibility: scripts need Node 20.10+, no dependencies; reference screenshots need Playwright.
 ---
 
 # wwjd:look

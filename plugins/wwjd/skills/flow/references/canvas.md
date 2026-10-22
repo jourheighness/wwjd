@@ -3,13 +3,14 @@
 One claude.ai Artifact per project, made from the Design canvas type: the flow diagram at the top, one row of real screenshots per journey, and at the end of each row a short "Why it looks like this" card: Johannes stepped in, what Claude decided (UX or UI, one line why), its guesses to check. wwjd keeps it current; the person moves things, draws and comments on it.
 
 ## The setting
-**Canvas**, on (default) or off: for you (the `canvasMode` plugin option) or for this project (`"canvasMode": "off"` in `.wwjd.json`, which wins). Off: never make or update a canvas. The canvas link lives in `.wwjd.json` as `"canvas"`.
+**Canvas**, on (default) or off, under `/wwjd` → Settings: for you (the `canvasmode` plugin option) or for this project (`"canvasMode": "off"` in `.wwjd.json`, which wins). Off: never make or update a canvas. The canvas link lives in `.wwjd.json` as `"canvas"`.
 
 ## Make it (once per project)
 - Artifact publish with `type_url: "https://claude.ai/artifact/QKN21svewxgyPb6SYRqWnd"` (the Design type), a `title` (the project name) and `auto_open: "after_first_write"`. No files.
 - Put the returned `url` in `.wwjd.json` as `"canvas"`. Then do a round.
 
 ## Keep it current (every round)
+`<skill>` is the wwjd:flow folder; every `canvas.mjs` command takes `--root <project>` when the project is not the current folder.
 1. Read the live canvas: Artifact read with `url` and `path: "project/canvas.json"`; note where it was saved. (A brand-new canvas has none: skip `--current`.)
 2. `node <skill>/scripts/canvas.mjs uploads` prints `{upload: [paths]}`: shots not uploaded yet, or retaken.
 3. Upload them in one Artifact call: `url`, `asset: true`, `file_paths`. Keep each result's `url`.
@@ -21,7 +22,7 @@ One claude.ai Artifact per project, made from the Design canvas type: the flow d
 - A publish failed? Fix the cause, then `build --all` resends every artboard.
 - Refused because a file changed on the canvas (the person edited it, or the editor touched it on a click)? Read that file (Artifact read with its `path`) and look: an edit to a screen's artboard means the person changed it, so keep their version (leave it out of `files`) and say so; an editor-only change (a style the editor added) can be replaced. Never pass `overwrite_unread` for files you have not read.
 - Never hand-edit the generated files (`.wwjd/canvas/`). Change the flow, the shots or the decisions and build again.
-- The person's own boards and notes, and where they moved things, survive every build. Only `w-` notes and wwjd's boards are rewritten.
+- The person's own boards and notes, and where they moved things, survive every build. Only wwjd's own boards and row titles (notes whose id starts `w-`) are rewritten.
 
 ## Comments
 - People comment anywhere on the canvas. Send to Claude wakes the session: read it with `ArtifactComments`.

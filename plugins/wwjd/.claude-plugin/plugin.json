@@ -1,7 +1,7 @@
 {
   "name": "wwjd",
-  "version": "0.32.1",
-  "description": "What Would Johannes Do: opinionated UI/UX rules and workflow. Three skills (wwjd:ux for structure, behaviour and copy; wwjd:look for the look; wwjd:motion for motion), a cold critic agent, a prompt hook that routes UI work, a lint hook after UI edits, a gate (new-project start question, Strictness checks), the /wwjd sidebar, a flow model checked for dead ends (wwjd:flow) and an optional project canvas.",
+  "version": "0.33.0",
+  "description": "What Would Johannes Do: opinionated UI/UX rules and workflow. Four skills (wwjd:ux for structure, behaviour and copy; wwjd:look for the look; wwjd:motion for motion; wwjd:flow for how screens connect, checked for dead ends), a cold critic agent, hooks that route UI prompts, lint UI edits and hold handovers until the Strictness checks ran, the /wwjd sidebar (decisions, corrections, Settings) and a project canvas.",
   "author": {
     "name": "Johannes Carlsten"
   },
@@ -10,7 +10,7 @@
     "hookmode": {
       "type": "string",
       "title": "Hooks: on, quiet or off",
-      "description": "on: routes UI prompts, lints edits and gates new UI files and handovers (default). quiet: routes and lints, never blocks. off: no wwjd hooks. A project's .wwjd.json \"hooks\" wins.",
+      "description": "on (default): routes UI prompts, lints edits, holds new UI files and handovers until the checks ran. quiet: routes and lints, never blocks. off: no wwjd hooks. A project's .wwjd.json \"hooks\" wins.",
       "options": ["on", "quiet", "off"],
       "default": "on"
     },
@@ -24,7 +24,7 @@
     "canvasmode": {
       "type": "string",
       "title": "Canvas: on or off",
-      "description": "Keeps a Figma-like project canvas current: every screen per journey, the flow, and a short Why card per journey. on (default) or off. A project's .wwjd.json \"canvasMode\" wins.",
+      "description": "A Figma-like project canvas (a claude.ai Design Artifact) kept current: every screen per journey, the flow, and a short Why card per journey. on (default) or off. A project's .wwjd.json \"canvasMode\" wins.",
       "options": ["on", "off"],
       "default": "on"
     },

@@ -46,7 +46,7 @@
 | fab | one floating primary create action | native (Material) · 26, 3, 22 | – |
 
 ## How to pick
-1. **Register first** (SKILL.md register table), for the surface, not the product. Persuade, Editorial, Reference, Transact and Showcase use section B; Flow uses wizard, auth-card or fullscreen-flow.
+1. **Register first** (SKILL.md §4 Registers), for the surface, not the product. Persuade, Editorial, Reference, Transact and Showcase use section B; Flow uses wizard, auth-card or fullscreen-flow.
 2. **Operate:** the verb → layout table and the detail container (inbox-3pane / list-peek / record-page) live in `registers/operate.md`.
 3. **Compose; don't invent.** One outer layout (shell-sidebar or a page grid), one inner layout per pane, plus overlays (command-palette, copilot-panel, bottom-sheet). Two layouts in one prompt: the dominant object's owns the frame, the other is a view tab ("list and board" = one query, two views).
 4. **Every width tier gets its own form;** the ≤480 form is designed, not the desktop stacked. Mobile and native add section C.

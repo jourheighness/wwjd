@@ -1,6 +1,6 @@
 # Themes per product type
 
-Theme sets the numbers; the register still decides what may move. `springy` never in Operate, Flow or Transact.
+Theme sets the numbers; the register still decides what may move. `springy` never in Operate, Monitor, Flow or Transact.
 
 ## Theme definitions
 | Theme | Tokens | Model | Reference systems |

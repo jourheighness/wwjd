@@ -22,14 +22,14 @@ const stilla = () => M(
     S("pricing", { title: "Pricing page", job: "Pick the membership that fits", route: "/", entry: true, data: true, states: ["default", "empty", "loading", "error"] }),
     S("join", { title: "Welcome", job: "See the membership is active", terminal: true }),
     S("member", { title: "Membership", job: "See and manage the membership", entry: true }),
-    S("cancel-review", { title: "Cancel membership", job: "Check what ends before cancelling", review: true }),
+    S("cancel-review", { title: "Cancel membership", job: "Check what ends before cancelling", review: true, states: ["default", "error"] }),
     S("cancelled", { title: "Cancelled", job: "See the membership ended", terminal: true }),
   ],
-  [E("pricing", "join"), E("member", "cancel-review"), E("cancel-review", "cancelled", "destructive"), E("cancelled", "member", "undo")],
+  [E("pricing", "join"), E("join", "member"), E("member", "cancel-review"), E("cancel-review", "member", "back"), E("cancel-review", "cancelled", "destructive"), E("cancelled", "member", "undo")],
   [J("join", ["pricing", "join"], { goal: "Member" }), J("cancel", ["member", "cancel-review", "cancelled"], { goal: "Not a member", undoes: "join" })],
 );
-// Smallest clean app: an entry that leads to an end.
-const tiny = () => M([S("a", { entry: true }), S("b", { terminal: true })], [E("a", "b")], [J("go", ["a", "b"])]);
+// Smallest clean app: an entry that leads to an end, which leads back.
+const tiny = () => M([S("a", { entry: true }), S("b", { terminal: true })], [E("a", "b"), E("b", "a")], [J("go", ["a", "b"])]);
 
 test("the Stilla example is clean: no findings at all", () => {
   assert.deepEqual(check(stilla()), []);
@@ -66,7 +66,7 @@ test("unreachable: a screen no path from an entry reaches", () => {
 });
 
 test("dead-end: no way on and not an end", () => {
-  const m = tiny(); m.screens[1].terminal = false;
+  const m = tiny(); m.screens[1].terminal = false; m.edges.pop();
   assert.deepEqual(only(m, "dead-end").map((f) => f.screen), ["b"]);
   assert.deepEqual(only(tiny(), "dead-end"), []);
 });
@@ -144,6 +144,53 @@ test("orphan-decision: a logged decision names a screen not in the flow", () => 
   assert.deepEqual(only(tiny(), "orphan-decision", { decisions: decisions.slice(1) }), []);
 });
 
+test("leaving-harder: the way to a buried cancel counts too", () => {
+  const m = stilla(); m.screens[2].entry = false;
+  m.screens.push(S("home", { entry: true }), S("account", { job: "See the account" }), S("billing", { job: "See billing" }));
+  m.edges.push(E("home", "account"), E("account", "billing"), E("billing", "member"), E("member", "home", "back"));
+  assert.deepEqual(only(m, "leaving-harder").map((f) => f.journey), ["cancel"]);
+  assert.match(only(m, "leaving-harder")[0].what, /takes 4 steps from where people arrive, but "join" took 2/);
+});
+
+test("review-no-change: a review with no way to change or keep is an error", () => {
+  const m = stilla(); m.edges = m.edges.filter((e) => !(e.from === "cancel-review" && e.kind === "back"));
+  assert.deepEqual(only(m, "review-no-change").map((f) => [f.screen, f.severity]), [["cancel-review", "error"]]);
+  m.edges.push({ from: "cancel-review", to: "member", action: "Keep my membership", kind: "forward" });
+  assert.deepEqual(only(m, "review-no-change"), []);
+});
+
+test("modal-no-dismiss: a modal needs a back or undo way out", () => {
+  const m = tiny(); m.screens.push(S("sheet", { modal: true, terminal: true })); m.edges.push(E("a", "sheet"), E("sheet", "b"));
+  assert.deepEqual(only(m, "modal-no-dismiss").map((f) => [f.screen, f.severity]), [["sheet", "error"]]);
+  m.edges.push(E("sheet", "a", "back"));
+  assert.deepEqual(only(m, "modal-no-dismiss"), []);
+  assert.ok(validate(M([S("x", { modal: "yes" })])).findings.some((f) => /"modal" is not true or false/.test(f.what)));
+});
+
+test("no-failure-path: a commit with no error state or error way warns once per screen", () => {
+  const m = stilla(); m.screens[3].states = ["default"];
+  m.screens.push(S("gone", { terminal: true })); m.edges.push(E("cancel-review", "gone", "destructive"), E("gone", "member"));
+  assert.deepEqual(only(m, "no-failure-path").map((f) => [f.screen, f.severity]), [["cancel-review", "warn"]]);
+  m.edges.push(E("cancelled", "cancel-review", "error"));
+  m.screens.at(-1).states = ["error"];
+  assert.deepEqual(only(m, "no-failure-path"), []);
+});
+
+test("error-restarts: a failure sent back past the step that failed warns", () => {
+  const m = M([S("cart", { entry: true }), S("address"), S("pay", { states: ["error"] }), S("done", { terminal: true })],
+    [E("cart", "address"), E("address", "pay"), E("pay", "done", "destructive"), E("done", "cart"), E("pay", "address", "back"), E("address", "cart", "back"), E("pay", "cart", "error")],
+    [J("buy", ["cart", "address", "pay", "done"])]);
+  assert.deepEqual(only(m, "error-restarts").map((f) => [f.journey, f.screen]), [["buy", "pay"]]);
+  m.edges.at(-1).to = "address";
+  assert.deepEqual(only(m, "error-restarts"), []);
+});
+
+test("end-no-next: an end with nothing to do next warns", () => {
+  const m = tiny(); m.edges.pop();
+  assert.deepEqual(only(m, "end-no-next").map((f) => [f.screen, f.severity]), [["b", "warn"]]);
+  assert.deepEqual(only(tiny(), "end-no-next"), []);
+});
+
 function project() {
   const root = mkdtempSync(join(tmpdir(), "wwjd-flow-"));
   const run = (...args) => spawnSync("node", [FLOW, ...args, "--root", root], { encoding: "utf8" });
@@ -152,7 +199,7 @@ function project() {
 
 test("cli check: text grouped by severity with a summary; exit 1 on errors, 0 when clean", () => {
   const p = project();
-  const m = stilla(); delete m.screens[0].shot; m.screens[1].terminal = false;
+  const m = stilla(); delete m.screens[0].shot; m.screens[1].terminal = false; m.edges = m.edges.filter((e) => e.from !== "join");
   writeFileSync(join(p.root, "wwjd.flow.json"), JSON.stringify(m));
   mkdirSync(join(p.root, ".wwjd"));
   writeFileSync(join(p.root, ".wwjd", "decisions.jsonl"), JSON.stringify({ title: "x", screen: "ghost" }) + "\nnot json\n");
@@ -194,4 +241,18 @@ test("cli init: writes a starter that checks, and never overwrites", () => {
   assert.deepEqual(validate(m).findings, []);
   assert.equal(p.run("init").status, 1);
   assert.ok(existsSync(file));
+});
+
+test("a flow file holding null is a shape error, never a clean report", () => {
+  const dir = mkdtempSync(join(tmpdir(), "wwjd-flow-null-"));
+  writeFileSync(join(dir, "wwjd.flow.json"), "null");
+  const r = spawnSync("node", [FLOW, "check", "--json", "--root", dir], { encoding: "utf8" });
+  assert.equal(r.status, 1);
+  assert.equal(JSON.parse(r.stdout).findings[0].rule, "shape");
+});
+
+test("a non-list states never crashes the checker", () => {
+  const m = { v: 1, screens: [{ id: "a", title: "A", job: "x", entry: true, states: 3 }, { id: "b", title: "B", job: "x", terminal: true, review: true, states: {} }],
+    edges: [{ from: "a", to: "b", action: "Delete", kind: "destructive" }, { from: "b", to: "a", action: "Back", kind: "back" }], journeys: [{ id: "j", title: "J", steps: ["a", "b"], goal: "g" }] };
+  assert.doesNotThrow(() => check(m));
 });

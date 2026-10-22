@@ -50,7 +50,7 @@ Generated UI drifts to the most probable output; ban a default and it falls to t
 6. **"Premium" (look):** double-bezel cards, floating glass pill nav, arrow-circle-in-button, blur + fade-up reveals, `rounded-[2rem]`.
 7. **"Notion-minimal" (look):** bone ground, pastel uppercase pill tags, 1px #EAEAEA on everything, faux window dots.
 8. **Avoidance aesthetic:** everything removed, nothing designed: a thin grey wireframe. Removal means fewer elements with stronger hierarchy; fill space with scale, real content or real primitives, never ornament. Test: cover the labels; if a grey grid of identical rows is left, add identity, values or a preview, never ornament.
-9. **Tame:** new features bolted onto the old page instead of a redesign. If it looks like the old thing with additions, redo it (long-familiar surfaces excepted, SKILL.md).
+9. **Tame:** new features bolted onto the old page instead of a redesign. If it looks like the old thing with additions, redo it (long-familiar surfaces excepted, `rules/visual.md`).
 
 ## Quick tests
 - **Squint** (the one definition; others point here): blurred, only the primary, the needs-you signals and the groups still read.

@@ -1,5 +1,6 @@
 // The wwjd sidebar (/wwjd), drawn as Claude's own sidebar is: quiet rounded cards that fold, rows of an icon and a short
-// title. Not done yet (red: what Claude still owes before it hands over, from the Strictness gate: Run it or Skip),
+// title. Not done yet (red: what Claude still owes before it hands over, from the Strictness gate: Run it or Skip; with
+// Hooks quiet the same rows are Suggested checks, neutral, since nothing blocks),
 // Johannes stepped in (saves: a wwjd rule changed what Claude was about to do), Claude decided (choices and guesses
 // already in the work; a row opens to why, proof, Edit and Dismiss), Directions, Handled, and Project (canvas, Settings).
 // Icons are Svg on the desktop (icons.ts), text marks on the terminal. Proof opens inside the desktop app where it can.
@@ -13,6 +14,7 @@ import { PANE, exportDials, loadProjectDials, setProjectRoot, settingsView } fro
 import { TONE, iconSource } from './icons'
 import type { IconName } from './icons'
 import { drawn, onFocus, onPress, tracked } from './press'
+import { gateMayHaveChanged } from './status'
 
 const view = atom({ plugin: 'wwjd', key: 'view' } as const, 'log')
 const editing = atom({ plugin: 'wwjd', key: 'editing' } as const, '')
@@ -39,11 +41,17 @@ const logRoot = atom({ plugin: 'wwjd', key: 'logRoot' } as const, '')
 const EDITS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit'])
 const parent = (p: string) => p.replace(/\/[^/]+\/?$/, '')
 
+// paths.mjs strayRoot(): a .wwjd/ in the home folder or above it, in a temp root, or in a folder directly in a shared
+// temp root (/tmp/<user>) belongs to no project.
+const TMP = /^(\/private)?\/(tmp|var\/tmp)(\/[^/]+)?$|^(\/private)?\/var\/folders\/[^/]+\/[^/]+\/T$/
+const stray = (dir: string, home: string | undefined) =>
+  dir === home || (home ?? '').startsWith(`${dir}/`) || dir === '' || TMP.test(dir)
+
 async function rootOf($: EngineInterface, start: string): Promise<string | null> {
   const home = await $.env.get('HOME')
   let git: string | null = null
   for (let dir = start; dir; ) {
-    if ((await $.fs.exists(`${dir}/.wwjd.json`)) || (dir !== home && (await $.fs.exists(`${dir}/.wwjd`)))) return dir
+    if ((await $.fs.exists(`${dir}/.wwjd.json`)) || (!stray(dir, home) && (await $.fs.exists(`${dir}/.wwjd`)))) return dir
     if (!git && (await $.fs.exists(`${dir}/.git`))) git = dir
     const up = parent(dir)
     if (!up || up === dir) break
@@ -59,7 +67,7 @@ async function artifactRoot($: EngineInterface, file?: string): Promise<string> 
     if (root) return root
   }
   for (let dir = cwd, home = await $.env.get('HOME'); dir && dir !== home; ) {
-    if ((await $.fs.exists(`${dir}/.wwjd.json`)) || (await $.fs.exists(`${dir}/.wwjd`))) return dir
+    if ((await $.fs.exists(`${dir}/.wwjd.json`)) || (!stray(dir, home) && (await $.fs.exists(`${dir}/.wwjd`)))) return dir
     const up = parent(dir)
     if (!up || up === dir) break
     dir = up
@@ -72,15 +80,17 @@ const logFile = (root: string) => `${root}/.wwjd/decisions.jsonl`
 // The pane's last read of disk (see the render), at a log version; a file edit clears it.
 let snap: { ver: number; root: string; canvas: string | null; dirs: Direction[]; all: Entry[] } | null = null
 
+// [] only when there is no log yet. Any other failure (over 4 MiB, no permission, I/O) throws: a writer that took it
+// for an empty log would write back only its own entry and wipe the rest.
 async function readLog($: EngineInterface, root: string): Promise<Entry[]> {
-  try {
-    return (await $.fs.read(logFile(root))).split('\n').filter(Boolean).flatMap(line => {
-      try { return [JSON.parse(line) as Entry] } catch { return [] }
-    })
-  } catch {
-    return []
-  }
+  if (!(await $.fs.exists(logFile(root)))) return []
+  return (await $.fs.read(logFile(root))).split('\n').filter(Boolean).flatMap(line => {
+    try { return [JSON.parse(line) as Entry] } catch { return [] }
+  })
 }
+const UNREADABLE = 'Could not read the decision log; nothing was written.'
+// The log as a writer needs it: null when it can't be read, so the writer stops.
+const readForWrite = ($: EngineInterface, root: string) => readLog($, root).catch(() => null)
 const writeLog = async ($: EngineInterface, root: string, entries: Entry[]) =>
   $.fs.write(logFile(root), entries.map(x => JSON.stringify(x)).join('\n') + '\n')
 
@@ -120,8 +130,10 @@ async function correct($: EngineInterface, id: string) {
   const root = await shownRoot($)
   const { file, head } = where === 'once' ? { file: '', head: '' } : await target($, where, root)
   const day = await today($)
+  let isUnread = false
   const entry = await serial(async () => {
-    const entries = await readLog($, root)
+    const entries = await readForWrite($, root)
+    if (!entries) { isUnread = true; return null }
     const entry = entries.find(x => x.id === id)
     if (!entry || entry.correction) return null
     if (where !== 'once') {
@@ -134,6 +146,7 @@ async function correct($: EngineInterface, id: string) {
     await writeLog($, root, entries)
     return entry
   })
+  if (isUnread) { $.ui.toast(UNREADABLE); return }
   if (!entry) return
   await update($, editing, () => '')
   draftText = ''
@@ -229,8 +242,13 @@ function proofLabel(p: Proof, canvas: string | null): string {
 /** The address a link uses where the surface opens it itself (the terminal). */
 const proofHref = (p: Proof) => (/^https?:\/\//.test(p.target) ? p.target : `file://${p.target}`)
 
+// What the system opener may hand a local file to: images and text, never something that runs.
+const VIEWABLE = /\.(png|jpe?g|gif|webp|svg|pdf|txt|md|json|html|css|js|ts|tsx)$/i
+
 // Opens a proof inside the desktop app through the tool the model would call (permission check included). A refusal
-// or a missing tool falls through to the system opener; either way a toast says what happened, never silence.
+// or a missing tool falls through to the system opener: a web address opens; a local file is shown in Finder on macOS,
+// elsewhere opened only when it is an image or text (an opener runs a script or an app). Either way a toast says what
+// happened, never silence.
 async function openProof($: EngineInterface, p: Proof, what: string, note?: string) {
   const call: Record<string, unknown> =
     p.kind === 'variant' || p.kind === 'artifact' ? { tool: 'Artifact', action: 'open', url: p.target }
@@ -251,16 +269,29 @@ async function openProof($: EngineInterface, p: Proof, what: string, note?: stri
   } catch (err) {
     why = err instanceof Error ? err.message : String(err)
   }
-  for (const opener of ['open', 'xdg-open']) {
-    const run = await $.process.run([opener, p.target]).catch(() => null)
-    if (run && run.exitCode === 0) { $.ui.toast(`Opened ${what} outside the app${note ? ` · ${note}` : ''}`); return }
+  const isWeb = /^https?:\/\//.test(p.target)
+  const isMac = !isWeb && (await $.process.run(['uname', '-s']).catch(() => null))?.stdout.trim() === 'Darwin'
+  const tries: string[][] = isWeb ? [['open', p.target], ['xdg-open', p.target]]
+    : isMac ? [['open', '-R', p.target]]
+      : VIEWABLE.test(p.target) ? [['xdg-open', p.target]] : []
+  for (const argv of tries) {
+    const run = await $.process.run(argv).catch(() => null)
+    if (run && run.exitCode === 0) {
+      $.ui.toast(`${isMac ? `Showed ${what} in Finder` : `Opened ${what} outside the app`}${note ? ` · ${note}` : ''}`)
+      return
+    }
   }
+  if (!tries.length) why = `${why ? `${why}; ` : ''}only images and text files open outside the app`
   $.ui.toast(`Couldn't open ${what}${why ? `: ${why.split('\n')[0]?.slice(0, 120)}` : ''}`)
 }
 
 // Skip: the gate counts the check as done until the next edit (.wwjd/skipped.json), the card leaves at once, and Claude
-// is told so it says so in the handover.
-async function skipCheck($: EngineInterface, root: string, key: string, text: string) {
+// is told so it says so in the handover. The file goes to the root of the gate's last edited file, where the gate reads
+// it; else the shown root.
+async function skipCheck($: EngineInterface, shown: string, key: string, text: string) {
+  const last = (await read($, gate))?.lastFile
+  const cwd = await $.session.cwd()
+  const root = (last ? await rootOf($, parent(last.startsWith('/') ? last : `${cwd}/${last}`)) : null) || shown
   if (root) {
     const file = `${root}/.wwjd/skipped.json`
     let map: Record<string, number> = {}
@@ -283,8 +314,10 @@ async function sendFix($: EngineInterface, label: string, ask: string) {
 async function setKept($: EngineInterface, id: string, isKept: boolean) {
   const day = await today($)
   const root = await shownRoot($)
+  let isUnread = false
   const entry = await serial(async () => {
-    const entries = await readLog($, root)
+    const entries = await readForWrite($, root)
+    if (!entries) { isUnread = true; return null }
     const entry = entries.find(x => x.id === id)
     if (!entry || entry.correction || Boolean(entry.kept) === isKept) return null
     if (isKept) entry.kept = { at: day }
@@ -292,6 +325,7 @@ async function setKept($: EngineInterface, id: string, isKept: boolean) {
     await writeLog($, root, entries)
     return entry
   })
+  if (isUnread) { $.ui.toast(UNREADABLE); return }
   if (!entry) return
   await update($, logVersion, n => (n ?? 0) + 1)
   $.ui.toast(isKept ? `Dismissed · ${entry.surface} · nothing changes` : `Reopened · ${entry.surface}`)
@@ -374,16 +408,20 @@ export const register: Register = (on, options) => {
     const now = await $.clock.now()
     const root = await artifactRoot($, typeof x.path === 'string' && x.path.trim() ? x.path.trim() : undefined)
     let first = false
+    // Read right before the write, inside the queue: entries another session added since are kept.
     const id = await serial(async () => {
-      const entries = await readLog($, root)
+      const entries = await readForWrite($, root)
+      if (!entries) return null
       first = entries.length === 0
       const id = newId(now, new Set(entries.map(y => y.id)))
       entries.push({ id, at: new Date(now).toISOString(), ...entry })
       await writeLog($, root, entries)
       return id
     })
+    if (id === null) return { deny: UNREADABLE }
     await update($, logRoot, () => root)
     await update($, logVersion, n => (n ?? 0) + 1)
+    await gateMayHaveChanged($, options)
     // The log is the sidebar's reason to exist: it opens on a project's first entry, unless the person closed it.
     if (first && (await $.store.get('isPinned')) !== false) await $.ui.open({ id: PANE, title: 'wwjd' }).catch(() => undefined)
     // An MCP tool answers with text (or content blocks); an object fails the host's output schema.
@@ -456,6 +494,8 @@ export const register: Register = (on, options) => {
           ...g.checks.filter(c => !c.done).map(c => ({ key: c.key, text: c.label.charAt(0).toUpperCase() + c.label.slice(1), what: c.what ?? '', fix: 'Run it', ask: `run this check before handover: ${c.label}. ${c.how}` })),
         ]
       : []
+    // Hooks quiet: the gate still reports the checks, but nothing blocks, so they are suggestions, without the red.
+    const isQuiet = g?.hooks === 'quiet'
     const all = snap.all
     const entries = all.filter(x => x.kind !== 'save' && !settled(x)).slice(-SHOWN)
     const handled = all.filter(x => x.kind !== 'save' && settled(x)).slice(-SHOWN).reverse()
@@ -537,8 +577,8 @@ export const register: Register = (on, options) => {
         </Box>
       )
     }
-    const mark = (kind: Entry['kind'] | 'blocking') => Svg
-      ? (kind === 'blocking' ? icon('alert', 'Not done yet', TONE.error) : kind === 'assumption' ? icon('help', 'Claude guessed') : kind === 'save' ? icon('shield', 'Johannes stepped in') : icon('dot', 'Claude chose'))
+    const mark = (kind: Entry['kind'] | 'blocking' | 'suggested') => Svg
+      ? (kind === 'blocking' ? icon('alert', 'Not done yet', TONE.error) : kind === 'suggested' ? icon('list', 'Suggested') : kind === 'assumption' ? icon('help', 'Claude guessed') : kind === 'save' ? icon('shield', 'Johannes stepped in') : icon('dot', 'Claude chose'))
       : kind === 'blocking' ? <Text color="error" bold>✕</Text>
       : kind === 'assumption' ? <Text color="suggestion" bold>?</Text> : <Text dimColor bold>·</Text>
 
@@ -555,7 +595,7 @@ export const register: Register = (on, options) => {
       saves.length > SAVES ? <Button key="saves-all" plain dimColor label={isAllSaves ? 'Show less' : 'Show more'} onPress={() => update($, showSaves, v => !v)} /> : null,
     ]
 
-    const dueRows = due.map(d => row(`due:${d.key}`, mark('blocking'), [
+    const dueRows = due.map(d => row(`due:${d.key}`, mark(isQuiet ? 'suggested' : 'blocking'), [
       <Text key={`due-text:${d.key}`} wrap="wrap">{d.text}</Text>,
       actions(d.key, [
         action(`fix:${d.key}`, d.fix, () => sendFix($, `${d.fix} · ${d.text}`, d.ask), 'primary'),
@@ -627,7 +667,7 @@ export const register: Register = (on, options) => {
 
     return (
       <Box flexDirection="column" padding="md" gap="md">
-        {due.length ? panel('needs', 'Not done yet', String(due.length), dueRows) : null}
+        {due.length ? panel('needs', isQuiet ? 'Suggested checks' : 'Not done yet', String(due.length), dueRows) : null}
         {saves.length ? panel('saves', 'Johannes stepped in', String(saves.length), saveRows) : null}
         {entries.length ? panel('decided', 'Claude decided', String(entries.length), decided) : null}
         {!entries.length && !due.length && !saves.length ? <Box paddingX="md" paddingY="sm"><Text dimColor>{handled.length ? 'Nothing open.' : 'Nothing logged in this project yet.'}</Text></Box> : null}

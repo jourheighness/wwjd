@@ -87,7 +87,8 @@ function seenSince(since, canvasId) {
   if (input.seen) return (seenMemo = { critic: (input.seen.critic || 0) > since, canvas: Boolean(canvasId) && (input.seen.artifact?.[canvasId] || 0) > since });
   const seen = { critic: false, canvas: false };
   try {
-    for (const line of readFileSync(input.transcript_path, "utf8").split("\n")) {
+    // A subagent's own calls are in its transcript (SubagentStop's agent_transcript_path), never the parent's.
+    for (const line of readFileSync(input.agent_transcript_path || input.transcript_path, "utf8").split("\n")) {
       const critic = line.includes("wwjd-critic"), canvas = canvasId && line.includes(canvasId) && line.includes("Artifact");
       if (!critic && !canvas) continue;
       try {
@@ -97,8 +98,9 @@ function seenSince(since, canvasId) {
           if (b.type !== "tool_use") continue;
           if (/wwjd-critic/.test(String(b.input?.subagent_type || ""))) seen.critic = true;
           // A publish (no action, or "publish"); a read, open or pin of the canvas changes nothing on it
+          // An asset upload (step 3 of a round) is not the publish.
           if (canvasId && b.name === "Artifact" && String(b.input?.url || "").includes(canvasId)
-            && [undefined, "publish"].includes(b.input?.action)) seen.canvas = true;
+            && [undefined, "publish"].includes(b.input?.action) && b.input?.asset !== true) seen.canvas = true;
         }
       } catch { /* partial line */ }
     }
@@ -109,7 +111,8 @@ function seenSince(since, canvasId) {
 // What to point render.mjs at: an edited .html page itself; for source files, the running page.
 function shotTarget(ledger) {
   if (ledger.lastPage && extname(ledger.lastPage) === ".html") return ledger.lastPage;
-  return process.env.WWJD_PREVIEW || (typeof config.preview === "string" && config.preview) || "<your running page URL>";
+  // Preview URLs are local setup: WWJD_PREVIEW (or AGENTS.local.md), never the committed .wwjd.json.
+  return process.env.WWJD_PREVIEW || "<your running page URL>";
 }
 
 // Where checks may have left their reports: the session's root and the edited file's project root (a page served over
@@ -166,7 +169,7 @@ function checks(ledger, s) {
     let fit = null;
     const fitFile = roots(ledger).map((r) => join(r, ".wwjd", "fit.json")).filter((f) => mtime(f) > pageSince).sort((a, b) => mtime(b) - mtime(a))[0];
     try { fit = fitFile ? JSON.parse(readFileSync(fitFile, "utf8")) : null; } catch { /* unreadable: not done */ }
-    const errs = fit ? fit.findings.filter((f) => f.severity === "error").map((f) => `${f.width}px ${f.rule}: ${f.what}`) : [];
+    const errs = fit ? (Array.isArray(fit.findings) ? fit.findings : []).filter((f) => f.severity === "error").map((f) => `${f.width}px ${f.rule}: ${f.what}`) : [];
     out.push({ key: "fit", label: errs.length ? "Fix layout on small screens" : "Check layout on small screens", what: errs.length ? `${new Set(errs).size} layout ${new Set(errs).size === 1 ? "problem" : "problems"} on phone-width screens (something clips, overflows or wraps badly). Claude fixes them before handing over.` : "Claude opens the page at phone widths and checks that nothing clips, overflows or wraps badly.", done: unavailable || (fit !== null && errs.length === 0),
       how: errs.length ? `fix the fit errors, then rerun fit: ${[...new Set(errs)].slice(0, 4).join("; ")}` : `the fit check: node ${R} fit ${target} --widths 320,480,720${at}` });
   }
@@ -175,7 +178,7 @@ function checks(ledger, s) {
     out.push({ key: "runtime", label: "Test it in a real browser", what: "Claude runs the page and checks for clipped text, small tap targets, hidden focus, layout jumps and broken images.", done: unavailable || roots(ledger).some((r) => mtime(join(r, ".wwjd", "runtime.json")) > pageSince), how: `the runtime checks: node ${R} runtime ${target}${at}` });
   }
   // Asked once per run of edits: an agent that made no unasked choice says so in the handover and may stop.
-  if (s >= 2) out.push({ key: "log", label: "List the choices Claude made", what: "Claude writes down what it decided without asking you, so you can approve or change each one here.", done: (ledger.logAsked || 0) >= since || loggedSince(ledger.start || 0, ledger),
+  if (s >= 2) out.push({ key: "log", label: "List the choices Claude made", what: "Claude writes down what it decided without asking you, so you can approve or change each one here.", done: (ledger.logAsked || 0) >= since || loggedSince(since, ledger),
     how: "the design assumptions and choices you made without being told: one mcp__wwjd__log call each (surface, kind, a 2-6 word title, one-line text, why, proof: the shot path, the page URL or the Artifact link that shows it); none? say so in the handover" });
   // The flow model (skills/flow), when the setting is on and the edited project keeps a wwjd.flow.json: its check comes
   // back without errors and the file was updated after the last page edit.
@@ -185,7 +188,8 @@ function checks(ledger, s) {
     let report = null;
     try { report = JSON.parse(execFileSync(process.execPath, [FLOW, "check", "--json", "--root", flowRoot], { encoding: "utf8", timeout: 4000, stdio: ["ignore", "pipe", "ignore"] })); }
     catch (e) { try { report = JSON.parse(e.stdout); } catch { /* can't run: not done */ } } // exit 1 on errors, the report still on stdout
-    const errs = report ? (report.findings || []).filter((f) => f.severity === "error").map((f) => f.what) : null;
+    // A report without a findings list is no report: the check is not done.
+    const errs = report && Array.isArray(report.findings) ? report.findings.filter((f) => f.severity === "error").map((f) => f.what) : null;
     const fresh = mtime(flowFile) > pageSince;
     out.push({ key: "flow", label: "Check how the app flows", what: "Claude checks the app's screens and the ways between them for dead ends, traps and missing states.",
       done: fresh && errs !== null && errs.length === 0,
@@ -197,7 +201,8 @@ function checks(ledger, s) {
   if (s >= 2 && canvasId && canvasMode(projectDir) === "on") out.push({ key: "canvas", label: "Update the project canvas",
     what: "Claude puts this round's screens and decisions on the project canvas.", done: seenSince(since, canvasId).canvas,
     how: `update the project canvas ${canvasUrl}: skills/flow/references/canvas.md; the Canvas setting turns this off` });
-  if (s >= 5) out.push({ key: "critic", label: "Get a second opinion", what: "A separate reviewer looks at the result with fresh eyes and lists what to fix.", done: seenSince(since, canvasId).critic, how: "a cold review: run the wwjd:wwjd-critic agent on what you built" });
+  // A subagent can't start another agent: its runs never owe the critic (the parent's do).
+  if (s >= 5 && !input.agent_id) out.push({ key: "critic", label: "Get a second opinion", what: "A separate reviewer looks at the result with fresh eyes and lists what to fix.", done: seenSince(since, canvasId).critic, how: "a cold review: run the wwjd:wwjd-critic agent on what you built" });
   const skipped = skippedAt(ledger);
   for (const c of out) if ((skipped[c.key] || 0) > since) Object.assign(c, { done: true, skipped: true });
   return out;
@@ -208,7 +213,8 @@ if (mode === "status") {
   const ledger = ensured();
   const file = isGated(s) ? sheet(ledger, roots(ledger)) : null;
   // due: the pre gate refused a new UI file this session and no sheet has been written since.
-  say({ strictness: s, hasEdits: editPending(ledger), lastFile: ledger.lastFile || null,
+  // hooks: "quiet" still reports the checks, as suggestions the sidebar shows without the red (nothing blocks).
+  say({ strictness: s, hooks, hasEdits: editPending(ledger), lastFile: ledger.lastFile || null,
     sheet: { needed: isGated(s), file, due: isGated(s) && Boolean(ledger.denied) && !file }, checks: editPending(ledger) ? checks(ledger, s) : [] });
 }
 
@@ -232,8 +238,8 @@ if (mode === "pre") {
     say({ hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason:
       `wwjd: ${project} is a new project, and wwjd owns its design side. Before the first UI file, ask the start question ` +
       `(skills/ux/commands/start.md §0) in one AskUserQuestion batch, each with a default: how to begin (lettered variants ` +
-      `in an Artifact first, recommended; or straight to build), how many directions, and the look (a board of options, ` +
-      `or quick mode). Then write ${join(project, ".wwjd.json")} with "start": "variants" or "build" (plus "register" and, ` +
+      `in an Artifact first, recommended; or straight to build), how many directions, the look (a board of options, ` +
+      `or quick mode)${canvasMode(project) === "on" ? ", and a project canvas (default yes)" : ""}. Then write ${join(project, ".wwjd.json")} with "start": "variants" or "build" (plus "register" and, ` +
       `once a project canvas exists, "canvas": its link, skills/flow/references/canvas.md), and do what they chose before writing ${fp}.` } });
   }
   const s = strictness();
@@ -243,7 +249,7 @@ if (mode === "pre") {
   update((l) => { l.denied = Date.now(); });
   say({ hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason:
     `wwjd Strictness ${s}: grade this surface before building it (references/budgets.md, Grade gate). ` +
-    `Write .wwjd/grade/<surface>.json in ${project}, run node ${join(HERE, "grade.mjs")} .wwjd/grade/<surface>.json there and answer its sheet in .wwjd/grade/<surface>.md. ` +
+    `Write .wwjd/grade/<surface>.json in ${project}, run node ${q(join(HERE, "grade.mjs"))} .wwjd/grade/<surface>.json there and answer its sheet in .wwjd/grade/<surface>.md. ` +
     `Within budget: one line in that .md ("within budget: title + 3"). Then write ${fp} again.` } });
 }
 

@@ -219,7 +219,7 @@ test("artifacts live at the nearest folder with .wwjd.json, as render.mjs writes
   assert.equal(inApp("stop", { stop_hook_active: false }), null);
 });
 
-test("shot commands point at an edited page, else the preview URL, never a source file", () => {
+test("shot commands point at an edited page, else WWJD_PREVIEW, never a source file or .wwjd.json", () => {
   const p = project(2);
   p.edit("card.html");
   assert.match(p.run("stop", { stop_hook_active: false }).reason, /shoot "?\S*card\.html/);
@@ -227,8 +227,9 @@ test("shot commands point at an edited page, else the preview URL, never a sourc
   const how = (extra) => p.run("status", {}, extra).checks[0].how;
   assert.match(how({}), /shoot <your running page URL>/);
   assert.match(how({ WWJD_PREVIEW: "http://localhost:5173/board" }), /shoot "?http:\/\/localhost:5173\/board/);
-  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, preview: "http://localhost:3000" }));
-  assert.match(how({}), /shoot "?http:\/\/localhost:3000/);
+  // a preview URL in the committed .wwjd.json is local setup and is ignored
+  writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ start: "build", dials: { strictness: 2 }, preview: "http://localhost:3000" }));
+  assert.match(how({}), /shoot <your running page URL>/);
 });
 
 test("status: the sheet is due only after the pre gate refused a new file", () => {
@@ -434,7 +435,8 @@ test("stop: with a canvas and Canvas on, a handover asks to update it; only an A
   const use = (name, input) => appendFileSync(p.transcript, JSON.stringify({ timestamp: new Date(Date.now() + 5000).toISOString(), message: { content: [{ type: "tool_use", name, input }] } }) + "\n");
   use("Artifact", { action: "read", url: "https://claude.ai/artifact/AbC123" });
   use("ArtifactData", { action: "batch", url: "https://claude.ai/artifact/AbC123" });
-  assert.equal(canvas({}).done, false);
+  use("Artifact", { action: "publish", url: "https://claude.ai/artifact/AbC123", asset: true, file_paths: ["/x/a.png"] });
+  assert.equal(canvas({}).done, false); // a read, a data write or an asset upload is not the publish
   use("Artifact", { url: "https://claude.ai/artifact/AbC123", file_path: "/x/canvas.json" });
   assert.equal(canvas({}).done, true);
   writeFileSync(join(p.root, ".wwjd.json"), JSON.stringify({ dials: { strictness: 2 }, canvas: "https://claude.ai/artifact/AbC123", canvasMode: "off" }));
@@ -530,4 +532,16 @@ test("a subagent's edits are its own ledger: the main session's stop never waits
   writeFileSync(join(p.root, "page.html"), "<div></div>");
   assert.equal(p.run("stop", { stop_hook_active: false }), null);
   assert.match(p.run("stop", { stop_hook_active: false, agent_id: "ag1" }).reason, /render/);
+});
+
+test("review fixes: quiet still reports checks as suggestions with hooks: quiet; a subagent never owes the critic", () => {
+  const p = project(5);
+  p.edit("card.html");
+  const quiet = p.run("status", {}, { CLAUDE_PLUGIN_OPTION_HOOKMODE: "quiet" });
+  assert.equal(quiet.hooks, "quiet");
+  assert.ok(quiet.checks.length > 0);
+  assert.equal(p.run("stop", { stop_hook_active: false }, { CLAUDE_PLUGIN_OPTION_HOOKMODE: "quiet" }), null);
+  assert.ok(p.run("status", {}).checks.some((c) => c.key === "critic"));
+  p.run("post", { tool_name: "Write", tool_input: { file_path: join(p.root, "card.html") }, agent_id: "ag2" });
+  assert.ok(!p.run("status", { agent_id: "ag2" }).checks.some((c) => c.key === "critic"));
 });

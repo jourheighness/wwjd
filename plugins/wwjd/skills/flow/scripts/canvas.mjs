@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // canvas.mjs: the project canvas's files (references/canvas.md), made from what is already on disk: a claude.ai Design
-// canvas with the flow diagram, one row of real screenshots per journey and the design decisions as stickies under
-// each screen. Claude publishes what it writes; nobody edits the generated files by hand.
+// canvas with the flow diagram, one row of real screenshots per journey and a "Why it looks like this" card ending each
+// row. Claude publishes what it writes; nobody edits the generated files by hand.
 //   uploads                        prints { upload: [abs paths] }: shots in wwjd.flow.json not uploaded yet, or changed.
 //   assets <path>=</_blob/url>…    records uploads in .wwjd/canvas-assets.json (with each file's mtime and size).
 //   build [--current <file>] [--title "…"] [--all]
@@ -34,6 +34,13 @@ const json = (f, fallback) => { try { return JSON.parse(readFileSync(f, "utf8"))
 const print = (x) => console.log(JSON.stringify(x, null, 2));
 /** A shot's key: project-relative, forward slashes. */
 const keyOf = (p) => relative(root, resolve(root, p)).split(sep).join("/");
+// A screen's shot: an image inside the project, or nothing. A flow file from a cloned repo must never get Claude to
+// upload a file from elsewhere on the machine.
+const shotKey = (p) => {
+  if (typeof p !== "string" || !p.trim()) return null;
+  const key = keyOf(p);
+  return key && !key.startsWith("..") && !isAbsolute(key) && /\.(png|jpe?g|webp|gif)$/i.test(key) ? key : null;
+};
 const mtimeOf = (abs) => { try { return Math.floor(statSync(abs).mtimeMs); } catch { return null; } };
 const assetsFile = join(dir, "canvas-assets.json");
 
@@ -60,7 +67,9 @@ if (cmd === "uploads") {
   const upload = [];
   for (const s of screens) {
     if (!s.shot) continue;
-    const key = keyOf(s.shot), abs = join(root, key), m = mtimeOf(abs);
+    const key = shotKey(s.shot);
+    if (!key) { console.error(`canvas.mjs: ${s.id}: shot must be an image path inside the project`); continue; }
+    const abs = join(root, key), m = mtimeOf(abs);
     if (m === null) { console.error(`canvas.mjs: ${s.id}: shot ${key} not found`); continue; }
     if ((!assets[key]?.url || assets[key].mtime !== m) && !upload.includes(abs)) upload.push(abs);
   }
@@ -75,7 +84,9 @@ if (cmd === "assets") {
   for (const p of opt.pairs) {
     const m = /^(.+?)=((?:\/_blob\/|https:\/\/).+)$/.exec(p);
     if (!m) fail(`"${p}": want "<path>=</_blob/url>"`);
-    const key = keyOf(isAbsolute(m[1]) ? m[1] : join(root, m[1])), abs = join(root, key), mtime = mtimeOf(abs);
+    const key = shotKey(isAbsolute(m[1]) ? m[1] : join(root, m[1]));
+    if (!key) fail(`"${m[1]}": an image path inside the project`);
+    const abs = join(root, key), mtime = mtimeOf(abs);
     if (mtime === null) fail(`"${m[1]}": no such file`);
     const size = pngSize(abs);
     assets[key] = { url: m[2], mtime, ...(size ? { w: size.w, h: size.h } : {}) };
@@ -135,7 +146,7 @@ const taken = new Set(["Main"]);
 const art = new Map(); // screen id -> { file, w, h, html }
 const missing = [];
 for (const s of screens) {
-  const key = s.shot ? keyOf(s.shot) : "", a = key ? assets[key] : null;
+  const key = shotKey(s.shot) || "", a = key ? assets[key] : null;
   const size = a?.url ? (pngSize(join(root, key)) || (a.w && a.h ? { w: a.w, h: a.h } : null)) : null;
   if (!size) { missing.push(s.id); continue; }
   let name = pascal(s.id), n = 2;
@@ -261,12 +272,15 @@ const noteId = (prefix, id) => {
 const curBoards = current?.boards && typeof current.boards === "object" ? current.boards : {};
 const curNotes = current?.notes && typeof current.notes === "object" ? current.notes : {};
 const boards = {}, order = [], notes = {}, why = new Map(); // why: file -> html
-const mainBox = { x: 0, y: 0, w: MW, h: MH, ...(curBoards["Main.dc.html"] ? pick(curBoards["Main.dc.html"], ["x", "y", "w", "h"]) : {}), title: "Flow" };
+// The diagram keeps where the person put it; its size always follows the diagram drawn now.
+const mainBox = { x: 0, y: 0, ...(curBoards["Main.dc.html"] ? pick(curBoards["Main.dc.html"], ["x", "y"]) : {}), w: MW, h: MH, title: "Flow" };
 boards["Main.dc.html"] = mainBox;
 order.push("Main.dc.html");
 function pick(o, keys) { const r = {}; for (const k of keys) if (Number.isFinite(o?.[k])) r[k] = o[k]; return r; }
-const putWhy = (file, where, list, x, y) => {
-  const c = whyCard(where, list), was = curBoards[file];
+// One name registry for every generated artboard: a card never shares a file with a screen or another card.
+const whyName = (stem) => { let name = stem, n = 2; while (taken.has(name)) name = `${stem}${n++}`; taken.add(name); return `${name}.dc.html`; };
+const putWhy = (stem, where, list, x, y) => {
+  const file = whyName(stem), c = whyCard(where, list), was = curBoards[file];
   boards[file] = { x, y, w: c.w, h: c.h, ...(was ? pick(was, ["x", "y"]) : {}), title: `Why: ${where}` };
   order.push(file);
   why.set(file, c.html);
@@ -276,7 +290,7 @@ const putWhy = (file, where, list, x, y) => {
 const placed = new Map(); // screen id -> board box
 const onBoard = (d) => d.screen && art.has(d.screen) && screenOf.has(d.screen);
 const loose = live.filter((d) => !onBoard(d));
-const looseH = loose.length ? putWhy("WhyProject.dc.html", flow.app || "The project", loose, mainBox.x + mainBox.w + 80, mainBox.y) : 0;
+const looseH = loose.length ? putWhy("WhyProject", flow.app || "The project", loose, mainBox.x + mainBox.w + 80, mainBox.y) : 0;
 let rowTop = Math.max(mainBox.y + mainBox.h, mainBox.y + looseH) + 120 + 240;
 const inJourney = new Set(journeys.flatMap((j) => j.steps));
 const rows = [...journeys.map((j) => ({ key: String(j.id), id: noteId("w-j-", String(j.id)), title: j.title || j.id, steps: j.steps })),
@@ -295,7 +309,7 @@ for (const r of rows) {
     x += a.w + 80;
   }
   const mine = live.filter((d) => onBoard(d) && fresh.includes(d.screen));
-  if (mine.length) { rowH = Math.max(rowH, putWhy(`Why${pascal(r.key)}.dc.html`, r.title, mine, x, rowTop)); x += CARD + 80; }
+  if (mine.length) { rowH = Math.max(rowH, putWhy(`Why${pascal(r.key)}`, r.title, mine, x, rowTop)); x += CARD + 80; }
   const was = curNotes[r.id];
   notes[r.id] = { kind: "title1", x: Number.isFinite(was?.x) ? was.x : 0, y: Number.isFinite(was?.y) ? was.y : rowTop - 240, text: r.title, maxW: x - 80 };
   rowTop += rowH + 120 + 240;
@@ -304,9 +318,11 @@ for (const r of rows) {
 // The person's own boards and notes stay as they are; boards for screens gone from the flow are removed.
 const ours = new Set(["Main.dc.html", ...[...art.values()].map((a) => a.file), ...why.keys()]);
 const removed = [];
-// A Why card wwjd sent before that has nothing to say now (or a sticky from an older build) goes too.
-for (const p of Object.keys(sent.files)) if (/^project\/Why[\w-]*\.dc\.html$/.test(p) && !why.has(p.slice(8)) && !ours.has(p.slice(8))) removed.push(p);
-for (const [file, id] of Object.entries(sent.screens)) if (!ours.has(file) && !screenOf.has(id)) removed.push(`project/${file}`);
+// A removal stays pending until the live canvas shows it gone, so a failed publish is retried by the next build.
+const gone = (file) => current && !(file in curBoards);
+// A Why card wwjd sent before that has nothing to say now goes too.
+for (const p of Object.keys(sent.files)) if (/^project\/Why[\w-]*\.dc\.html$/.test(p) && !why.has(p.slice(8)) && !ours.has(p.slice(8)) && !(p.slice(8) in sent.screens) && !gone(p.slice(8))) removed.push(p);
+for (const [file, id] of Object.entries(sent.screens)) if (!ours.has(file) && !screenOf.has(id) && !gone(file)) removed.push(`project/${file}`);
 for (const [file, b] of Object.entries(curBoards)) if (!ours.has(file) && !(file in sent.screens) && !removed.includes(`project/${file}`)) boards[file] = b;
 for (const [file, id] of Object.entries(sent.screens)) if (!ours.has(file) && screenOf.has(id) && curBoards[file]) boards[file] = curBoards[file]; // its shot is gone: keep what is there
 for (const [id, n] of Object.entries(curNotes)) if (!id.startsWith("w-")) notes[id] = n;
@@ -342,6 +358,7 @@ for (const p of removed) rmSync(join(outDir, p), { force: true });
 const canvasFile = join(projDir, "canvas.json");
 writeFileSync(canvasFile, JSON.stringify(canvas, null, 2));
 const screensSent = Object.fromEntries([...art.entries()].map(([id, a]) => [a.file, id]));
-for (const [file, id] of Object.entries(sent.screens)) if (!removed.includes(`project/${file}`) && !(file in screensSent)) { screensSent[file] = id; if (sent.files[`project/${file}`]) nextFiles[`project/${file}`] = sent.files[`project/${file}`]; }
+for (const [file, id] of Object.entries(sent.screens)) if (!(file in screensSent) && !gone(file)) { screensSent[file] = id; if (sent.files[`project/${file}`]) nextFiles[`project/${file}`] = sent.files[`project/${file}`]; }
+for (const p of removed) if (p.startsWith("project/Why") && sent.files[p]) nextFiles[p] = sent.files[p]; // a card's removal is pending too
 writeFileSync(sentFile, JSON.stringify({ files: nextFiles, screens: screensSent }, null, 2));
 print({ root: outDir, file_path: canvasFile, files, removed, missing });

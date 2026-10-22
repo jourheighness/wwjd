@@ -205,3 +205,39 @@ test("second build: only changed artboards; --current keeps the person's moves a
   assert.equal(c.boards["WhyBorrow.dc.html"].x, 7000); // a moved card keeps its place
   assert.match(readFileSync(join(r.root, "project", "WhyBorrow.dc.html"), "utf8"), /people compare prices/);
 });
+
+test("review fixes: a removal stays pending until the canvas shows it gone; names never clash; the diagram's size follows it", () => {
+  const p = project();
+  p.uploadAll();
+  p.run("build");
+  // a journey whose id would name its card WhyProject, beside the project card for loose decisions
+  p.flow({ ...FLOW, journeys: [{ ...FLOW.journeys[0], id: "project" }, FLOW.journeys[1]] });
+  const r = p.run("build");
+  const c = p.read(r);
+  const cards = Object.keys(c.boards).filter((f) => f.startsWith("Why"));
+  assert.equal(new Set(cards).size, cards.length);
+  assert.ok(cards.includes("WhyProject.dc.html") && cards.includes("WhyProject2.dc.html"), cards.join());
+  // a stale diagram size on the live canvas is replaced; its position is kept
+  const live = p.read(r);
+  live.boards["Main.dc.html"] = { ...live.boards["Main.dc.html"], x: 40, y: 50, h: 10 };
+  const cur = join(p.root, "live.json");
+  writeFileSync(cur, JSON.stringify(live));
+  const m = p.read(p.run("build", "--current", cur)).boards["Main.dc.html"];
+  assert.deepEqual([m.x, m.y], [40, 50]);
+  assert.ok(m.h > 10);
+  // a screen leaves the flow; the publish fails, so the next build lists the removal again
+  p.flow({ ...FLOW, screens: FLOW.screens.filter((s) => s.id !== "borrow"), journeys: [{ ...FLOW.journeys[0], id: "project", steps: ["catalogue", "tool-detail"] }, FLOW.journeys[1]] });
+  assert.deepEqual(p.run("build", "--current", cur).removed, ["project/Borrow.dc.html"]);
+  assert.deepEqual(p.run("build", "--current", cur).removed, ["project/Borrow.dc.html"]); // live still has it
+  delete live.boards["Borrow.dc.html"];
+  writeFileSync(cur, JSON.stringify(live));
+  assert.deepEqual(p.run("build", "--current", cur).removed, []); // gone: forgotten
+});
+
+test("review fixes: a shot outside the project or not an image is never uploaded; a screen named why-… is never removed as a card", () => {
+  const p = project();
+  p.flow({ ...FLOW, screens: [...FLOW.screens, { id: "leak", title: "Leak", job: "x", shot: "../../etc/passwd" }, { id: "odd", title: "Odd", job: "x", shot: 42 }] });
+  const up = p.run("uploads").upload;
+  assert.ok(up.every((f) => f.endsWith(".png")), up.join());
+  assert.doesNotThrow(() => p.run("build"));
+});

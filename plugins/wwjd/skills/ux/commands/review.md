@@ -41,7 +41,7 @@ Review like an experienced designer: in one glance, by cutting. No scores. The o
 10. No step asks for what the system knows; input is accepted generously.
 11. Response times: `rules/states.md`. Never fake progress.
 12. The action sits next to its object, and stays with the widget that informed it.
-13. The flow map has no orphans, duplicate routes, dead ends or circles.
+13. The flow map has no orphans, duplicate routes, dead ends or circles (`wwjd:flow`'s check, when the project keeps `wwjd.flow.json`).
 14. An interrupted flow resumes exactly.
 15. The flow ends on the result; error recovery is designed too.
 16. No pressure counts, receipts or reassurance anywhere in the flow.

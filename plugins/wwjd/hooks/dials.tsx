@@ -25,7 +25,7 @@ const FLOW = [
 ] as const
 // The Canvas setting (skills/ux/scripts/paths.mjs canvasMode): on or off.
 const CANVAS = [
-  ['on', 'On', 'A Figma-like project canvas stays current: every screen per journey, the flow, and the decisions as sticky notes.'],
+  ['on', 'On', 'A Figma-like project canvas stays current: every screen per journey, the flow, and a short Why card per journey.'],
   ['off', 'Off', 'No canvas. Everything stays in this panel.'],
 ] as const
 const onOff = (v: unknown) => (v === 'on' || v === 'off' ? v : '')
@@ -78,16 +78,19 @@ async function readProject($: EngineInterface): Promise<Project> {
 // WWJD_DIALS for every Bash child from now on (hooks/session.sh sets it only at session start).
 export async function exportDials($: EngineInterface, options: PluginOptions) {
   const set = DIALS.filter(d => !isDefault(d, mine(options, d))).map(d => `${d.key}=${valueOf(d, mine(options, d))}`)
-  await $.env.set('WWJD_DIALS', set.join(' '))
+  await $.env.set('WWJD_DIALS', set.join(' ')) // the engine lists env names, so it is literal
 }
 
-// A pick: the plugin option for you, .wwjd.json for the project; stop -1 hands a project dial back to yours.
-async function pick($: EngineInterface, key: string, stop: number) {
+// A pick: the plugin option for you (plus WWJD_DIALS, so Bash sees it this session; `options` is as this render had
+// it, so the pick goes on top), .wwjd.json for the project; stop -1 hands a project dial back to yours.
+async function pick($: EngineInterface, options: PluginOptions, key: string, stop: number) {
   const dial = dialOf(key)
   if (!dial) return
   if ((await read($, scope)) === 'person') {
-    const { deny } = await $.config.set({ key: `wwjd.${key}`, value: valueOf(dial, stop) })
-    if (deny) $.ui.toast(`Not saved: ${deny}`)
+    const value = valueOf(dial, stop)
+    const { deny } = await $.config.set({ key: `wwjd.${key}`, value })
+    if (deny) { $.ui.toast(`Not saved: ${deny}`); return }
+    await exportDials($, { ...options, [key]: value })
     return
   }
   const { file, json, error } = await readProject($)
@@ -219,10 +222,10 @@ export async function settingsView($: EngineInterface, e: RenderInput, options: 
   const dialCards = DIALS.map(dial => {
     const { at, isOwn, isInherited } = state(dial)
     const right = isOwn
-      ? <Button key={`${dial.key}:reset`} plain dimColor label="Use mine" onPress={() => pick($, dial.key, -1)} />
+      ? <Button key={`${dial.key}:reset`} plain dimColor label="Use mine" onPress={() => pick($, options, dial.key, -1)} />
       : isInherited ? <Text dimColor>Same as yours</Text> : null
     return dialCard(`card-${dial.key}`, dial.name, right, dial.stops[at]?.[1] ?? '',
-      dial.stops.map(([name], i) => stop(`${dial.key}:${i}`, name, i === at && !isInherited, () => pick($, dial.key, i))))
+      dial.stops.map(([name], i) => stop(`${dial.key}:${i}`, name, i === at && !isInherited, () => pick($, options, dial.key, i))))
   })
 
   return (

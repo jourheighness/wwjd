@@ -27,7 +27,7 @@ export function gitRoot(cwd) {
   catch { return null; }
 }
 
-// Shared temp roots: a .wwjd/ in one, or in a folder directly in one (/tmp/claude-501), belongs to no project.
+// Shared temp roots: a .wwjd/ in one, or in a folder directly in one (/tmp/<user>), belongs to no project.
 const realOf = (p) => { try { return realpathSync(p); } catch { return p; } };
 const SHARED_TMP = new Set(["/tmp", "/var/tmp"].flatMap((p) => [p, realOf(p)]));
 const TMP_ROOTS = new Set([...SHARED_TMP, tmpdir(), realOf(tmpdir())].map((p) => p.replace(/\/+$/, "")));

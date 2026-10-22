@@ -3,7 +3,8 @@ import { expect, mock, test } from 'claude-code/testing'
 const PANE = { component: 'Pane', requestId: 'wwjd' } as const
 const props = { title: 'wwjd', isFocused: true, bodyColumns: 70, placement: 'dock' } as never
 
-function disk(on: (...a: never[]) => unknown, files: Record<string, string>) {
+// unreadable: files that exist but whose read fails (no permission, over 4 MiB).
+function disk(on: (...a: never[]) => unknown, files: Record<string, string>, unreadable: string[] = []) {
   const o = on as unknown as (ev: string, fn: (...a: never[]) => unknown) => void
   o('session.cwd', () => ({ value: '/p' }))
   o('clock.now', () => ({ value: Date.parse('2026-10-18T12:00:00Z') }))
@@ -12,6 +13,7 @@ function disk(on: (...a: never[]) => unknown, files: Record<string, string>) {
   o('fs.exists', ((_$: unknown, e: { path: string }) => ({ value: e.path in files })) as never)
   o('fs.read', ((_$: unknown, e: { path: string }) => {
     const t = files[e.path]
+    if (unreadable.includes(e.path)) throw new Error('EACCES: permission denied')
     if (t === undefined) throw new Error('missing')
     return { value: t }
   }) as never)
@@ -239,4 +241,62 @@ test('a save logs as "Johannes kept Claude from …": its own section, never a d
   expect(await ui.find({ type: 'Button', text: 'Johannes stepped in' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: 'Kept Claude from putting the price in a tooltip' })).toBeDefined()
   expect(await ui.find({ type: 'Button', text: 'Claude decided' })).toBeUndefined()
+})
+
+test('a decision log that exists but cannot be read is never overwritten: the log call says so and writes nothing', async ($, on) => {
+  mock.store(on)
+  const old = JSON.stringify({ id: 'd1', at: '2026-10-01T00:00:00Z', surface: 'Board', kind: 'choice', text: 'Kept' }) + '\n'
+  const files: Record<string, string> = { '/p/.wwjd/decisions.jsonl': old }
+  disk(on as never, files, ['/p/.wwjd/decisions.jsonl'])
+  on('ui.open', () => ({ value: { isPlaced: true } }) as never)
+  const r = await $.tool.call({ tool: 'mcp__wwjd__log', surface: 'Card', kind: 'choice', text: 'New one' } as never)
+  expect((r as { deny?: string }).deny).toBe('Could not read the decision log; nothing was written.')
+  expect(files['/p/.wwjd/decisions.jsonl']).toBe(old)
+})
+
+// The gate as status.tsx hands it to the pane: a wwjd skill turns it on, process.run is gate.mjs status.
+const settle = () => new Promise(r => setTimeout(r, 20))
+function gateFrom(on: (...a: never[]) => unknown, json: object) {
+  const o = on as unknown as (ev: string, fn: (...a: never[]) => unknown) => void
+  o('session.id', () => ({ value: 's1' }))
+  o('ui.status', () => ({ value: undefined }))
+  o('ui.toast', () => ({ value: undefined }))
+  o('ui.open', () => ({ value: { isPlaced: true } }))
+  o('session.append', ((_$: unknown, e: unknown, next: (x: unknown) => unknown) => next(e)) as never)
+  o('tool.call', () => ({ result: {} }))
+  o('process.run', () => ({ value: { exitCode: 0, isStdoutTruncated: false, isStderrTruncated: false, stderr: '', stdout: JSON.stringify({
+    strictness: 3, hasEdits: true, lastFile: '/p/card.html', sheet: { needed: false, file: null, due: false },
+    checks: [{ key: 'shots', label: 'Shots at 2 widths', done: false, how: '' }], ...json }) } }))
+}
+
+test('Skip writes skipped.json to the root of the file the gate saw edited last, where the gate reads it', async ($, on) => {
+  mock.store(on)
+  const files: Record<string, string> = { '/q/.git': 'gitdir: /p/.git/worktrees/q\n' }
+  disk(on as never, files)
+  gateFrom(on as never, { lastFile: '/q/src/card.html' })
+  await $.tool.call({ tool: 'Skill', skill: 'wwjd:ux' } as never)
+  await settle()
+  await $.command.run({ command: 'wwjd' } as never)
+  const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })
+  await ui.press({ key: 'skip:shots' })
+  expect(Object.keys(JSON.parse(files['/q/.wwjd/skipped.json'] ?? '{}'))).toEqual(['shots'])
+  expect(files['/p/.wwjd/skipped.json']).toBeUndefined()
+})
+
+test('with Hooks quiet the checks are Suggested checks: no red, Run it and Skip stay', async ($, on) => {
+  mock.store(on)
+  disk(on as never, {})
+  gateFrom(on as never, { hooks: 'quiet' })
+  await $.tool.call({ tool: 'Skill', skill: 'wwjd:ux' } as never)
+  await settle()
+  await $.command.run({ command: 'wwjd' } as never)
+  const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })
+  expect(await ui.find({ type: 'Button', text: 'Suggested checks' })).toBeDefined()
+  expect(await ui.find({ type: 'Button', text: 'Not done yet' })).toBeUndefined()
+  const alts = (await ui.findAll({ type: 'Svg' })).map(x => (x as unknown as { props: { alt?: string } }).props.alt)
+  expect(alts).not.toContain('Not done yet')
+  expect(await ui.find({ key: 'fix:shots' })).toBeDefined()
+  expect(await ui.find({ key: 'skip:shots' })).toBeDefined()
+  const term = await $.ui.mount({ plugin: 'wwjd', surface: 'terminal', ...PANE, props })
+  expect(await term.find({ type: 'Text', text: '✕' })).toBeUndefined()
 })

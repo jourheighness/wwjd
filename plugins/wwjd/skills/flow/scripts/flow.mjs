@@ -37,7 +37,7 @@ export function validate(m) {
     else ids.add(s.id);
     if (!isStr(s.title)) bad(`Screen "${s.id}" has no title.`, "Add the name people see.", at);
     if (!isStr(s.job)) bad(`Screen "${s.id}" has no job.`, "Say the one thing a person does there.", at);
-    for (const k of ["entry", "data", "review", "terminal"]) if (k in s && typeof s[k] !== "boolean") bad(`Screen "${s.id}": "${k}" is not true or false.`, `Set "${k}" to true or false.`, at);
+    for (const k of ["entry", "data", "review", "terminal", "modal"]) if (k in s && typeof s[k] !== "boolean") bad(`Screen "${s.id}": "${k}" is not true or false.`, `Set "${k}" to true or false.`, at);
     for (const k of ["route", "shot"]) if (k in s && s[k] !== null && typeof s[k] !== "string") bad(`Screen "${s.id}": "${k}" is not text.`, `Make "${k}" a string.`, at);
     if ("states" in s && !(Array.isArray(s.states) && s.states.every(isStr))) bad(`Screen "${s.id}": "states" is not a list of names.`, `List the states, like ["default", "empty"].`, at);
   });
@@ -161,13 +161,53 @@ export function check(m, { decisions = [] } = {}) {
       add("destructive-unguarded", "error", { screen: e.from }, `"${e.action}" from ${name(e.from)} to ${name(e.to)} cannot be taken back and has no review step.`, `Put a review step before it ("review": true), or add an undo from ${name(e.to)}.`);
   }
 
-  // 8 leaving-harder: a review step the Floor asks for is not a hurdle, so it does not count on either side
-  const effort = (j) => j.steps.filter((id) => by.get(id)?.review !== true).length;
+  // 8 leaving-harder: counted from where people arrive, so a cancel buried in settings costs its depth too.
+  // A review step the Floor asks for is not a hurdle, so it does not count on either side.
+  const depth = new Map(entries.map((id) => [id, 0])), dq = [...entries];
+  while (dq.length) { const v = dq.shift(); for (const w of out.get(v)) if (!depth.has(w)) { depth.set(w, depth.get(v) + 1); dq.push(w); } }
+  const effort = (j) => (depth.get(j.steps[0]) ?? 0) + j.steps.filter((id) => by.get(id)?.review !== true).length;
   for (const j of journeys) {
     const k = isStr(j.undoes) && jby.get(j.undoes);
     if (k && effort(j) > effort(k))
-      add("leaving-harder", "error", { journey: j.id }, `"${j.title}" takes ${effort(j)} steps, but "${k.title}" took ${effort(k)}.`, `Cut "${j.title}" to ${effort(k)} steps or fewer, review steps aside.`);
+      add("leaving-harder", "error", { journey: j.id }, `"${j.title}" takes ${effort(j)} steps from where people arrive, but "${k.title}" took ${effort(k)}.`, `Cut "${j.title}" to ${effort(k)} steps or fewer, counting the way to its first screen and leaving review steps aside.`);
   }
+
+  // 14 review-no-change: a review must let people correct or keep what they have (WCAG 3.3.4, GOV.UK check answers)
+  for (const s of screens.filter((s) => s.review === true)) {
+    const earlier = new Set(back.get(s.id));
+    for (const j of journeys) { const i = j.steps.indexOf(s.id); if (i > 0) j.steps.slice(0, i).forEach((id) => earlier.add(id)); }
+    const ok = edges.some((e) => e.from === s.id && (e.kind === "back" || e.kind === "undo" || (e.to !== s.id && earlier.has(e.to))));
+    if (!ok && earlier.size)
+      add("review-no-change", "error", { screen: s.id }, `${name(s.id)} reviews what is about to happen but offers no way to change it or keep things as they are.`, `Add a Change or Cancel way from ${name(s.id)} back to the step it reviews.`);
+  }
+
+  // 15 modal-no-dismiss: every modal has an obvious way to close it (Apple HIG Modality; NN/g emergency exit)
+  for (const s of screens.filter((s) => s.modal === true))
+    if (!edges.some((e) => e.from === s.id && (e.kind === "back" || e.kind === "undo")))
+      add("modal-no-dismiss", "error", { screen: s.id }, `${name(s.id)} is a modal with no way to close it.`, `Add a Cancel or Close way ("kind": "back") from ${name(s.id)}.`);
+
+  // 16 no-failure-path: a commit that can fail needs somewhere to go when it does (NN/g heuristic 9; Baymard declined cards)
+  const failing = new Set();
+  for (const e of edges.filter((e) => e.kind === "destructive")) {
+    const handled = [e.from, e.to].some((id) => (Array.isArray(by.get(id).states) && by.get(id).states.includes("error")) || edges.some((x) => x.from === id && x.kind === "error"));
+    if (!handled && !failing.has(e.from)) {
+      failing.add(e.from);
+      add("no-failure-path", "warn", { screen: e.from }, `"${e.action}" on ${name(e.from)} can fail, and nothing says what people see when it does.`, `Add an "error" state to ${name(e.from)}, or an "error" way back to the step that failed, with the data kept.`);
+    }
+  }
+
+  // 17 error-restarts: a failure goes back to the step that failed, not further (GOV.UK question pages; Baymard)
+  for (const e of edges.filter((e) => e.kind === "error")) for (const j of journeys) {
+    const [a, b] = [j.steps.indexOf(e.from), j.steps.indexOf(e.to)];
+    if (a >= 0 && b >= 0 && b < a - 1) {
+      add("error-restarts", "warn", { journey: j.id, screen: e.from }, `When "${e.action}" fails on ${name(e.from)}, people go back to ${name(e.to)}, ${a - b} steps earlier in "${j.title}".`, `Send the failure back to the step that failed, with what people entered kept.`);
+      break;
+    }
+  }
+
+  // 18 end-no-next: an end offers the next sensible step (GOV.UK confirmation pages)
+  for (const s of screens.filter((s) => s.terminal === true && !out.get(s.id).length))
+    add("end-no-next", "warn", { screen: s.id }, `${name(s.id)} is an end with nothing to do next.`, "Offer the next sensible step: the record, tracking, another one, or back to where they started.");
 
   // 9 missing-state
   for (const s of screens.filter((s) => s.data === true)) {
@@ -178,7 +218,7 @@ export function check(m, { decisions = [] } = {}) {
 
   // 10 long-journey
   for (const j of journeys) if (j.steps.length > LONG)
-    add("long-journey", "warn", { journey: j.id }, `"${j.title}" takes ${j.steps.length} steps.`, `Merge or cut steps to ${LONG} or fewer.`);
+    add("long-journey", "warn", { journey: j.id }, `"${j.title}" takes ${j.steps.length} steps.`, `Cut steps nobody needs and branch so each person sees only theirs; a long form people finish over several sittings becomes a task list (GOV.UK).`);
 
   // 12 no-shot
   for (const s of screens) if (!isStr(s.shot))
@@ -237,8 +277,10 @@ function main(argv) {
   let m = null, findings;
   if (!existsSync(file)) findings = [{ rule: "shape", severity: "error", what: `There is no ${FILE} in ${root}.`, fix: "Run `flow.mjs init`, then write the app's screens, ways and journeys." }];
   else {
-    try { m = JSON.parse(readFileSync(file, "utf8")); } catch (e) { findings = [{ rule: "shape", severity: "error", what: `${FILE} is not valid JSON (${e.message}).`, fix: "Fix the JSON." }]; }
-    if (m !== null) findings = check(m, { decisions: readDecisions(root) });
+    let parsed = false;
+    try { m = JSON.parse(readFileSync(file, "utf8")); parsed = true; } catch (e) { findings = [{ rule: "shape", severity: "error", what: `${FILE} is not valid JSON (${e.message}).`, fix: "Fix the JSON." }]; }
+    // Any parsed value is checked, null included: the shape rule reports what isn't a model.
+    if (parsed) findings = m && typeof m === "object" ? check(m, { decisions: readDecisions(root) }) : [{ rule: "shape", severity: "error", what: `${FILE} holds no model (it must be an object with screens, edges and journeys).`, fix: "Run `flow.mjs init` or write the model." }];
   }
   const screens = Array.isArray(m?.screens) ? m.screens.length : 0, journeys = Array.isArray(m?.journeys) ? m.journeys.length : 0;
   console.log(json ? JSON.stringify({ screens, journeys, findings }, null, 2) : format(findings, m));

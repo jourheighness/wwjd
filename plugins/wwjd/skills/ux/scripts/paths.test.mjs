@@ -11,7 +11,7 @@ import { artifactRoot } from "./paths.mjs";
 const PATHS = join(dirname(fileURLToPath(import.meta.url)), "paths.mjs");
 
 test("artifactRoot: a stray .wwjd/ in a folder directly in /tmp (a per-user temp folder) is no project; deeper ones and .wwjd.json are", () => {
-  const user = realpathSync(mkdtempSync("/tmp/wwjd-user-")); // as /tmp/claude-501
+  const user = realpathSync(mkdtempSync("/tmp/wwjd-user-")); // as /tmp/<user>
   mkdirSync(join(user, ".wwjd"));
   const scratch = join(user, "session", "scratchpad");
   mkdirSync(scratch, { recursive: true });

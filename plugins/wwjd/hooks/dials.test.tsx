@@ -39,9 +39,11 @@ test('project picks land in .wwjd.json dials; inherit removes them', async ($, o
   }
 })
 
-test('person picks go to the plugin options', async ($, on) => {
+test('person picks go to the plugin options, and to WWJD_DIALS so Bash sees them this session', async ($, on) => {
   mock.store(on)
-  mock.env(on, { HOME: '/home/j' })
+  const env: Record<string, string | undefined> = { HOME: '/home/j' }
+  on('env.get', (_$, e) => ({ value: env[e.name] }))
+  on('env.set', (_$, e) => { env[e.name] = e.value; return { value: undefined } })
   const sets: unknown[] = []
   on('config.set', (_$, e) => {
     sets.push([e.key, e.value])
@@ -58,6 +60,7 @@ test('person picks go to the plugin options', async ($, on) => {
   await ui.press({ key: 'budget:1' })
   await ui.press({ key: 'motion:1' })
   expect(sets).toEqual([['wwjd.budget', 2], ['wwjd.motion', 2]])
+  expect(env.WWJD_DIALS).toMatch(/\bmotion=2\b/)
 })
 
 test('each dial card says what its picked stop does', async ($, on) => {
