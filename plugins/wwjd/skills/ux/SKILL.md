@@ -31,6 +31,8 @@ wwjd owns the design side: how a product looks, flows and reads is decided here,
 | `messy` + broad ask, debt | `audit` |
 | small change | rules + loop only |
 
+While the Flow setting is on (status says), new apps and new screens go through `wwjd:flow` first (writes `wwjd.flow.json` and checks it).
+
 ## 1. Precedence
 Floor > project DESIGN.md + decision log > taste file (yours) > dials > wwjd (more specific file wins) > user profile (workflow, locale only). Old UI breaking rules: fix in scope, flag the rest.
 
@@ -61,8 +63,8 @@ Persuade: landing, hero, pricing · Showcase: portfolio, case study · Editorial
 
 ## 5. Loop
 - **Show** the smallest renderable slice with realistic data; hand over the link and what changed at once.
-- **Log as you go:** each assumption and each choice nobody asked for: one `mcp__wwjd__log` call, in the past tense and plain words, with typed `proof` (kinds in the tool). When a wwjd rule changes what you were about to do, a `save`: what it kept you from ("putting the price in a tooltip") and the rule's name. No tool: one line `{"surface","kind","text","why","proof"}` in `.wwjd/decisions.jsonl`.
-- **Board:** on with a `board` in `.wwjd.json` (status says): each handover adds its round (`references/board.md`).
+- **Log as you go:** each assumption and each choice nobody asked for: one `mcp__wwjd__log` call, a 2–6 word `title` (the sidebar row: what to know at a glance) plus the line in the past tense and plain words, with typed `proof` (kinds in the tool), plus `screen` (its id in `wwjd.flow.json`) and `aspect` (`ux` how it works, `ui` how it looks) when known. When a wwjd rule changes what you were about to do, a `save`: what it kept you from ("putting the price in a tooltip") and the rule's name. No tool: one line `{"surface","kind","text","why","proof"}` in `.wwjd/decisions.jsonl`.
+- **Canvas:** on with a `canvas` in `.wwjd.json` (status says): each handover puts its screens and decisions on it (`../flow/references/canvas.md`).
 - **Checks** per the Strictness dial (`references/dials.md`); hooks enforce them unless Hooks is quiet or off; the checks are owed either way. Hooks see Edit and Write: change UI files with those, never through Bash or a script. Shoot every new state (focus, hover, editing, open popover) zoomed, both themes, before any "checked"; a check that could not run is reported as not run. A Design canvas (`.dc.html`) renders only in its canvas: no shots or fit; say it was looked at there. Handover lists each `TODO(api)`.
 - **React:** change only what was named. Same correction twice: 3 structurally different options or one question with a default.
 

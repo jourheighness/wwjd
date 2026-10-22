@@ -1,15 +1,15 @@
-// The wwjd sidebar (/wwjd), in plain words for someone who never read the skill. Two sections, each saying what it
-// holds: "Not done yet" (what Claude still does before calling the work finished, from the Strictness gate: Run it or
-// Skip) and "Claude decided" (choices and guesses already in the work, grouped by task: the ✕ dismisses it as fine,
-// Edit or Correct sends Claude the change, just this time or saved as a rule for this project or every project).
-// Every button says what it does and every toast says what happened. Proof opens inside the desktop app where it can:
-// an Artifact in its pane, a page in the built-in browser, a file in the Files pane; else as a link. The dials sit behind Settings (dials.tsx). The agent logs through the `log` tool registered here
-// (mcp__wwjd__log); entries live in .wwjd/decisions.jsonl at the root of the project being edited (artifactRoot below).
+// The wwjd sidebar (/wwjd), drawn as Claude's own sidebar is: quiet rounded cards that fold, rows of an icon and a short
+// title. Not done yet (red: what Claude still owes before it hands over, from the Strictness gate: Run it or Skip),
+// Johannes stepped in (saves: a wwjd rule changed what Claude was about to do), Claude decided (choices and guesses
+// already in the work; a row opens to why, proof, Edit and Dismiss), Directions, Handled, and Project (canvas, Settings).
+// Icons are Svg on the desktop (icons.ts), text marks on the terminal. Proof opens inside the desktop app where it can.
+// The agent logs through the `log` tool registered here (mcp__wwjd__log); entries live in .wwjd/decisions.jsonl at the
+// root of the project being edited (artifactRoot below).
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { Entry, NoteScope, Scope } from '../types'
-import { PANE, card, exportDials, loadProjectDials, setProjectRoot, settingsView } from './dials'
+import { PANE, exportDials, loadProjectDials, setProjectRoot, settingsView } from './dials'
 import { TONE, iconSource } from './icons'
 import type { IconName } from './icons'
 import { drawn, onFocus, onPress, tracked } from './press'
@@ -21,7 +21,10 @@ let draftText = ''
 const noteScope = atom({ plugin: 'wwjd', key: 'noteScope' } as const, 'once')
 const gate = atom({ plugin: 'wwjd', key: 'gate' } as const, null)
 const logVersion = atom({ plugin: 'wwjd', key: 'logVersion' } as const, 0)
-const showHandled = atom({ plugin: 'wwjd', key: 'showHandled' } as const, false)
+const foldsAtom = atom({ plugin: 'wwjd', key: 'folds' } as const, {})
+const openRow = atom({ plugin: 'wwjd', key: 'openRow' } as const, '')
+// Card borders on the desktop: a quiet line that holds on light and dark panes.
+const LINE = 'rgba(127, 127, 127, 0.28)'
 const showSaves = atom({ plugin: 'wwjd', key: 'showSaves' } as const, false)
 
 const TOOL = 'mcp__wwjd__log'
@@ -67,7 +70,7 @@ async function artifactRoot($: EngineInterface, file?: string): Promise<string> 
 const shownRoot = async ($: EngineInterface) => (await read($, logRoot)) || artifactRoot($)
 const logFile = (root: string) => `${root}/.wwjd/decisions.jsonl`
 // The pane's last read of disk (see the render), at a log version; a file edit clears it.
-let snap: { ver: number; root: string; board: string | null; dirs: Direction[]; all: Entry[] } | null = null
+let snap: { ver: number; root: string; canvas: string | null; dirs: Direction[]; all: Entry[] } | null = null
 
 async function readLog($: EngineInterface, root: string): Promise<Entry[]> {
   try {
@@ -142,9 +145,11 @@ async function correct($: EngineInterface, id: string) {
 }
 
 const settled = (x: Entry) => Boolean(x.correction || x.kept)
+// A row's label: the entry's title, else its text up to the first clause break, at most seven words (older entries).
+const titleOf = (x: Entry) => x.title || (x.text.split(/[,;:(]|\s[—–]\s/)[0] ?? x.text).trim().split(/\s+/).slice(0, 7).join(' ')
 
-// The project's board artifact, when .wwjd.json names one ("board"): the same link every session.
-// The directions explored, from .wwjd/directions.json (written with the board; local, never committed):
+// The project canvas artifact, when .wwjd.json names one ("canvas"): the same link every session.
+// The directions explored, from .wwjd/directions.json (written when directions are explored; local, never committed):
 // [{ name, url, board?, note? }]. Directions that share one canvas open it with one button.
 type Direction = { name: string; url: string; board?: string }
 async function directions($: EngineInterface, root: string): Promise<Direction[]> {
@@ -160,10 +165,10 @@ async function directions($: EngineInterface, root: string): Promise<Direction[]
   }
 }
 
-async function boardUrl($: EngineInterface, root: string): Promise<string | null> {
+async function canvasUrl($: EngineInterface, root: string): Promise<string | null> {
   const f = `${root}/.wwjd.json`
   try {
-    const url = (JSON.parse(await $.fs.read(f)) as { board?: unknown }).board
+    const url = (JSON.parse(await $.fs.read(f)) as { canvas?: unknown }).canvas
     return typeof url === 'string' && /^https:\/\//.test(url) ? url : null
   } catch {
     return null
@@ -210,11 +215,11 @@ function toProof(raw: unknown, root: string): Proof | null {
 }
 
 const base = (path: string) => path.split('/').pop() ?? path
-/** What the button says. `board` is the project's board link, so the board reads as "Open board". */
-function proofLabel(p: Proof, board: string | null): string {
+/** What the button says. `canvas` is the project canvas link, so the canvas reads as "Open canvas". */
+function proofLabel(p: Proof, canvas: string | null): string {
   switch (p.kind) {
     case 'variant': return p.name ?? p.board ?? 'Variant'
-    case 'artifact': return p.target === board ? 'Open board' : `Open ${p.name ?? 'Artifact'}`
+    case 'artifact': return p.target === canvas ? 'Open canvas' : `Open ${p.name ?? 'Artifact'}`
     case 'page': return `Try it: ${p.name ?? (p.target.replace(/^https?:\/\/[^/]+/, '') || '/')}`
     case 'screenshot': return `Screenshot: ${p.name ?? base(p.target).replace(/\.\w+$/, '')}`
     case 'file': return `File: ${p.name ?? base(p.target)}${p.line ? `:${p.line}` : ''}`
@@ -273,7 +278,7 @@ async function sendFix($: EngineInterface, label: string, ask: string) {
   $.ui.toast(`Sent · ${label}`)
 }
 
-// Dismiss (the card's ✕): the decision stands. It leaves the open list; Reopen in Handled brings it back. The host's toast holds text
+// Dismiss: the decision stands. It leaves the open list; Reopen in Handled brings it back. The host's toast holds text
 // only, so the way back lives in Handled rather than an Undo in the toast.
 async function setKept($: EngineInterface, id: string, isKept: boolean) {
   const day = await today($)
@@ -302,15 +307,18 @@ export const register: Register = (on, options) => {
       isDeferred: false,
       inputSchema: {
         type: 'object',
-        required: ['surface', 'kind', 'text'],
+        required: ['surface', 'kind', 'title', 'text'],
         properties: {
           surface: { type: 'string', description: 'The component, screen or layout it is about, in product words ("Task card", "Settings page")' },
           kind: { type: 'string', enum: ['assumption', 'choice', 'save'], description: 'assumption: a guess about product, data or intent; choice: a design call nobody asked for; save: a wwjd rule changed what you were about to do (text: only what it kept you from, a short phrase as "putting the price in a tooltip"; what you did instead goes in why; rule: its name)' },
+          title: { type: 'string', description: 'Two to six words, what you need to know at a glance; the sidebar row ("Decisions open on press", "Prices visible, no tooltips", "Work email assumed")' },
           text: { type: 'string', description: 'One line in the past tense, what you already did or assumed, in plain words a non-designer reads ("Dropped the comment count from the card", "Assumed people sign up with a work email")' },
           why: { type: 'string', description: 'One short reason in plain words, no jargon ("the card was too crowded to scan")' },
           rule: { type: 'string', description: 'save only: the wwjd rule that stepped in, by its name ("Floor: tooltips", "One primary action")' },
           path: { type: 'string', description: 'A file this is about, when the project being edited is not the session\'s folder; the entry goes to that project\'s log' },
           task: { type: 'string', description: 'The task this belongs to, the same words for every entry of it ("Signup flow", "Sidebar log")' },
+          screen: { type: 'string', description: 'The screen this is about, by its id in wwjd.flow.json ("checkout"), when the project keeps one' },
+          aspect: { type: 'string', enum: ['ux', 'ui'], description: 'ux: the reason is about how it works (flow, structure, copy); ui: about how it looks' },
           proof: { type: 'array', description: 'What shows it, one entry per thing to open. An object { kind, name, url or path, board, line }: kind variant (one design on a board canvas: url is the board, name the variant, board its frame), artifact (an Artifact of its own), page (a running dev-server URL), screenshot (an image path), file (a source path, with line), link (other web page). Or a string "Name | target", whose kind is read from the target. Name every entry the way the person would ("Variant A · Deck")',
             items: { anyOf: [{ type: 'string' }, { type: 'object', properties: {
               kind: { type: 'string', enum: ['variant', 'artifact', 'page', 'screenshot', 'file', 'link'] }, name: { type: 'string' },
@@ -333,7 +341,7 @@ export const register: Register = (on, options) => {
   })
 
   on('tool.call', { tool: TOOL }, async ($, e) => {
-    const x = e as unknown as { surface?: unknown; kind?: unknown; text?: unknown; why?: unknown; rule?: unknown; path?: unknown; task?: unknown; proof?: unknown }
+    const x = e as unknown as { surface?: unknown; kind?: unknown; title?: unknown; text?: unknown; why?: unknown; rule?: unknown; path?: unknown; task?: unknown; screen?: unknown; aspect?: unknown; proof?: unknown }
     if (typeof x.surface !== 'string' || typeof x.text !== 'string' || (x.kind !== 'assumption' && x.kind !== 'choice' && x.kind !== 'save')) {
       return { deny: 'Needs surface, kind (assumption, choice or save) and text.' }
     }
@@ -355,9 +363,12 @@ export const register: Register = (on, options) => {
     const why = typeof x.why === 'string' && x.why.trim() ? x.why.trim() : instead.join('; ').replace(/^./, c => c.toUpperCase())
     const entry = {
       surface: x.surface.trim(), kind: x.kind as Entry['kind'], text,
+      ...(typeof x.title === 'string' && x.title.trim() ? { title: x.title.trim().slice(0, 60) } : {}),
       ...(why ? { why } : {}),
       ...(x.kind === 'save' && typeof x.rule === 'string' && x.rule.trim() ? { rule: x.rule.trim() } : {}),
       ...(typeof x.task === 'string' && x.task.trim() ? { task: x.task.trim() } : {}),
+      ...(typeof x.screen === 'string' && x.screen.trim() ? { screen: x.screen.trim().slice(0, 80) } : {}),
+      ...(x.aspect === 'ux' || x.aspect === 'ui' ? { aspect: x.aspect as Entry['aspect'] } : {}),
       ...(proof.length ? { proof } : {}),
     }
     const now = await $.clock.now()
@@ -427,17 +438,16 @@ export const register: Register = (on, options) => {
 
     const ver = await read($, logVersion)
     const Link = ui.Link
-    const isHandledShown = await read($, showHandled)
     // What the pane reads from disk, cached, so the redraws a click causes (press.ts) stay quick. A log write bumps the
-    // version; any file edit clears it (the board link and directions are files Claude writes).
+    // version; any file edit clears it (the canvas link and directions are files Claude writes).
     if (!snap || snap.ver !== ver) {
       const root = await shownRoot($).catch(() => '')
       snap = { ver, root,
-        board: root ? await boardUrl($, root).catch(() => null) : null,
+        canvas: root ? await canvasUrl($, root).catch(() => null) : null,
         dirs: root ? await directions($, root).catch(() => [] as Direction[]) : [],
         all: root ? await readLog($, root).catch(() => [] as Entry[]) : [] }
     }
-    const { root, board, dirs } = snap
+    const { root, canvas, dirs } = snap
     // What Strictness still wants after the last UI edit, from the same gate state the hooks enforce: Blocking cards.
     const g = await read($, gate)
     const due = g?.hasEdits
@@ -457,36 +467,51 @@ export const register: Register = (on, options) => {
     const Input = 'Input' in ui ? ui.Input : null
     // Icons where the surface draws Svg (icons.ts); the terminal keeps text marks.
     const Svg = 'Svg' in ui ? ui.Svg : null
-    const icon = (name: IconName, alt: string, color?: string) => (Svg ? <Svg source={iconSource(name, color)} alt={alt} width={16} height={16} /> : null)
-    // A section: icon, title and count on one line, what it holds in a smaller line under it.
-    const section = (key: string, name: IconName, title: string, n: number, sub: string | null, body: (JSX.Element | null)[], color?: string) => (
-      <Box key={key} flexDirection="column" gap="sm">
-        <Box flexDirection="column" gap="xs">
-          <Box flexDirection="row" alignItems="center" gap="sm">
-            {icon(name, '', color)}
-            <Text weight="semibold" color={color}>{title}{n ? <Text dimColor tabular weight="regular"> {String(n)}</Text> : null}</Text>
+    // Each icon in a box that never shrinks: an Svg beside a native button otherwise collapses to nothing.
+    const icon = (name: IconName, alt: string, color?: string) => (Svg ? <Box flexShrink={0}><Svg source={iconSource(name, color)} alt={alt} width={14} height={14} /></Box> : null)
+    const inApp = e.surface === 'desktop'
+    const folds = (await read($, foldsAtom)) as Record<string, boolean>
+    const row1 = await read($, openRow)
+
+    // The pane is cards, as Claude's own sidebar draws them: a quiet rounded border, a title with a chevron that folds
+    // it, a dim count on the right, then rows of an icon and a line. Colour only for what needs you (Not done yet).
+    // Every card folds: a dim chevron right after the title, as Claude's sidebar draws it.
+    const panel = (key: string, title: string, meta: string, body: (JSX.Element | null)[], opts: { isOpen?: boolean } = {}) => {
+      const isOpen = folds[key] ?? opts.isOpen ?? true
+      return (
+        <Box key={`panel:${key}`} flexDirection="column" gap="md" borderStyle="round" borderColor={inApp ? LINE : 'subtle'} paddingX="md" paddingTop="md" paddingBottom="lg">
+          <Box flexDirection="row" justifyContent="space-between" alignItems="center" gap="sm">
+            <Box flexDirection="row" alignItems="center" gap="xs" flexShrink={1}>
+              <Box flexShrink={1}>
+                <Button key={`fold:${key}`} plain label={Svg ? title : `${title} ${isOpen ? '▾' : '▸'}`} onPress={() => update($, foldsAtom, f => ({ ...(f as Record<string, boolean>), [key]: !isOpen }))} />
+              </Box>
+              {icon(isOpen ? 'down' : 'right', isOpen ? 'Fold' : 'Open', TONE.dim)}
+            </Box>
+            {meta ? <Text size="footnote" dimColor tabular>{meta}</Text> : null}
           </Box>
-          {sub ? <Text size="footnote" wrap="wrap" dimColor>{sub}</Text> : null}
+          {isOpen ? body : null}
         </Box>
-        {body}
+      )
+    }
+    // One row: icon, then the line and whatever hangs under it on the line's edge.
+    const row = (key: string, mark: JSX.Element | null, content: (JSX.Element | null)[]) => (
+      <Box key={`item:${key}`} flexDirection="row" gap="sm" alignItems="flex-start">
+        {mark}
+        <Box flexDirection="column" flexGrow={1} flexShrink={1} gap="xs">{content}</Box>
       </Box>
     )
-
-    // Tasks (else surfaces) in order of their latest entry, newest first; entries in each oldest first.
-    const groupOf = (x: Entry) => x.task ?? x.surface
-    const byGroup = new Map<string, Entry[]>()
-    for (const x of entries) byGroup.set(groupOf(x), [...(byGroup.get(groupOf(x)) ?? []), x])
-    const groups = [...byGroup.entries()].sort((a, b) => (b[1].at(-1)?.at ?? '').localeCompare(a[1].at(-1)?.at ?? ''))
-
-    // A card action: a native button on the desktop, [ ] on the terminal; the one primary per card, the rest plain.
+    const note = (key: string, text: string) => <Text key={key} size="footnote" wrap="wrap" dimColor>{text}</Text>
     const action = (key: string, label: string, onPress: () => unknown, kind: 'primary' | 'plain' | 'dim' = 'plain') =>
       <Button key={key} label={label} variant={kind === 'primary' ? 'primary' : undefined} dimColor={kind === 'dim'} onPress={() => { void onPress() }} />
-    const actions = (key: string, list: JSX.Element[]) =>
-      <Box key={`actions:${key}`} flexDirection="row" flexWrap="wrap" gap="xs" marginTop="xs">{list}</Box>
-    // Desktop: buttons that open inside the app (openProof); other surfaces: links.
-    const inApp = e.surface === 'desktop'
-    // One button per place: proofs that open the same thing merge ("Open board: A · Deck, C · Park times"), so no two
-    // buttons look different and do the same. A variant opens its board; the toast names which board to look at.
+    const actions = (key: string, list: (JSX.Element | null)[]) =>
+      <Box key={`actions:${key}`} flexDirection="row" flexWrap="wrap" gap="xs" alignItems="center">{list}</Box>
+    // A line that opens what it is about: in the app on the desktop (openProof), a link elsewhere.
+    const opener = (key: string, label: string, p: Proof | null, toast?: string) => !p
+      ? <Text key={key} wrap="wrap">{label}</Text>
+      : inApp
+        ? <Button key={key} plain label={label} onPress={() => { void openProof($, p, label, toast) }} />
+        : <Text key={key} wrap="wrap"><Link href={proofHref(p)} label={label} /></Text>
+    // One button per place: proofs that open the same thing merge ("Open canvas: A · Deck, C · Park times").
     const proofs = (key: string, list: unknown[] | undefined) => {
       const ps = (list ?? []).map(x => toProof(x, root)).filter((x): x is Proof => x !== null)
       if (!ps.length) return null
@@ -495,160 +520,120 @@ export const register: Register = (on, options) => {
         const k = `${p.kind === 'variant' ? 'artifact' : p.kind}:${p.target}:${p.line ?? ''}`
         groups.set(k, [...(groups.get(k) ?? []), p])
       }
-      const items = [...groups.values()].map(g => {
-        const first = g[0] as Proof
-        const variants = g.filter(p => p.kind === 'variant').map(p => proofLabel(p, board))
-        const label = variants.length ? `${first.target === board ? 'Open board' : 'Open'}: ${variants.join(', ')}` : proofLabel(first, board)
-        const note = variants.length ? `Opened the board · look for ${variants.join(', ')}` : undefined
-        const kind: IconName = first.kind === 'screenshot' ? 'image' : first.kind === 'page' ? 'globe' : first.kind === 'file' ? 'file' : first.kind === 'link' ? 'link' : 'layout'
-        return { p: first, label, note, kind }
-      })
       return (
-        <Box key={`proof:${key}`} flexDirection="row" flexWrap="wrap" gap="sm">
-          {items.map((it, i) => inApp
-            ? (
+        <Box key={`proof:${key}`} flexDirection="column" gap="xs">
+          {[...groups.values()].map((g, i) => {
+            const first = g[0] as Proof
+            const variants = g.filter(p => p.kind === 'variant').map(p => proofLabel(p, canvas))
+            const label = variants.length ? `${first.target === canvas ? 'Open canvas' : 'Open'}: ${variants.join(', ')}` : proofLabel(first, canvas)
+            const kind: IconName = first.kind === 'screenshot' ? 'image' : first.kind === 'page' ? 'globe' : first.kind === 'file' ? 'file' : first.kind === 'link' ? 'link' : 'layout'
+            return (
               <Box key={`proof:${key}:${i}`} flexDirection="row" alignItems="center" gap="xs">
-                {icon(it.kind, '')}
-                <Button key={`proof:${key}:${i}`} plain label={it.label} onPress={() => { void openProof($, it.p, it.label, it.note) }} />
+                {icon(kind, '')}
+                {opener(`proof:${key}:${i}`, label, first, variants.length ? `Opened the board · look for ${variants.join(', ')}` : undefined)}
               </Box>
             )
-            : <Text key={`proof:${key}:${i}`}><Link href={proofHref(it.p)} label={it.label} /></Text>)}
+          })}
         </Box>
       )
     }
     const mark = (kind: Entry['kind'] | 'blocking') => Svg
-      ? (kind === 'blocking' ? icon('alert', 'Not done yet', TONE.error) : kind === 'assumption' ? icon('help', 'Claude guessed', TONE.guess) : icon('dot', 'Claude chose'))
+      ? (kind === 'blocking' ? icon('alert', 'Not done yet', TONE.error) : kind === 'assumption' ? icon('help', 'Claude guessed') : kind === 'save' ? icon('shield', 'Johannes stepped in') : icon('dot', 'Claude chose'))
       : kind === 'blocking' ? <Text color="error" bold>✕</Text>
       : kind === 'assumption' ? <Text color="suggestion" bold>?</Text> : <Text dimColor bold>·</Text>
-    // The mark sits on the first line at the top left; everything else, the actions included, hangs on the text's edge.
-    const lead = (key: string, kind: Entry['kind'] | 'blocking', text: string, lines: (string | undefined)[], below: (JSX.Element | null)[], corner?: JSX.Element) => (
-      <Box key={`lead:${key}`} flexDirection="row" gap="sm" alignItems="flex-start">
-        {mark(kind)}
-        <Box flexDirection="column" flexGrow={1} flexShrink={1} gap="sm">
-          <Box flexDirection="column" gap="xs">
-            <Text wrap="wrap">{text}</Text>
-            {lines.filter(Boolean).map((l, i) => <Text key={`line:${key}:${i}`} size="footnote" wrap="wrap" dimColor>{l}</Text>)}
-          </Box>
-          {below}
-        </Box>
-        {corner ?? null}
-      </Box>
-    )
 
-    const blockingCard = (d: (typeof due)[number]) =>
-      card(ui, `due-card:${d.key}`, lead(d.key, 'blocking', d.text, [d.what], [
-        actions(d.key, [
-          action(`fix:${d.key}`, d.fix, () => sendFix($, `${d.fix} · ${d.text}`, d.ask), 'primary'),
-          ...(d.key === 'sheet' ? [] : [action(`skip:${d.key}`, 'Skip', () => skipCheck($, root, d.key, d.text))]),
-        ]),
-      ]), 'error')
+    // Johannes stepped in: the hero. Each line opens the Artifact (or file) it happened in.
+    const SAVES = 4
+    const saveRows = [
+      ...(isAllSaves ? saves : saves.slice(0, SAVES)).map(x => {
+        const p = (x.proof ?? []).map(y => toProof(y, root)).find((y): y is Proof => y !== null) ?? null
+        return row(`save:${x.id}`, mark('save'), [
+          <Text key={`save-text:${x.id}`} wrap="wrap">{`Kept Claude from ${x.text}`}</Text>,
+          x.rule || p ? actions(`save:${x.id}`, [x.rule ? <Text key={`rule:${x.id}`} size="footnote" dimColor>{x.rule}</Text> : null, p ? opener(`save:${x.id}`, 'Open', p) : null]) : null,
+        ])
+      }),
+      saves.length > SAVES ? <Button key="saves-all" plain dimColor label={isAllSaves ? 'Show less' : 'Show more'} onPress={() => update($, showSaves, v => !v)} /> : null,
+    ]
 
-    const decisionCard = (x: Entry) => {
+    const dueRows = due.map(d => row(`due:${d.key}`, mark('blocking'), [
+      <Text key={`due-text:${d.key}`} wrap="wrap">{d.text}</Text>,
+      actions(d.key, [
+        action(`fix:${d.key}`, d.fix, () => sendFix($, `${d.fix} · ${d.text}`, d.ask), 'primary'),
+        d.key === 'sheet' ? null : action(`skip:${d.key}`, 'Skip', () => skipCheck($, root, d.key, d.text)),
+      ]),
+    ]))
+
+    // A decision is one line; pressing it opens why, what shows it, and Edit or Dismiss.
+    const decisionRow = (x: Entry) => {
       const guess = x.kind === 'assumption'
-      const status = guess ? 'Claude guessed this. Check that it is right.' : 'Claude chose this without asking you.'
-      const why = x.why ? `Why: ${x.why}` : undefined
+      const isOpen = row1 === x.id || open === x.id
+      const label = titleOf(x)
+      const line = <Button key={`row:${x.id}`} plain label={label} onPress={() => update($, openRow, r => (r === x.id ? '' : x.id))} />
+      const whole = label !== x.text ? <Text key={`text:${x.id}`} wrap="wrap">{x.text}</Text> : null
       if (open === x.id) {
-        return card(ui, `card:${x.id}`, lead(x.id, x.kind, x.text, [why], [
-          <Text key={`ask:${x.id}`} wrap="wrap">What should it be instead? Claude redoes it in the current work.</Text>,
+        return row(x.id, mark(x.kind), [line, whole,
+          x.why ? note(`why:${x.id}`, `Why: ${x.why}`) : null,
           Input ? (
-            <Input key={`note:${x.id}`} placeholder="For example: keep the comment count, but smaller" autoFocus
+            <Input key={`note:${x.id}`} placeholder="What should it be instead?" autoFocus
               onInput={v => { draftText = v }} onSubmit={v => { draftText = v; void correct($, x.id) }} />
           ) : null,
-          <Box key={`scope:${x.id}`} flexDirection="row" flexWrap="wrap" gap="xs" alignItems="center">
-            <Text dimColor>Remember it</Text>
-            {(['once', 'project', 'person'] as const).map(sc => (
+          actions(`scope:${x.id}`, [
+            <Text key={`remember:${x.id}`} size="footnote" dimColor>Remember</Text>,
+            ...(['once', 'project', 'person'] as const).map(sc => (
               <Button key={`scope:${x.id}:${sc}`} label={sc === 'once' ? 'Just this time' : sc === 'project' ? 'This project' : 'Every project'}
                 variant={where === sc ? 'primary' : undefined} dimColor={where !== sc} onPress={() => update($, noteScope, () => sc)} />
-            ))}
-          </Box>,
+            )),
+          ]),
           actions(x.id, [
             action(`save:${x.id}`, 'Send to Claude', () => correct($, x.id), 'primary'),
             action(`cancel:${x.id}`, 'Cancel', () => update($, editing, () => ''), 'dim'),
           ]),
-        ]))
+        ])
       }
-      // Already done: nothing to approve. The ✕ in the corner dismisses it as fine; Edit or Correct changes it.
-      const dismiss = <Button key={`dismiss:${x.id}`} label="Dismiss, it's fine" plain dimColor onPress={() => { void setKept($, x.id, true) }}>✕</Button>
-      return card(ui, `card:${x.id}`, lead(x.id, x.kind, x.text, [status, why], [
+      return row(x.id, mark(x.kind), [line, ...(isOpen ? [
+        whole,
+        x.why ? note(`why:${x.id}`, `Why: ${x.why}`) : null,
         proofs(x.id, x.proof),
         actions(x.id, [
-          ...(Input ? [action(`change:${x.id}`, guess ? 'Correct…' : 'Edit…', () => { draftText = ''; return update($, noteScope, () => 'once').then(() => update($, editing, () => x.id)) })] : []),
+          Input ? action(`change:${x.id}`, guess ? 'Correct…' : 'Edit…', () => { draftText = ''; return update($, noteScope, () => 'once').then(() => update($, editing, () => x.id)) }) : null,
+          <Button key={`dismiss:${x.id}`} plain dimColor label="Dismiss" onPress={() => { void setKept($, x.id, true) }} />,
         ]),
-      ], dismiss))
+      ] : [])])
     }
+    // Tasks (else surfaces), newest first; a task's name only when there are several.
+    const groupOf = (x: Entry) => x.task ?? x.surface
+    const byGroup = new Map<string, Entry[]>()
+    for (const x of entries) byGroup.set(groupOf(x), [...(byGroup.get(groupOf(x)) ?? []), x])
+    const groups = [...byGroup.entries()].sort((a, b) => (b[1].at(-1)?.at ?? '').localeCompare(a[1].at(-1)?.at ?? ''))
+    const decided = groups.flatMap(([name, xs]) => [groups.length > 1 ? note(`group:${name}`, name) : null, ...xs.map(decisionRow)])
 
-    const handledRow = (x: Entry) => (
-      <Box key={`handled:${x.id}`} flexDirection="row" gap="sm" alignItems="flex-start">
-        {mark(x.kind)}
-        <Box flexDirection="column" flexGrow={1} flexShrink={1} gap="xs">
-          <Text size="footnote" wrap="wrap" dimColor><Text dimColor>{x.task ?? x.surface} · </Text>{x.text}</Text>
-          {x.correction
-            ? <Text size="footnote" wrap="wrap">Changed → {x.correction.note} <Text dimColor>· {x.correction.scope === 'once' ? 'just this time' : x.correction.scope === 'person' ? 'every project' : 'this project'}</Text></Text>
-            : <Text size="footnote" dimColor>Dismissed</Text>}
-        </Box>
-        {x.kept ? <Button key={`reopen:${x.id}`} plain dimColor label="Reopen" onPress={() => setKept($, x.id, false)} /> : null}
-      </Box>
-    )
+    const handledRows = handled.map(x => row(`handled:${x.id}`, mark(x.kind), [
+      <Text key={`handled-text:${x.id}`} size="footnote" wrap="wrap" dimColor>{titleOf(x)}</Text>,
+      x.correction ? note(`changed:${x.id}`, `Changed to: ${x.correction.note}`) : null,
+      x.kept ? <Button key={`reopen:${x.id}`} plain dimColor label="Reopen" onPress={() => setKept($, x.id, false)} /> : null,
+    ]))
 
     const dirRows = [...dirs.reduce((m, d) => m.set(d.url, [...(m.get(d.url) ?? []), d]), new Map<string, Direction[]>()).entries()].map(([url, ds], i) => {
       const names = ds.map(d => d.name).join(', ')
-      const label = ds.length > 1 ? 'Open canvas' : ds[0]?.name ?? 'Open'
+      const label = ds.length > 1 ? `Canvas: ${names}` : ds[0]?.name ?? 'Open'
       const onCanvas = ds.length === 1 && Boolean(ds[0]?.board)
-      const press = () => { void openProof($, { kind: onCanvas ? 'variant' : 'artifact', target: url, name: label }, label, onCanvas ? `Opened the canvas · look for ${names}` : undefined) }
-      return (
-        <Box key={`dir:${i}`} flexDirection="row" flexWrap="wrap" gap="sm" alignItems="center">
-          {ds.length > 1 ? <Text size="footnote" wrap="wrap" dimColor>{names}</Text> : null}
-          {inApp ? <Button key={`dir:${i}:open`} plain label={label} onPress={press} /> : <Text><Link href={url} label={label} /></Text>}
-        </Box>
-      )
-    })
-    const decided = groups.map(([name, xs]) => {
-      const surfaces = [...new Set(xs.map(x => x.surface))]
-      const isTask = xs.some(x => x.task)
-      return (
-        <Box key={`group:${name}`} flexDirection="column" gap="sm">
-          <Text size="footnote" weight="semibold" dimColor>{name}</Text>
-          {isTask && surfaces.length > 1
-            ? surfaces.map(sf => (
-              <Box key={`sub:${name}:${sf}`} flexDirection="column" gap="sm">
-                <Text size="footnote" dimColor>{sf}</Text>
-                {xs.filter(x => x.surface === sf).map(decisionCard)}
-              </Box>
-            ))
-            : xs.map(decisionCard)}
-        </Box>
-      )
+      return row(`dir:${i}`, icon('layout', ''), [opener(`dir:${i}:open`, label, { kind: onCanvas ? 'variant' : 'artifact', target: url, name: label }, onCanvas ? `Opened the canvas · look for ${names}` : undefined)])
     })
 
+    const projectRows = [
+      canvas ? row('canvas', icon('layout', ''), [opener('canvas', 'Canvas', { kind: 'artifact', target: canvas })]) : null,
+      row('settings', icon('gear', ''), [<Button key="to-settings" plain label="Settings" onPress={() => { setProjectRoot(root); void update($, view, () => 'settings').then(() => loadProjectDials($)) }} />]),
+    ]
+
     return (
-      <Box flexDirection="column" padding="lg" gap="lg">
-        <Box flexDirection="row" alignItems="center" gap="sm">
-          <Box flexGrow={1}><Text size="heading" weight="semibold">wwjd</Text></Box>
-          {board ? (inApp
-            ? <Button key="board" plain label="Open board" onPress={() => { void openProof($, { kind: 'artifact', target: board }, 'the board') }} />
-            : <Text><Link href={board} label="Open board" /></Text>) : null}
-          <Button key="to-settings" plain dimColor label="Settings" onPress={() => { setProjectRoot(root); void update($, view, () => 'settings').then(() => loadProjectDials($)) }} />
-        </Box>
-        {due.length ? section('needs', 'alert', 'Not done yet', due.length, 'Claude does these before it says the work is finished. Run one now, or skip it.', due.map(blockingCard), TONE.error) : null}
-        {dirs.length ? section('directions', 'compass', 'Directions', dirs.length, null, dirRows) : null}
-        {groups.length ? section('decided', 'list', 'Claude decided', entries.length, "Already in the work. Dismiss what's fine with ✕, or edit it and Claude changes it.", decided) : null}
-        {saves.length ? section('saves', 'shield', 'Johannes stepped in', saves.length, null, [
-          ...(isAllSaves ? saves : saves.slice(0, 5)).map(x => (
-            <Text key={`save:${x.id}`} size="footnote" wrap="wrap"><Text dimColor>Johannes kept Claude from </Text>{x.text}{x.rule ? <Text dimColor> · {x.rule}</Text> : null}</Text>
-          )),
-          saves.length > 5 ? <Button key="saves-all" plain dimColor label={isAllSaves ? 'Show fewer' : `Show all ${saves.length}`} onPress={() => update($, showSaves, v => !v)} /> : null,
-        ]) : null}
-        {!groups.length && !due.length ? <Text dimColor>{handled.length ? 'Nothing open.' : 'No decisions logged in this project yet.'}</Text> : null}
-        {handled.length ? (
-          <Box key="handled-list" flexDirection="column" gap="sm">
-            <Box flexDirection="row" alignItems="center" gap="sm">
-              {icon('archive', '')}
-              <Button key="handled" plain dimColor label={`${isHandledShown ? '▾' : '▸'} Handled · ${handled.length}`}
-                onPress={() => update($, showHandled, v => !v)} />
-            </Box>
-            {isHandledShown ? handled.map(handledRow) : null}
-          </Box>
-        ) : null}
+      <Box flexDirection="column" padding="md" gap="md">
+        {due.length ? panel('needs', 'Not done yet', String(due.length), dueRows) : null}
+        {saves.length ? panel('saves', 'Johannes stepped in', String(saves.length), saveRows) : null}
+        {entries.length ? panel('decided', 'Claude decided', String(entries.length), decided) : null}
+        {!entries.length && !due.length && !saves.length ? <Box paddingX="md" paddingY="sm"><Text dimColor>{handled.length ? 'Nothing open.' : 'Nothing logged in this project yet.'}</Text></Box> : null}
+        {dirs.length ? panel('directions', 'Directions', String(dirs.length), dirRows, { isOpen: false }) : null}
+        {handled.length ? panel('handled', 'Handled', String(handled.length), handledRows, { isOpen: false }) : null}
+        {panel('project', 'Project', root ? root.split('/').pop() ?? '' : '', projectRows)}
       </Box>
     )
   })

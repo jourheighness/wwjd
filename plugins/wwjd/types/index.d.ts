@@ -24,6 +24,8 @@ export type Entry = {
   surface: string
   kind: 'assumption' | 'choice' | 'save'
   text: string
+  /** 2–6 words, the row's label in the sidebar ("Decisions open on press"); the text is the whole line. */
+  title?: string
   why?: string
   /** A save's rule, by its wwjd name ("Floor: tooltips"). */
   rule?: string
@@ -32,6 +34,10 @@ export type Entry = {
   /** What it is about: screenshot or file paths (a file may end in :line), live dev-server URLs, artifact links. */
   /** "Name | target" strings, or typed { kind, name, url | path, board, line } (hooks/sidebar.tsx Proof). */
   proof?: (string | { kind?: string; name?: string; url?: string; path?: string; board?: string; line?: number })[]
+  /** The screen it is about, by its id in wwjd.flow.json. */
+  screen?: string
+  /** Whether the reason is about how it works (ux) or how it looks (ui). */
+  aspect?: 'ux' | 'ui'
   correction?: { note: string; scope: NoteScope; file: string; at: string }
   kept?: { at: string }
 }
@@ -43,15 +49,20 @@ declare module 'claude-code' {
       project: Record<string, string | number>
       /** The project's .wwjd.json "hooks" (on, quiet, off), '' when it has none. */
       projectHooks: string
-      /** The project's .wwjd.json "boardMode" (on, off), '' when it has none. */
-      projectBoard: string
+      /** The project's .wwjd.json "flowMode" (on, off), '' when it has none. */
+      projectFlow: string
+      /** The project's .wwjd.json "canvasMode" (on, off), '' when it has none. */
+      projectCanvas: string
       gate: Gate | null
       isActive: boolean
       view: 'log' | 'settings'
       editing: string
       noteScope: NoteScope
       logVersion: number
-      showHandled: boolean
+      /** Which pane cards the person folded or opened, by key; absent keys use each card's default. */
+      folds: Record<string, boolean>
+      /** The decision row opened to show why, proof, Edit and Dismiss. */
+      openRow: string
       showSaves: boolean
       /** The last file the session wrote or edited: names the project whose log the agent writes. */
       lastEdited: string

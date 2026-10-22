@@ -1,8 +1,8 @@
 // paths.mjs: where wwjd's scripts find a project's config and artifacts, and which files count as UI. No deps, Node 20.10+.
 // gate.mjs, render.mjs and wwjd.mjs share it, so the gate reads what render writes and lints what the hook checks.
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { homedir } from "node:os";
+import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { dirname, extname, join, resolve } from "node:path";
 import { DIALS, stopOf, valueOf } from "./dials-spec.mjs";
 
@@ -27,15 +27,29 @@ export function gitRoot(cwd) {
   catch { return null; }
 }
 
+// Shared temp roots: a .wwjd/ in one, or in a folder directly in one (/tmp/claude-501), belongs to no project.
+const realOf = (p) => { try { return realpathSync(p); } catch { return p; } };
+const SHARED_TMP = new Set(["/tmp", "/var/tmp"].flatMap((p) => [p, realOf(p)]));
+const TMP_ROOTS = new Set([...SHARED_TMP, tmpdir(), realOf(tmpdir())].map((p) => p.replace(/\/+$/, "")));
+// Not a project folder for a stray .wwjd/: the home folder or above it, a temp root, or a folder directly in a shared one.
+const strayRoot = (d, home) => d === home || home.startsWith(d.endsWith("/") ? d : d + "/") || TMP_ROOTS.has(d) || SHARED_TMP.has(dirname(d));
+
 /** Where .wwjd/ (shots, runtime.json, grade sheets) lives: the nearest ancestor of cwd with .wwjd.json or .wwjd/,
- * else the git root, else cwd. A stray ~/.wwjd/ does not make the home folder a project. */
+ * else the git root, else cwd. A stray .wwjd/ in the home folder or above, or in a temp root, makes no project. */
 export function artifactRoot(cwd) {
   const home = homedir();
   for (let d = cwd; ; d = dirname(d)) {
-    if (existsSync(join(d, ".wwjd.json")) || (d !== home && isDir(join(d, ".wwjd")))) return d;
+    if (existsSync(join(d, ".wwjd.json")) || (!strayRoot(d, home) && isDir(join(d, ".wwjd")))) return d;
     if (dirname(d) === d) break;
   }
   return gitRoot(cwd) || cwd;
+}
+
+/** Whether `file` sits inside a Claude Code plugin (an ancestor holds .claude-plugin/plugin.json): plugin code, never a
+ * web page, so the gate asks it for no render checks. */
+export function inPlugin(file) {
+  for (let d = dirname(resolve(file)); dirname(d) !== d; d = dirname(d)) if (existsSync(join(d, ".claude-plugin", "plugin.json"))) return true;
+  return false;
 }
 
 /** The project a file belongs to, even one not written yet: artifactRoot() from its nearest existing folder. */
@@ -77,8 +91,10 @@ function setting(start, key, envs, allowed, fallback) {
 }
 /** The Hooks setting: "on" (route, lint, gates), "quiet" (route and lint, nothing blocks) or "off" (no wwjd hooks). */
 export const hooksMode = (start = process.cwd()) => setting(start, "hooks", ["CLAUDE_PLUGIN_OPTION_HOOKMODE", "WWJD_HOOKS"], ["on", "quiet", "off"], "on");
-/** The Project board setting: "on" (a new project offers a board; each handover adds its round) or "off". */
-export const boardMode = (start = process.cwd()) => setting(start, "boardMode", ["CLAUDE_PLUGIN_OPTION_BOARDMODE", "WWJD_BOARD"], ["on", "off"], "on");
+/** The Flow setting: "on" (wwjd:flow writes wwjd.flow.json and the gate checks it) or "off". */
+export const flowMode = (start = process.cwd()) => setting(start, "flowMode", ["CLAUDE_PLUGIN_OPTION_FLOWMODE", "WWJD_FLOW"], ["on", "off"], "on");
+/** The Canvas setting: "on" (a project canvas, kept current each round) or "off". */
+export const canvasMode = (start = process.cwd()) => setting(start, "canvasMode", ["CLAUDE_PLUGIN_OPTION_CANVASMODE", "WWJD_CANVAS"], ["on", "off"], "on");
 
 /** The effective dials for a project, one place for every script: the plugin options (CLAUDE_PLUGIN_OPTION_<KEY> in
  * hooks, WWJD_DIALS in Bash) < the nearest .wwjd.json "dials". Values outside a dial's stops fall back to its default.

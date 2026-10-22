@@ -10,12 +10,13 @@ import type { Gate } from '../types'
 const gate = atom({ plugin: 'wwjd', key: 'gate' } as const, null)
 const isActive = atom({ plugin: 'wwjd', key: 'isActive' } as const, false)
 
-// What can change the gate's state: UI edits, the critic, a board write, and the Bash runs of render.mjs and grade.mjs.
+// What can change the gate's state: UI and wwjd.flow.json edits, the critic, an Artifact publish (the canvas), and the
+// Bash runs of render.mjs, grade.mjs and flow.mjs.
 const EDITS = new Set(['Write', 'Edit', 'MultiEdit'])
-const UI = /\.(tsx|jsx|vue|svelte|astro|html|mdx|css|scss)$/
+const UI = /(\.(tsx|jsx|vue|svelte|astro|html|mdx|css|scss)|(^|\/)wwjd\.flow\.json)$/
 const changesGate = (e: { tool: string; command?: unknown; file_path?: unknown }) =>
   (EDITS.has(e.tool) && UI.test(String(e.file_path ?? ''))) || e.tool === 'Agent' || e.tool === 'Task' ||
-  e.tool === 'ArtifactData' || (e.tool === 'Bash' && /\b(render|grade)\.mjs\b/.test(String(e.command ?? '')))
+  e.tool === 'Artifact' || (e.tool === 'Bash' && /\b(render|grade|flow)\.mjs\b/.test(String(e.command ?? '')))
 
 // The dials as the scripts see them: the plugin options, then the nearest .wwjd.json.
 async function dials($: EngineInterface, options: PluginOptions): Promise<Record<string, number>> {
@@ -38,18 +39,20 @@ async function dials($: EngineInterface, options: PluginOptions): Promise<Record
   return out
 }
 
-// What the gate can't read without the transcript: when a wwjd-critic ran and when each board was written (by id).
-const seen: { critic: number; board: Record<string, number> } = { critic: 0, board: {} }
+// What the gate can't read without the transcript: when a wwjd-critic ran and when each Artifact was published (by id;
+// the gate's canvas check). A read, open or pin is not a publish.
+const seen: { critic: number; artifact: Record<string, number> } = { critic: 0, artifact: {} }
 async function note($: EngineInterface, e: { tool: string; subagent_type?: unknown; action?: unknown; url?: unknown }) {
   if ((e.tool === 'Agent' || e.tool === 'Task') && /wwjd-critic/.test(String(e.subagent_type ?? ''))) seen.critic = await $.clock.now()
   const id = /artifact\/([\w-]+)/.exec(String(e.url ?? ''))?.[1]
-  if (e.tool === 'ArtifactData' && id && ['set', 'update', 'batch', 'delete', 'str_replace'].includes(String(e.action))) seen.board[id] = await $.clock.now()
+  if (e.tool === 'Artifact' && id && (e.action === undefined || e.action === 'publish')) seen.artifact[id] = await $.clock.now()
 }
 
 async function refresh($: EngineInterface, options: PluginOptions) {
   const d = await dials($, options)
   const env = { WWJD_DIALS: Object.entries(d).map(([k, v]) => `${k}=${v}`).join(' '),
-    WWJD_HOOKS: String(options.hookmode ?? 'on'), WWJD_BOARD: String(options.boardmode ?? 'on') }
+    WWJD_HOOKS: String(options.hookmode ?? 'on'),
+    WWJD_FLOW: String(options.flowmode ?? 'on'), WWJD_CANVAS: String(options.canvasmode ?? 'on') }
   const stdin = JSON.stringify({ session_id: await $.session.id(), cwd: await $.session.cwd(), seen })
   const run = await $.process.run(['node', `${$.plugin.root}/skills/ux/scripts/gate.mjs`, 'status'], { stdin, env, timeoutMs: 5000 })
   let next: Gate | null = null

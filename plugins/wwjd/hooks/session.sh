@@ -8,7 +8,9 @@ for k in creativity budget density motion voice strictness; do
   [[ "$v" =~ ^[a-z0-9]+$ ]] && dials="$dials $k=$v"
 done
 # The dials pane (hooks/dials.tsx) keeps WWJD_DIALS current mid-session; this is the fallback.
-bm=$(printenv CLAUDE_PLUGIN_OPTION_BOARDMODE)
-[[ "$bm" =~ ^(on|off)$ ]] && printf 'export WWJD_BOARD="${WWJD_BOARD-%s}"\n' "$bm" >> "$CLAUDE_ENV_FILE"
+fm=$(printenv CLAUDE_PLUGIN_OPTION_FLOWMODE)
+[[ "$fm" =~ ^(on|off)$ ]] && printf 'export WWJD_FLOW="${WWJD_FLOW-%s}"\n' "$fm" >> "$CLAUDE_ENV_FILE"
+cm=$(printenv CLAUDE_PLUGIN_OPTION_CANVASMODE)
+[[ "$cm" =~ ^(on|off)$ ]] && printf 'export WWJD_CANVAS="${WWJD_CANVAS-%s}"\n' "$cm" >> "$CLAUDE_ENV_FILE"
 [ -n "$dials" ] && printf 'export WWJD_DIALS="${WWJD_DIALS-%s}"\n' "${dials# }" >> "$CLAUDE_ENV_FILE"
 exit 0

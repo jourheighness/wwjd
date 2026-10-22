@@ -4,7 +4,8 @@ The owner's words, used literally. A drawer is not a rail.
 
 | Term | Meaning |
 |---|---|
-| Project board | The shareable Artifact per project (`board.md`), linked as `"board"` in `.wwjd.json` |
+| Project canvas | The Figma-like Design Artifact per project: every screen per journey, the flow and the decisions (`../flow/references/canvas.md`), linked as `"canvas"` in `.wwjd.json` |
+| Flow model | `wwjd.flow.json` at the project root: screens, the ways between them, journeys; `wwjd:flow` writes and checks it |
 | Canvas | A Design canvas file (`.dc.html`); it renders only there, so no shots |
 | Register | The job a surface does (Persuade, Operate…), chosen per surface, not per product |
 | Surface | A page, screen or pane being worked on |

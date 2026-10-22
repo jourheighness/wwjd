@@ -1,7 +1,7 @@
 {
   "name": "wwjd",
-  "version": "0.30.0",
-  "description": "What Would Johannes Do: opinionated UI/UX rules and workflow. Three skills (wwjd:ux for structure, behaviour and copy; wwjd:look for the look; wwjd:motion for motion), a cold critic agent, a prompt hook that routes UI work, a lint hook after UI edits, a gate (new-project start question, Strictness checks), the /wwjd sidebar and an optional project board.",
+  "version": "0.33.0",
+  "description": "What Would Johannes Do: opinionated UI/UX rules and workflow. Three skills (wwjd:ux for structure, behaviour and copy; wwjd:look for the look; wwjd:motion for motion), a cold critic agent, a prompt hook that routes UI work, a lint hook after UI edits, a gate (new-project start question, Strictness checks), the /wwjd sidebar, a flow model checked for dead ends (wwjd:flow) and an optional project canvas.",
   "author": {
     "name": "Johannes Carlsten"
   },
@@ -14,10 +14,17 @@
       "options": ["on", "quiet", "off"],
       "default": "on"
     },
-    "boardmode": {
+    "flowmode": {
       "type": "string",
-      "title": "Project board: on or off",
-      "description": "on: a new project offers a shareable board, and each handover adds its round (default). off: Claude never creates or updates one. A project's .wwjd.json \"boardMode\" wins.",
+      "title": "Flow: on or off",
+      "description": "wwjd:flow: Claude writes how the app works (screens, ways between them, journeys) and checks it for dead ends and traps before building. on (default) or off. A project's .wwjd.json \"flowMode\" wins.",
+      "options": ["on", "off"],
+      "default": "on"
+    },
+    "canvasmode": {
+      "type": "string",
+      "title": "Canvas: on or off",
+      "description": "Keeps a Figma-like project canvas current: every screen per journey, the flow, and a short Why card per journey. on (default) or off. A project's .wwjd.json \"canvasMode\" wins.",
       "options": ["on", "off"],
       "default": "on"
     },
