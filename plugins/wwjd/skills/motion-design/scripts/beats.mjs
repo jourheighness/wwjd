@@ -3,7 +3,7 @@
 //
 // Usage: node beats.mjs <command> [file]   (default file: ./motion.beats.json)
 //   check   the story, shot, staging and timing rules (SKILL.md S, ST, O, T, X, E): errors first. Exit 1 on errors.
-//   table   the beat sheet as a Markdown table, the one to show the owner for approval
+//   table   the beat sheet as a Markdown table, the one to show the person for approval
 //   init    write a starter motion.beats.json (never overwrites)
 //   --json  machine output for check
 // Times are seconds from the start of the piece, every time absolute. The format: references/workflow.md.
@@ -126,7 +126,8 @@ export function check(m) {
   for (const mv of travel) {
     const d = mv.to - mv.from;
     if ((mv.kind === "enter" || mv.kind === "move") && d < 0.4) add("move-short", "warn", `${mv.what} ${mv.kind}s in ${round(d)} s.`, "A story move takes 0.5-0.9 s; under 0.4 s it reads as a glitch (T1).");
-    if ((mv.kind === "enter" || mv.kind === "move") && d > 1.6) add("move-long", "warn", `${mv.what} ${mv.kind}s for ${round(d)} s.`, "Longer than a scene change; shorten it or make it the camera's move (T1).");
+    const cap = mv.kind === "move" ? 2.2 : 1.6; // something carried across the frame (data in flight) may take up to 2.2 s
+    if ((mv.kind === "enter" || mv.kind === "move") && d > cap) add("move-long", "warn", `${mv.what} ${mv.kind}s for ${round(d)} s.`, mv.kind === "move" ? "Past 2.2 s even a carried thing drags; shorten it or let the camera carry it (T1)." : "Longer than a scene change; shorten it or make it the camera's move (T1).");
     if (mv.kind === "camera" && d < 0.8) add("move-short", "warn", `A camera move of ${round(d)} s.`, "Camera moves take 1.2-2 s; a fast camera loses the eye (T1).");
     if (mv.kind === "exit" && medianEnter && d > medianEnter * 0.9) add("exit-long", "warn", `${mv.what} leaves in ${round(d)} s, as slow as things enter.`, "Exits take ~2/3 of the entrance: nobody waits to watch something leave (T2).");
   }
@@ -153,7 +154,7 @@ export function check(m) {
   return F.sort((a, b) => SEV.indexOf(a.severity) - SEV.indexOf(b.severity));
 }
 
-/** The beat sheet as a Markdown table for the owner. */
+/** The beat sheet as a Markdown table for the person to approve. */
 export function table(m) {
   const head = `**${m.title || "Beat sheet"}**: ${m.message || "(no message)"}\n` +
     (m.abt ? `And ${m.abt.and || "…"} · But ${m.abt.but || "…"} · Therefore ${m.abt.therefore || "…"}\n` : "") +

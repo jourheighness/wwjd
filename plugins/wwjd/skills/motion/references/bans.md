@@ -1,6 +1,6 @@
 # Motion bans: the tell → instead
 
-Each ban names its replacement. Extends wwjd:ux's `references/bans.md`; for motion this file wins (more specific wins).
+Extends wwjd:ux `references/bans.md`; for motion this file wins. Breaking a SKILL.md §3 rule (`transition: all`, layout properties, > 500ms, `ease-in`, locked clicks) is a tell too; set state first, motion follows.
 
 | Tell | Instead |
 |---|---|
@@ -9,7 +9,7 @@ Each ban names its replacement. Extends wwjd:ux's `references/bans.md`; for moti
 | Parallax layers on everything | Static; one depth layer only if it carries the idea, off on reduced motion |
 | Bouncing scroll chevron, pulsing CTA, ping dots | Nothing; a clear next section edge above the fold |
 | Custom cursor, cursor followers, magnetic buttons | The system cursor |
-| Typing effect on a headline | The headline, set |
+| Typing or word-by-word reveal on a headline | The headline, set |
 | Count-up on page load | The number, set; animate only when it changes |
 | Chart bars or lines growing in | Chart drawn; new data points crossfade in place |
 | `scale(0)` entrance, bounce or elastic easing | Opacity + `scale(.95–.98)`, ease-out; `springy` ≤2% overshoot on transform |
@@ -22,12 +22,7 @@ Each ban names its replacement. Extends wwjd:ux's `references/bans.md`; for moti
 | Hover lift + shadow-grow on cards | Border or background tone step |
 | Motion on keyboard actions, palette, context menu | Instant |
 | Theme switch transitions (colours fading on every element) | Instant switch; at most a root view-transition crossfade |
-| `transition: all` | Name the properties |
-| Animating width, height, top, left, margin, padding | `transform`; height via grid rows, `<details>` or FLIP |
-| Durations over 500ms on UI feedback | ≤300ms typical; exits faster |
-| `ease-in` on an entrance, `linear` on UI | `--ease-out`; `linear` only for progress and scroll-linked |
 | Lottie or video loops that never stop | Pause off-screen, on reduced motion, and give a pause control past 5s |
-| Locking clicks until an animation ends, `animationend` setting final state | Transitions that reverse; state set first, motion follows |
 
 ## Lint ideas (static check)
 - `transition: all` or `transition-property: all`.

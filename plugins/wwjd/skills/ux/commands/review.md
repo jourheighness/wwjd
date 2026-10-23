@@ -1,6 +1,6 @@
 # review: verdict and ranked findings
 
-Review like an experienced designer: in one glance, by cutting. No scores. The owner reads a verdict and ranked fixes.
+Review like an experienced designer: in one glance, by cutting. No scores: a verdict and ranked fixes.
 
 ## Look in this order
 1. **Clutter and text volume:** what can go?
@@ -8,17 +8,17 @@ Review like an experienced designer: in one glance, by cutting. No scores. The o
 3. **Edges and spacing:** stepped margins, cramped parts, clipped outlines, misaligned starts.
 4. **Movement:** jumps, re-sorts, unwanted animation.
 5. **Glance test:** does the view answer its question in 5 seconds at its primary width with real data?
-6. **Foreign parts:** anything that doesn't feel like the product, or looks broken though it works.
+6. **Foreign parts:** anything off-brand, or that looks broken though it works.
 7. **Signals:** too faint to notice, or a list with no priority.
-8. **Workaround features:** a "classic view" toggle, "Recently visited" promoted to main nav, a mobile skin for a desktop problem, a half-finished migration. Each names a failing area.
+8. **Workaround features** (glossary): each names a failing area.
 
 ## Procedure
-1. **Context:** the entry reads (SKILL.md), the register, the spec if any.
-2. **Render:** `render.mjs shoot` at both widths × light/dark; populated, empty, worst case (`rules/states.md`). `wwjd.mjs check` on the files.
-3. **What works, first,** in a few lines (calibration, not padding). Each deviation from the rules is intentional (applied consistently: note it), accidental (a finding) or unclear (ask).
-4. **Budgets and grades:** every surface against `references/budgets.md`, its job named first (`budgets.md` Expose by job, Grade gate). Over budget is a finding, with where the overflow goes; on an expose surface, a hidden item the job needs is the finding.
+1. **Context:** the entry reads (SKILL.md § 0), the register, the spec if any.
+2. **Render:** `render.mjs shoot` at 1440 and 390 × light/dark; populated, empty, worst case (`rules/states.md` § Worst-case data). `wwjd.mjs check` on the files.
+3. **What works, first,** in a few lines. Each deviation from the rules is intentional (applied consistently: note it), accidental (a finding) or unclear (ask).
+4. **Budgets and grades:** every surface against `references/budgets.md`, its job named first. Over budget is a finding, with where the overflow goes; on an exposure surface, a hidden item the job needs is the finding.
 5. **UX laws pass** (below).
-6. **Findings, ranked** by severity (**blocks** the task · **major**, incl. any floor failure · **minor**). Each one: the element, where (`file:line` or screen), the rule it breaks, one concrete fix, stated as a count where possible ("Remind me later" ×4; 8 widgets at equal weight). Merge instances into their pattern; cross-screen patterns rank first.
+6. **Findings, ranked** by severity (**blocks** the task · **major**, incl. any Floor failure · **minor**). Each: the element, where (`file:line` or screen), the rule it breaks, one concrete fix, as a count where possible ("Remind me later" ×4). Merge instances into their pattern; cross-screen patterns rank first.
 7. **Fault in the kit?** Say so: the fix goes to the component and its story, not each call site.
 8. **Verify** every finding in the render or the code; drop what you can't point at.
 
@@ -29,24 +29,19 @@ Review like an experienced designer: in one glance, by cutting. No scores. The o
 - **Mocks:** one line listing each `TODO(api)` and what the backend must provide.
 
 ## UX laws pass
-1. Obvious where to look first; nothing to remember that could be shown; a stranger gets it in 5 seconds.
-2. Squint test (`references/bans.md` Quick tests).
+1. One focal element per view; nothing to remember that could be shown.
+2. Squint test (`references/bans.md` § Quick tests).
 3. ≤ ~7 ungrouped items per section; groups match the real logic.
 4. Same function looks the same; different function looks different.
 5. Options are distinct (five clear beat three vague); the frequent choice is the default.
-6. Primary first or last, never mid-set; one focal element per view.
-7. Wayfinding: where am I, how did I get here, how do I get back; the active state shows by more than colour.
-8. The core task finishes at the first layer; options appear once they can apply.
-9. Nothing used daily is buried in ⋯; nothing critical lives only in a tooltip.
-10. No step asks for what the system knows; input is accepted generously.
-11. Response times: `rules/states.md`. Never fake progress.
-12. The action sits next to its object, and stays with the widget that informed it.
-13. The flow map has no orphans, duplicate routes, dead ends or circles (`wwjd:flow`'s check, when the project keeps `wwjd.flow.json`).
-14. An interrupted flow resumes exactly.
-15. The flow ends on the result; error recovery is designed too.
-16. No pressure counts, receipts or reassurance anywhere in the flow.
-17. Path count: every decision from landing to result, compared with the category's best.
+6. Wayfinding: where am I, how did I get here, how do I get back; the active state shows by more than colour.
+7. The core task finishes at the first layer; nothing used daily is buried in ⋯; nothing critical lives only in a tooltip.
+8. No step asks for what the system knows; input is accepted generously.
+9. The action sits next to its object and stays with the widget that informed it.
+10. Flow: no orphans, duplicate routes, dead ends or circles (`wwjd:flow`'s check, when the project keeps `wwjd.flow.json`); interrupted flows resume exactly; it ends on the result; error recovery is designed.
+11. No pressure counts, receipts or reassurance anywhere in the flow.
+12. Path count (glossary), compared with the category's best.
 
 ## On request only
 - **Cold review:** the `wwjd-critic` agent, in the background after handover (required at Strictness 5, `references/dials.md`).
-- **Expert lenses** (UI, UX, interaction, reviewed separately, then merged) and **personas** (a role and a goal, no prior knowledge: first-time admin, busy specialist, keyboard-only user) clicking through and reporting where they hesitated. Heavy in rebuilds, light in polish; never a gate the user didn't ask for.
+- **Expert lenses** (UI, UX, interaction, reviewed separately, then merged) and **personas** (a role and a goal, no prior knowledge: first-time admin, keyboard-only user) clicking through and reporting where they hesitated. Never a gate the person didn't ask for.

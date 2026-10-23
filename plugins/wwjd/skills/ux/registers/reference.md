@@ -5,14 +5,14 @@ Profile: `data-profile="docs"`, primary widths 1440 and 390 alike. Colour: atten
 Success: the reader finds the answer and leaves. Use a mature docs framework (Starlight, Fumadocs, Nextra, Docusaurus) before hand-rolling. Layouts: `docs`, `changelog`.
 
 - **Page types don't mix:** tutorial (learn by doing), how-to (a task), reference (facts, complete), explanation (why).
-- **Three panes:** nav tree, a 65–80ch content column (it includes code; prose keeps the reading measure, code may break out wider), on-page contents. Mono only for code and identifiers.
+- **Three panes:** nav tree, a 65–80ch content column (code may break out wider), on-page contents.
 - **Wayfinding on every page:** breadcrumbs, previous/next, a version switcher where versions exist, last-updated date, "edit this page".
-- **Search is the front door:** ⌘K / Ctrl+K or `/` (single-key shortcuts can be turned off or remapped). Results show section breadcrumbs. Zero results suggest the nearest page and keep the query.
+- **Search is the front door:** ⌘K / Ctrl+K or `/` (`rules/actions.md` single-key shortcuts). Results show section breadcrumbs. Zero results suggest the nearest page and keep the query.
 - **Headings** have stable slugs with copy-link on hover; renames get redirects.
 - **Code blocks:** highlighting tuned for both themes, a copy button, a filename or language tab, line highlights and diffs. They scroll inside the block, never the page.
 - **Synced tabs** (language, package manager) remember the choice across pages.
 - **API tables:** name, type, required, default, description; every row present.
-- **Callouts:** ≤4 kinds (note, tip, warning, danger), icon + word, no emoji. A page that's mostly callouts needs rewriting.
+- **Callouts:** ≤4 kinds (note, tip, warning, danger), icon + word, no emoji. A page that's mostly callouts gets rewritten.
 
 ## Tells to avoid
 - A marketing hero on the docs home; empty "Introduction" pages; gradient headers.

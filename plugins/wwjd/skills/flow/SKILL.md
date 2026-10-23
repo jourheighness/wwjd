@@ -1,12 +1,12 @@
 ---
 name: flow
-description: 'How the app works as a whole (wwjd): screens, the ways between them and the journeys people take, written as data in wwjd.flow.json and checked for dead ends, traps, unguarded deletes and missing states before screens are built. Use before building a new app, adding or changing a screen, or reworking navigation. Pairs with wwjd:ux, which owns each screen; its Floor wins.'
-when_to_use: '"user flow", "how does the app work", "journey", "navigation", "sitemap", "what happens after…", "add a screen", a new app or product.'
+description: 'How an app works as a whole (wwjd): screens, the ways between them and journeys, written in wwjd.flow.json and checked for dead ends, traps and missing states. Use before a new app, a new or changed screen, or navigation work.'
+when_to_use: '"user flow", "journey", "navigation", "sitemap", "what happens after…", "add a screen", a new app.'
 compatibility: scripts need Node 20.10+, no dependencies.
 ---
 
 # Flow
-Screens built one at a time leave gaps between them. Write the app's structure first, let the checker find the flow bugs, then build.
+Screens built one at a time leave gaps between them: write the structure first, let the checker find flow bugs, then build.
 
 ## When
 On with the Flow setting (default on): `/wwjd` → Settings, for you (the `flowmode` option) or this project. `"flowMode": "off"` in `.wwjd.json` wins. Off: skip this skill.
@@ -23,5 +23,5 @@ On with the Flow setting (default on): `/wwjd` → Settings, for you (the `flowm
 
 ## Lookups
 - Full schema and every rule with its source: `references/model.md`.
-- The research behind the rules and patterns (NN/g, Baymard, GOV.UK, WCAG 2.2, platform guides, cancel and consent law): `references/sources.md`.
+- The research behind the rules and patterns: `references/sources.md`.
 - Keeping the project canvas current: `references/canvas.md`, when the Canvas setting is on.

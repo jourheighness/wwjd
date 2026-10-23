@@ -21,7 +21,7 @@
   --ease-spring: var(--ease-drawer); --dur-spring: var(--dur-pop);
   --pop-scale: .96; --press-scale: .97; --enter-y: 12px;
 }
-/* M3 Expressive springs on transform only: spatial .8/380 (≈1.2% overshoot), moves .9/700. Persuade, Showcase, Native */
+/* M3 Expressive springs on transform only: spatial .8/380 (≈1.2% overshoot), moves .9/700. Persuade, Showcase, playful */
 [data-motion="springy"] {
   --dur-fast: 120ms; --dur-pop: 180ms; --dur-modal: 320ms;
   --ease-spring: linear(0, .025 2.8%, .102 6%, .536 18.5%, .717 24.8%, .848 31%, .934 37.5%, .988 45%, 1.012 54.5%, 1);

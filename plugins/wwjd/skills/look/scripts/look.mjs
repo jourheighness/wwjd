@@ -134,7 +134,7 @@ const CLASH = [
   ['indigo-default', x => !x.brand && x.accent != 'mono' && x.hue >= 265 && x.hue <= 320, 'an indigo/violet accent without a brand is the generated default (bans.md); give a brand hex or another hue'],
   // bans are for new choices: the project's own faces ("lock": ["fonts"]) stay whatever they are
   ['trend-font', x => !x.lock?.includes('fonts') && TREND.test(JSON.stringify(x.fonts || {})), 'a trend face (bans.md lane 5): pick by job, or keep the project font (its own faces: "lock": ["fonts"])'],
-  ['ink-chroma', x => x.inkChroma > .03, 'ink chroma above the .03 cap needs a reference card and the owner\'s OK'] ];
+  ['ink-chroma', x => x.inkChroma > .03, 'ink chroma above the .03 cap needs a reference card and the person\'s OK'] ];
 
 const die = (msg, code = 2) => { console.error(msg); process.exit(code); };
 const normNeutral = v => { const p = String(v).split('/'); const t = p.find(q => q in TEMP) || 'stone', c = p.find(q => q in CHROMA) || 'quiet'; return `${t}/${c}`; };
@@ -458,7 +458,7 @@ if (!look.register) { const g = registerOf(out, root); if (g) look.register = g;
 if (args.design) look.fixed = { ...designColors(args.design), ...(look.fixed || {}) };
 const fp = look.fixed?.primary || look.fixed?.accent; if (/^#/.test(fp || '')) look.brand = fp; // a pinned primary is the brand: dark, hover and link derive from it
 const x = resolve(look), bad = clashes(x, look.allow);
-if (bad.length) die(`rejected: ${bad.join('; ')}. Change an axis, or add the id to "allow" once the owner agrees.`, 1);
+if (bad.length) die(`rejected: ${bad.join('; ')}. Change an axis, or add the id to "allow" once the person agrees.`, 1);
 fs.mkdirSync(wdir, { recursive: true }); fs.mkdirSync(out, { recursive: true });
 if (!fs.existsSync(path.join(wdir, '.gitignore'))) fs.writeFileSync(path.join(wdir, '.gitignore'), '*\n');
 const B = build(look, x), au = audit(B), line = AXES.map(k => x[k]).join(' · ');

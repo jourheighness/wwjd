@@ -1,6 +1,6 @@
 # Dials
 
-Six dials tune how wwjd designs, never what is correct. Each runs between two named ends; the middle stop is wwjd as written (the product type decides). Set them under Settings in the `/wwjd` sidebar (one segmented row per dial, for you or for this project), with `/plugin configure wwjd@wwjd` or `/config`, or per project in `.wwjd.json` `"dials"`. Nudge one request with words; the prompt hook names the nudge. `wwjd.mjs dials` prints the non-default dials with what each does. Source of truth: `scripts/dials-spec.mjs`.
+Six dials tune how wwjd designs, never what is correct. Each runs between two named ends; the middle stop is wwjd as written (where the product type decides). Set them in the `/wwjd` sidebar under Settings (per person or per project), with `/plugin configure wwjd@wwjd` or `/config`, or per project in `.wwjd.json` `"dials"`. `wwjd.mjs dials` prints the non-default dials and what each does. Source of truth: `scripts/dials-spec.mjs`.
 
 **Precedence:** SKILL.md §1. A dial never breaks contrast, targets, states or the budgets' overflow rules; a DESIGN.md that owns the look outranks Look.
 
@@ -47,16 +47,16 @@ Six dials tune how wwjd designs, never what is correct. Each runs between two na
 ## Strictness: fast ↔ strict (`strictness`)
 How hard the agent is on its own work: grading before it builds, checks after. Hooks enforce it (`scripts/gate.mjs`) unless Hooks is quiet or off; the checks are owed either way.
 - **Before:** from 4, a new UI file waits for a grade sheet written this session.
-- **After:** from 2, the first stop after a run of UI edits names every check below that can run and is not yet newer than the last UI edit, at most twice a turn; one that can't run is said in the handover. The gate asks only for what can run and matters: render checks need a page to point at (an edited `.html` file or `WWJD_PREVIEW`); the phone-width fit check only where the product has phone screens (not Operate or Monitor, unless `.wwjd.json` "devices" names "phone"); a Design canvas, a plugin file, a page about the work (a plan, brief, report or review) or an edit that only touches comments needs no checks. Fit and runtime measure an animated page at rest (reduced motion, animations settled). While the person is exploring ("just exploring", "verify later") the checks are held until they say keep. `.wwjd/shots/UNAVAILABLE` stands in when no renderer can run. The checks are between the gate and Claude: the `/wwjd` sidebar never shows them.
-- **Also from 2:** a clean `flow.mjs check` while Flow is on and the project keeps `wwjd.flow.json` (owed only while it has errors); a canvas publish while Canvas is on and `.wwjd.json` links one. Logging decisions is the skill's job (SKILL.md Loop), never a gate.
+- **After:** from 2, the first stop after a run of UI edits lists every check below that can run and has not run since the last UI edit (at most twice a turn); a check that can't run is named in the handover. Owed only where it can run and matters: render checks need a page (an edited `.html` file or `WWJD_PREVIEW`); phone-width fit only for products with phone screens (not Operate or Monitor unless `.wwjd.json` "devices" names "phone"); a Design canvas, plugin file, page about the work (plan, brief, report, review) or comment-only edit owes none. Animated pages are measured at rest. While the person is exploring ("just exploring", "verify later"), checks wait until they say keep. `.wwjd/shots/UNAVAILABLE` stands in when no renderer can run.
+- **Also from 2:** a clean `flow.mjs check` while Flow is on and `wwjd.flow.json` has errors; a canvas publish while Canvas is on and `.wwjd.json` links one. Logging decisions is never gated (SKILL.md §5).
 - **1 Fast:** Over-budget surfaces graded in your head; after: lint only.
 - **2 Light:** Over-budget surfaces graded in your head; after: lint and one screenshot at the main width.
 - **3 Standard (default):** Over-budget surfaces graded in your head; after: lint, screenshots at desktop and phone width and a clean fit check.
 - **4 Careful:** A written grade sheet per over-budget surface before it is built; after: adds dark mode, the key states and render.mjs runtime checks.
 - **5 Strict:** Grade sheets; after: adds the critic agent, and explore's variants before building.
-- One critic run covers the surfaces built so far: applying its findings owes no second run, a new UI file does.
-- Nudge words, as instructions only: "be thorough", "carefully", "polish it" / "quick fix", "rough draft", "just ship it". A complaint ("too quick", "really rough") moves nothing: it asks for more care.
+- One critic run covers the surfaces built so far: applying its findings owes no second run; a new UI file does.
+- Nudge words, as instructions only: "be thorough", "carefully", "polish it" / "quick fix", "rough draft", "just ship it". A complaint ("too quick", "really rough") moves no dial; it asks for more care.
 
 ## Using them
-- **A nudge moves one dial one stop for that request only,** and the handover names it ("Look 4, Bold, for this page").
-- **Grading is never off,** only how it is written down: Strictness 4 and up makes it a file before the build, 1–3 keep it in your head.
+- **Nudge words in a request move one dial one stop for that request only;** the prompt hook names the nudge, the handover repeats it ("Look 4, Bold, for this page").
+- **Grading is never off;** Strictness only sets whether it is written down (`budgets.md` Grade gate).

@@ -1,14 +1,14 @@
 # Themes per product type
 
-Theme sets the numbers; the register still decides what may move. `springy` never in Operate, Monitor, Flow or Transact.
+The theme sets the numbers; the register decides what may move (`springy` limits: SKILL.md §2).
 
 ## Theme definitions
-| Theme | Tokens | Model | Reference systems |
-|---|---|---|---|
-| `instant` | 80/100/160ms, `--pop-scale: 1`, `--enter-y: 0` | Opacity only | IBM Carbon productive (fast-01 70ms, fast-02 110ms); Atlassian "frequent stays under 150ms" |
-| `crisp` | 120/160/220ms, `.97`, `.98` press, 8px | Ease-out from near-size | Emil Kowalski's curves and durations; NN/g 100–300ms |
-| `smooth` | 180/240/320ms, `.96`, 12px, drawer curve | Long deceleration | iOS sheet curve (Vaul); Fluent 2 gentle/slow 250–300ms |
-| `springy` | 120/180/320ms + 420ms spring, `.95`, 16px | Damping .8 / stiffness 380 spatial; .9/700 for moves | Material 3 Expressive spatial springs; SwiftUI `.snappy` |
+| Theme | Tokens | Model |
+|---|---|---|
+| `instant` | 80/100/160ms, `--pop-scale: 1`, `--enter-y: 0` | Opacity only (IBM Carbon productive; frequent stays under 150ms) |
+| `crisp` | 120/160/220ms, `.97`, `.98` press, 8px | Ease-out from near-size |
+| `smooth` | 180/240/320ms, `.96`, 12px, drawer curve | Long deceleration (iOS sheet curve) |
+| `springy` | 120/180/320ms + 420ms spring, `.95`, 16px | Damping .8 / stiffness 380 spatial; .9/700 for moves (Material 3 Expressive) |
 
 ## Product type → theme → signature moments
 | Product type | Register | Theme | Signature moments (everything else: none) |
@@ -29,5 +29,4 @@ Theme sets the numbers; the register still decides what may move. `springy` neve
 | Government, public service, forms that must work for all | Flow | `instant` | None. GOV.UK components ship no motion; that is the bar |
 
 ## Mixing
-- One theme per product; a landing page and its app may differ (`springy` site, `crisp` app).
-- Inside a hybrid, the inner region keeps its own register's theme (a chat panel inside a dashboard stays `crisp`).
+- A landing page and its app may differ (`springy` site, `crisp` app); an inner region keeps its own register's theme (a chat panel in a dashboard stays `crisp`).

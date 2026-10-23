@@ -229,7 +229,7 @@ try {
   }
 } catch { /* no log yet */ }
 // ── "Why it looks like this": one summary card per journey row, beside its screens ──
-// Johannes stepped in first (the saves), then what Claude decided (UX or UI, one line why), then its guesses to check.
+// Where a wwjd rule stepped in first (the saves), then what the agent decided (UX or UI, one line why), then its guesses to check.
 const short = (x) => x.title || String(x.text || "").split(/[,;:(]|\s[—–]\s/)[0].trim().split(/\s+/).slice(0, 7).join(" ");
 const live = [...decisions.values()].filter((x) => !x.kept && (x.title || x.text));
 const CARD = 480, INNER = CARD - 64;

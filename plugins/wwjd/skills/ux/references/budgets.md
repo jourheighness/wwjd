@@ -1,10 +1,14 @@
 # Surface budgets
 
-Every surface has a range. Below the minimum it is too thin to earn its own box (merge it); above the maximum something moves or goes. A project's DESIGN.md may override a row.
+Every surface has a range. Below the minimum it is too thin to earn its own box: merge it. Above the maximum something moves or goes. A project's DESIGN.md may override a row.
 
-**Facts** = visible pieces of information (a label + value is one). **Actions** = visible controls besides the whole-surface click. The identifier, legal, consent, price (commerce) and safety text never count against the budget and never move.
+**Facts** = visible pieces of information (a label + value is one). **Actions** = visible controls besides the whole-surface click. The identifier, legal, consent, price (commerce) and safety text never count and never move.
 
-**Expose by job.** The job picks the kind. *Budget surfaces* (glance, decide, one-off: card, row, hero, dialog…) cut and move. *Exposure surfaces* (configure, review, compare, bulk edit, audit, inspect: rows marked **expose**) show everything the job needs; their numbers cap a group, never the page. Overflow there is organised, never hidden: split into headed sections; ≥5 sections: a sticky anchor index with the current section marked; ≥8 sections or ≥40 settings: search; tables: sticky header, frozen identifier, density, a column chooser the person controls, "Hide identical rows" in compare; not applicable: dimmed with its value kept, never removed. Disclose only what is rare (a small minority uses it, last section, one level), destructive (danger zone, last, visible), or dependent (child follows its parent). Never an expander, "Show more", tooltip or hover peek around settings, answers, columns or properties the job needs. The person's own editable data is content, not clutter.
+**Expose by job.** The job picks the kind. *Budget surfaces* (glance, decide, one-off: card, row, hero, dialog…) cut and move. *Exposure surfaces* (configure, review, compare, bulk edit, audit, inspect: rows marked **expose**) show everything the job needs; their numbers cap a group, never the page. Organise overflow there, never hide it:
+- headed sections; ≥5 sections: a sticky anchor index marking the current one; ≥8 sections or ≥40 settings: search;
+- tables: sticky header, frozen identifier, density, a column chooser the person controls; compare: "Hide identical rows";
+- not applicable: dimmed with its value kept, never removed.
+- Disclose only the rare (a small minority uses it: last section, one level), the destructive (danger zone, last, visible) and the dependent (child follows its parent). Never an expander, "Show more", tooltip or hover peek around settings, answers, columns or properties the job needs. The person's own editable data is content, not clutter.
 
 **Grades** (one per fact; this file is their home):
 | Grade | Means | Gets |
@@ -13,7 +17,7 @@ Every surface has a range. Below the minimum it is too thin to earn its own box 
 | Delights | true, specific, makes it feel better or more trustworthy; never copy about the interface | at most one moment where the surface has room |
 | Nothing | changes nothing; includes raw inputs when their derived answer shows | cut |
 
-Example, coffee delivered by drone: arrival time decides; "68 °C in your hands" delights, so it gets its own line; the distance is an input to the time, so it is nothing.
+Example, drone coffee delivery: arrival time decides; "68 °C in your hands" delights (its own line); distance, an input to the time, is nothing.
 
 | Surface (`--surface`) | Facts | Actions | Overflow goes to |
 |---|---|---|---|
@@ -39,7 +43,7 @@ Example, coffee delivered by drone: arrival time decides; "68 °C in your hands"
 | Dialog (`dialog`) | title + ≤2 sentences + ≤3 fields | 1 primary + 1 secondary | a page or drawer |
 | Drawer, peek (`drawer`) | identifier + ≤8 facts in groups | 1 primary + 1 secondary + ⋯ | the full record page, the inspector |
 | Popover (`popover`) | ≤5 facts | ≤2 | the detail view |
-| Tooltip (`tooltip`) | 1 line, non-essential | 0 | (essential info never lives here) |
+| Tooltip (`tooltip`) | 1 line, non-essential | 0 | – (essentials never live here) |
 | Toast (`toast`) | 1 line | ≤1 (Undo) | activity log |
 | Menu (`menu`) | ≤7 ungrouped, or groups of ≤5; longer only grouped + type-ahead | – | search inside the menu, sub-menu |
 | Toolbar | – | 1 primary + ≤3 visible tools (icon toggles, filters) | ⋯ |
@@ -50,39 +54,33 @@ Example, coffee delivered by drone: arrival time decides; "68 °C in your hands"
 | Notification item (`notification`) | 1 line + time | ≤1 | the thing it points to |
 
 ## When it overflows
-Budget surfaces only. On an **expose** surface nothing is cut for count: drop only what restates or explains, then organise with the Expose-by-job tools; a group over its cap splits, it never folds.
-1. **Inclusion needs proof.** Ask "should this stay?", never "should this go?". An item stays only if the person needs it here to decide or act now; on a budget surface the default is out.
-2. **Ask about the bad habits directly,** per item, before ranking anything:
-   - Does it restate something already visible?
-   - Is it explaining another element or the interface, rather than being content?
-   - Would the person notice if it were gone?
-   - Is it needed now, or only later or elsewhere?
-   An item that restates or explains never stays, however "important" it sounds.
-3. **Throw away** what nobody would miss: system facts (sync time, internal IDs, warehouse), inputs whose answer is shown, duplicates.
+Budget surfaces only. On an **expose** surface nothing is cut for count: drop only what restates or explains, then organise as above; a group over its cap splits, never folds.
+1. **Inclusion needs proof.** Ask "should this stay?", never "should this go?". An item stays only if the person needs it here to decide or act now; the default is out.
+2. **Test each item before ranking:** does it restate something visible? Explain another element or the interface? Would the person notice it gone? Is it needed now, or only later or elsewhere? An item that restates or explains never stays, however important it sounds.
+3. **Throw away** what nobody would miss: system facts (sync time, unless staleness changes a decision; internal IDs, warehouse), inputs whose answer is shown, duplicates.
 4. **Keep** what earned its place, ranked, up to the max, plus at most one "delights" moment where the surface has room (hero, empty state, success). A free slot stays empty unless an unsure item is justified.
-5. **Move** the rest one step away, by kind; explainers move, they don't vanish:
-   - an explanation of something visible → tooltip (never essential);
+5. **Move** the rest one step away, by kind:
+   - explanation of something visible → tooltip (never essential);
    - teaching copy → the empty state or one-time onboarding;
    - more of the same kind → "Show more" or expand in place;
    - details of this object → the detail view, peek or side panel;
    - more actions → ⋯ or the hover toolbar (never the only path on touch);
-   - a comparison → a table or page of its own; a preference → settings.
-6. **Swap, never grow.** To bring a cut item back, name the shown item it replaces. The budget is fixed.
+   - a comparison → its own table or page; a preference → settings.
+6. **Swap, never grow.** To bring a cut item back, name the shown item it replaces.
 7. **Say where it went** in the handover, one line per moved group ("SKU, weight → product page specs").
-8. **Keep the sheets:** the answered `.wwjd/grade/*.md` sheets are the record of what was cut. Something cut again and again (subtitles, "Learn more", helper text under every field) becomes a ban in `bans.md` or DESIGN.md, so it stops being proposed.
+8. **Keep the sheets:** answered `.wwjd/grade/*.md` sheets record what was cut. Something cut repeatedly (subtitles, "Learn more", helper text under every field) becomes a ban in `bans.md` or DESIGN.md.
 
 ## Grade gate
-Set by the Strictness dial: 4 and up writes a sheet (gate), 1–3 grade in your head (light); `wwjd.mjs status` prints which. With the gate, a hook refuses a new UI file until a `.wwjd/grade/*.md` from this session exists. A surface within budget, or an expose surface: the sheet is one line naming the surface, its job and its kind ("Profile settings: configure, expose").
-- **When:** a surface has more candidate facts than its budget: once, before building or simplifying it. Never per edit. Expose surfaces skip the count; grade only for restating, explaining and system facts. Name the job first; a settings page is never graded as a drawer.
-- **gate:** write the spec, run `grade.mjs` and answer its sheet in `.wwjd/grade/<surface>.md` before the surface's markup. The sheet is the gate: no sheet, no build.
-- **light:** the same questions in your head; the handover still says what moved and where.
-- **Spec in a minute,** from the inventory you already have, at `.wwjd/grade/<surface>.json`:
+The Strictness dial sets it (`dials.md`): 4 and up writes a sheet (gate), 1–3 grade without one (light); `wwjd.mjs status` prints which. Under the gate, a hook refuses a new UI file until a `.wwjd/grade/*.md` from this session exists. A surface within budget, or an expose surface: the sheet is one line naming surface, job and kind ("Profile settings: configure, expose").
+- **When:** once per surface with more candidate facts than its budget, before building or simplifying it; never per edit. Name the job first: a settings page is never graded as a drawer. Expose surfaces skip the count and grade only for restating, explaining and system facts.
+- **gate:** spec, `grade.mjs`, answered sheet, then markup. **light:** the same questions without a file; the handover still says what moved where.
+- **Spec**, from the inventory already gathered, at `.wwjd/grade/<surface>.json`:
 ```json
 { "goal": "find the order a customer is asking about", "surface": "order row in the support inbox",
   "surfaceType": "row", "job": "decide", "keep": ["customer"],
-  "items": { "customer": "Anna Berg", "total": "1 240 kr", "status": "Refund requested", "synced": "Synced 2 min ago" },
+  "items": { "customer": "Anna Berg", "total": "€1,240", "status": "Refund requested", "synced": "Synced 2 min ago" },
   "object": "order", "actions": { "refund": "Refund", "reply": "Reply" },
   "states": { "refund_requested": "the customer asked for a refund" } }
 ```
-  `job` is required: glance, decide, configure, review, compare, bulk-edit, audit, inspect, flow or persuade. `regions`, `actions` and `states` are optional; `keep` lists what never counts (identifier, legal, price, consent).
-- **Run** `node <skill>/scripts/grade.mjs .wwjd/grade/<surface>.json`; it prints the budget (or, on an expose surface, the organise rules), the items and the rules. Answer one line per item in `.wwjd/grade/<surface>.md`, then build only the `show` items and place the rest where their line says.
+  `job` is required (glance, decide, configure, review, compare, bulk-edit, audit, inspect, flow, persuade). `regions`, `actions` and `states` are optional; `keep` lists what never counts (identifier, legal, price, consent).
+- **Run** `node <skill>/scripts/grade.mjs .wwjd/grade/<surface>.json`: it prints the budget (or the organise rules on an expose surface), the items and the rules. Answer one line per item in the `.md`, build only the `show` items, place the rest where their line says.

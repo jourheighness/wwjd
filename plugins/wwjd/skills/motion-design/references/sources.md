@@ -69,7 +69,6 @@
 - Banner ads, 15 s and 3 loops: https://ads.apple.com/apple-news/advertisers/help/ad-specs/0116-iab-banner-specs
 
 ## Gaps
-- No frame-level numbers published by Buck, Ordinary Folk, Giant Ant or Apple's agencies; their teaching is in paid courses.
 - Story-scale durations (an entrance 0.5-0.9 s, a camera move 1.2-2 s) are a synthesis: the top of UI scales below them, animation and film figures above.
 - The 3-6 s shot, the 2 s final hold and the 60% carried-object share are working numbers, not studied ones.
-- The owner's rules (2026-10-20 to 10-22) were made on real scenes and win where they differ.
+- Numbers marked "tested on production scenes" come from watching real pieces and win where they differ from a source.

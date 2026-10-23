@@ -54,7 +54,7 @@ test("story and shots: no message, no reason out, four equal beats, big moments 
   for (const k of ["message", "abt", "end", "transition", "subject", "change", "rhythm", "big", "hook"]) assert.ok(r.includes(k), `${k} in ${r.join(", ")}`);
 });
 
-test("errors sort first, and the table shows the holds the owner reads", () => {
+test("errors sort first, and the table shows the holds the person reads", () => {
   const m = base([shot("a", 0, 3, { text: "Publish once", textAt: 2, moves: [{ what: "a", kind: "enter", at: 0.2, dur: 0.3 }] })], { pause: false });
   const F = check(m);
   assert.equal(F[0].severity, "error");

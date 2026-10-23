@@ -1,6 +1,6 @@
 # Baseline: the ground
 
-For a project with no design system, so a screen never comes out as raw HTML or an untouched library default. The project's own tokens and kit win; this fills gaps.
+For a project with no design system, so no screen ships as raw HTML or an untouched library default. The project's own tokens and kit win; this fills gaps.
 
 - **Tokens:** `kit/tokens.css`, the default look preset (stone neutral, flat, Inter, radii 4/6/8/12). `wwjd:look` may replace it under the same variable names; never rename one. Re-check contrast after any change (4.5:1 text, 3:1 edges and focus).
 - **Structure:** `kit/base.css` (components, `data-profile` type and rhythm, `data-density`); page frames in `kit/layouts.css`. Their comments carry the values.
@@ -37,24 +37,24 @@ For a project with no design system, so a screen never comes out as raw HTML or 
 | `.table`, `.row`, `.group-header` | Plain; sticky headers, `.num` end-aligned |
 | `.card`, `.empty`, `.skeleton`, `kbd` | Plain; skeletons static, no shimmer |
 | `.flow`, `.breakout` | Prose rhythm; reading column with feature/full breakouts |
-| `.chrome`, `.material`, `.t-accent-2` | Only with the look tokens behind them (wwjd:look surface chrome / translucent, accent dual): a dark sidebar or bar, one frosted Native bar or sheet, one secondary category |
+| `.chrome`, `.material`, `.t-accent-2` | Only when `wwjd:look` tokens define them: a dark sidebar or bar, one frosted native bar or sheet, one secondary category |
 
 ## Faces
-- **Product UI:** Inter variable (opsz 14–32, 400–600) or the system stack when it should feel native. **Reading:** Source Serif 4 (`data-profile="reading"`). **Persuade/Showcase:** the brand face; choosing one is `wwjd:look`. **Mono:** only code, IDs, hashes.
+- **Product UI:** Inter variable (opsz 14–32, 400–600), or the system stack to feel native. **Reading:** Source Serif 4 (`data-profile="reading"`). **Persuade/Showcase:** the brand face (`wwjd:look`). **Mono:** code, IDs, hashes only.
 
 ## The 15 details that make it read as a product
 1. Surfaces: a tone step first, a hairline second, a shadow only on overlays.
 2. Three text levels; never a fourth grey.
-3. Icons 16px, 1.5 stroke, one library, `--text-2`, aligned to the first text line.
+3. Icons from one library, one size and stroke (16px, 1.5 in app UI), `--text-2`, aligned to the first text line.
 4. Padding 8, 12 or 16; the same slot gets the same padding everywhere.
-5. Everything pressable has a hover fill and a pressed fill (hover only under `(hover: hover) and (pointer: fine)`).
+5. Everything pressable has a hover and a pressed fill (hover only under `(hover: hover) and (pointer: fine)`).
 6. Selected = a tint plus an indicator, never colour alone.
 7. Table and group headers stick, with scroll padding under them.
 8. Compared numbers end-aligned and tabular.
-9. Controls 28, 32 or 36px, so a toolbar row lines up.
+9. Controls on the density's height scale (28/32/36 in app UI, 44+ on touch), so a toolbar row lines up.
 10. Nested radii concentric.
-11. The whole row is the target, the hover fill hung on the row.
+11. The whole row is the target; the hover fill hangs on the row.
 12. One focus ring: 2px, ≥3:1, `:focus-visible`, instant; fields and menu items inset.
 13. Column headers 12/500 sentence case, never uppercase and tracked.
 14. Popups grow from their trigger in under 200ms; exits faster.
-15. Empty, loading, error and longest-string states exist before a screen is done.
+15. Empty, loading, error and longest-string states exist before a screen is done (SKILL.md §3 States).

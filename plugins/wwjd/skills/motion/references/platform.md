@@ -1,6 +1,6 @@
 # Platform: CSS first, then a library only when it earns it
 
-Support as of 2026-10 (MDN BCD). Every recipe degrades to an instant change, never to broken UI.
+Support as of 2026-10 (MDN BCD); re-check before relying on it. Every recipe degrades to an instant change.
 
 ## CSS features
 | Feature | Support | Use | Fallback |
@@ -19,15 +19,14 @@ Support as of 2026-10 (MDN BCD). Every recipe degrades to an instant change, nev
 - Not yet: scroll-triggered `animation-trigger` (Chrome 146 only), element-scoped VT (Chrome 147, experimental), `prefers-reduced-transparency` (Chrome only; wwjd is opaque by default).
 
 ## Recipes and gotchas
-- **Entry/exit:** the open state carries the entry transition, the closed state the faster exit (`motion.css`). Transitions reverse from where they are; keyframes restart.
-- **Same-document VT:** `document.startViewTransition(() => update())`. Keep it to one element group; `::view-transition { pointer-events: none }` so clicks reach the page; a new VT skips the running one.
+- **Entry/exit:** the open state carries the entry, the closed state the faster exit (`motion.css`).
+- **Same-document VT:** `document.startViewTransition(() => update())`, one element group; `::view-transition { pointer-events: none }` so clicks reach the page.
 - **React:** `<ViewTransition>` is stable in React 19.3; it fires only from `startTransition`, Suspense reveals or `useDeferredValue`. Next.js App Router needs no config; `<Link transitionTypes={['nav-forward']}>`.
 - **Names:** unique among rendered elements; lists use `match-element` + `view-transition-class`.
-- **Springs in CSS:** `linear()` springs are time-based. Interrupted mid-flight they don't keep velocity, so gesture-driven or frequently interrupted springs belong in JS (Motion) or keep the curve without overshoot. Generate curves with the linear() easing generator.
-- **Height:** grid rows `0fr→1fr` works everywhere; `<details>` with `interpolate-size` is Chrome-only progressive enhancement.
+- **Springs in CSS:** `linear()` springs lose velocity when interrupted; gesture-driven or often-interrupted springs go in JS (Motion) or drop the overshoot.
 - **Scroll-driven:** put `animation-timeline` after the `animation` shorthand (the shorthand resets it); `animation-range: entry 0% entry 60%` finishes before the reader arrives.
 - **Reduced motion:** a VT under reduce: `::view-transition-group(*) { animation: none }`, crossfade ≤120ms. JS: `matchMedia('(prefers-reduced-motion: reduce)')` before any WAAPI/library call; Motion has `MotionConfig reducedMotion="user"`.
-- **WCAG:** 2.2.2 (A) auto-motion over 5s needs pause/stop/hide; 2.3.3 (AAA) interaction motion can be turned off; 2.3.1 no more than 3 flashes a second.
+- **WCAG:** 2.2.2 auto-motion over 5s needs pause; 2.3.3 interaction motion can be turned off; 2.3.1 ≤ 3 flashes a second.
 
 ## Libraries: when each earns the dependency
 | Need | Use | Cost |
@@ -40,6 +39,5 @@ Support as of 2026-10 (MDN BCD). Every recipe degrades to an instant change, nev
 | Interactive illustration with states (mascot, onboarding art) | Rive (runtime 222–648 KB WASM; exports need a paid plan) | Showcase, playful only |
 | Designer After Effects loops | Lottie (`lottie-web` light ≈47 KB, or dotLottie WASM ≈500 KB) | Pause off-screen and on reduce |
 | Rolling numbers | NumberFlow, or digits in CSS | Small |
-- Prefer, in order: CSS transitions → CSS animations → WAAPI → a library (Vercel and Stripe both rank it this way).
-- Never ship a library for something a transition does. Never ship two motion libraries.
+- Prefer CSS transitions → CSS animations → WAAPI → a library. Never a library for what a transition does; never two motion libraries.
 - Native: SwiftUI springs (`.smooth`, `.snappy`, `.bouncy`, default `duration: 0.5`); Compose Material 3 motion scheme (spatial vs effects springs).

@@ -4,7 +4,7 @@
 
 ## Schema
 ```json
-{ "v": 1, "app": "Stilla",
+{ "v": 1, "app": "Example Club",
   "screens": [
     { "id": "pricing", "title": "Pricing page", "job": "Pick the membership that fits", "route": "/", "entry": true,
       "data": true, "states": ["default", "empty", "loading", "error"], "review": false, "terminal": false, "modal": false,
