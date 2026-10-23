@@ -4,10 +4,18 @@
 import { closeSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { extname, join, resolve } from "node:path";
-import { SKIP_DIR, STORY, TEST, UI_EXT, inPlugin } from "./paths.mjs";
+import { NOT_PRODUCT, SKIP_DIR, STORY, TEST, UI_EXT, inPlugin } from "./paths.mjs";
 
-/** UI work for the gate: tests, fixtures, stories and build output are not. */
-export const isUI = (p) => typeof p === "string" && UI_EXT.has(extname(p)) && !SKIP_DIR.test(p) && !TEST.test(p) && !STORY.test(p);
+/** UI work for the gate: tests, fixtures, stories, build output and pages about the work (plans, briefs) are not. */
+export const isUI = (p) => typeof p === "string" && UI_EXT.has(extname(p)) && !SKIP_DIR.test(p) && !TEST.test(p) && !STORY.test(p) && !NOT_PRODUCT.test(p);
+
+// An edit that only touches comments or whitespace changes nothing anyone sees.
+const bare = (s) => String(s ?? "").replace(/<!--[\s\S]*?-->|\/\*[\s\S]*?\*\/|(^|[^:"'`\\])\/\/[^\n]*/g, "$1").replace(/\s+/g, "");
+const cosmetic = (input) => {
+  const t = input.tool_input || {};
+  const pairs = input.tool_name === "Edit" ? [t] : input.tool_name === "MultiEdit" && Array.isArray(t.edits) ? t.edits : null;
+  return Boolean(pairs?.length) && pairs.every((e) => typeof e.old_string === "string" && typeof e.new_string === "string" && bare(e.old_string) === bare(e.new_string));
+};
 
 const nap = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
@@ -51,7 +59,7 @@ export function openLedger(input) {
 /** Notes a UI edit (Write, Edit, MultiEdit) from PostToolUse input; anything else is ignored. */
 export function noteEdit(input) {
   const fp = input.tool_input?.file_path;
-  if (!["Write", "Edit", "MultiEdit"].includes(input.tool_name) || !isUI(fp)) return false;
+  if (!["Write", "Edit", "MultiEdit"].includes(input.tool_name) || !isUI(fp) || cosmetic(input)) return false;
   const now = Date.now(), at = resolve(input.cwd || process.cwd(), fp);
   // A page edit is what the render checks look at. A Design canvas (.dc.html) and a file inside a Claude Code plugin
   // (plugin code, not a web page) never set it, so they ask only for the log.

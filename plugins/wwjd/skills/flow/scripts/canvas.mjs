@@ -14,7 +14,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, openSync, readFileSync, readSync, closeSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { artifactRoot } from "../../ux/scripts/paths.mjs";
+import { artifactRoot, logRoot } from "../../ux/scripts/paths.mjs";
 
 const argv = process.argv.slice(2);
 const opt = { root: "", current: "", title: "", all: false, pairs: [] };
@@ -223,7 +223,7 @@ const mainHtml = page("Flow", mainBody, MW, MH);
 // ── decisions: the last line per id wins; dismissed ones are left out ──
 const decisions = new Map();
 try {
-  for (const l of readFileSync(join(dir, "decisions.jsonl"), "utf8").split("\n")) {
+  for (const l of readFileSync(join(logRoot(root), ".wwjd", "decisions.jsonl"), "utf8").split("\n")) {
     if (!l.trim()) continue;
     try { const x = JSON.parse(l); if (x && x.id) decisions.set(String(x.id), x); } catch { /* a torn line */ }
   }

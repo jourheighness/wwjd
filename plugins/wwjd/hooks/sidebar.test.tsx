@@ -35,6 +35,10 @@ test('the agent logs through the tool; the sidebar groups entries by surface', a
   expect(files['/p/.wwjd/decisions.jsonl']?.trim().split('\n')).toHaveLength(2)
   const refused = await $.tool.call({ tool: 'mcp__wwjd__log', surface: 'Card', kind: 'maybe', text: 'x' } as never)
   expect((refused as { deny?: string }).deny).toMatch(/kind/)
+  // The person's own ask is not a decision: it is refused, and nothing is written
+  const echo = await $.tool.call({ tool: 'mcp__wwjd__log', surface: 'Card', kind: 'choice', text: 'Made the hero bolder', why: 'The owner asked for a bolder hero' } as never)
+  expect((echo as { deny?: string }).deny).toMatch(/asked/)
+  expect(files['/p/.wwjd/decisions.jsonl']?.trim().split('\n')).toHaveLength(2)
 
   await $.command.run({ command: 'wwjd' } as never)
   const ui = await $.ui.mount({ plugin: 'wwjd', surface: 'desktop', ...PANE, props })

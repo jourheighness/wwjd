@@ -21,7 +21,7 @@ The how behind SKILL.md's "every state" rule.
 | First use | Seeded example content plus one action; may teach once |
 | One item | Doesn't look broken or lonely |
 | Many | Priority stays visible. Virtualise only when measured slow (breaks find-in-page, print, screen-reader counts) |
-| Empty | One line plus one action; a secondary region may collapse. Table cells "—" with accessible text "None" |
+| Empty | One line plus one action, in the region's own box: it never collapses, hides or changes height (Stability). Table cells "—" with accessible text "None" |
 | Filtered empty | Echo the query, offer to clear filters, suggest the next query |
 | Loading | Skeleton matching the final layout; spinner only inside a button, keeping its label. Skeleton only past 400ms (`wwjd:motion` owns the timing), time out into error + retry |
 | Refetch, poll | Stale data stays with a quiet refresh mark; never back to a skeleton |

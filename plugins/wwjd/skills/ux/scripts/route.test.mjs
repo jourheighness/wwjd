@@ -35,3 +35,18 @@ test("the redesign hint comes on later prompts of the session too", () => {
   assert.match(once("now redesign it"), /§5/);
   assert.equal(once("thanks"), "");
 });
+
+test("Strictness moves on instructions, never on a complaint about speed or roughness", () => {
+  assert.match(route("just a quick fix on the hero button"), /strictness -1/);
+  assert.match(route("make a rough draft of the landing page"), /strictness -1/);
+  assert.doesNotMatch(route("the hero transitions are really rough") || "", /strictness/);
+  assert.doesNotMatch(route("the dissolves on the hero go really quickly, too quick to read") || "", /strictness/);
+  assert.match(route("polish this dashboard carefully"), /strictness \+1/);
+});
+
+test("exploring holds the handover checks until the person says keep", () => {
+  const session = `t-${Math.random().toString(36).slice(2)}`;
+  assert.match(route("just exploring the hero motion, we can verify with wwjd later", session), /checks are held/);
+  assert.match(route("nice, keep it and make the cards bolder", session), /apply again/);
+  assert.doesNotMatch(route("make the cards bolder") || "", /held|apply again/);
+});

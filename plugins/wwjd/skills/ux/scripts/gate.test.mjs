@@ -556,3 +556,40 @@ test("a page edit already asked about is not owed again when the newer edits are
   assert.equal(p.run("stop", { stop_hook_active: false }), null);
   assert.deepEqual(p.run("status", {}).checks, []);
 });
+
+test("an edit that only changes comments, and pages about the work (plans, briefs, reports), ask for no checks", () => {
+  const p = project(3);
+  const led = () => { try { return p.ledger(); } catch { return {}; } };
+  p.file("card.css", "a{}");
+  p.run("post", { tool_name: "Edit", tool_input: { file_path: join(p.root, "card.css"), old_string: "a{color:red} /* old */", new_string: "a{color:red}\n// why it is red" } });
+  assert.equal(led().lastEdit, undefined);
+  p.run("post", { tool_name: "Write", tool_input: { file_path: join(p.root, "plans", "rollout.html") } });
+  p.run("post", { tool_name: "Write", tool_input: { file_path: join(p.root, "review-2026-10.html") } });
+  assert.equal(led().lastEdit, undefined);
+  p.run("post", { tool_name: "Edit", tool_input: { file_path: join(p.root, "card.css"), old_string: "a{color:red}", new_string: "a{color:blue}" } });
+  assert.ok(led().lastEdit > 0);
+});
+
+test("stop: one critic run covers the surfaces built so far; only a new UI file owes another", () => {
+  const p = project(5);
+  p.edit("card.html");
+  const critic = () => p.run("status", {}).checks.find((c) => c.key === "critic").done;
+  appendFileSync(p.transcript, JSON.stringify({ timestamp: new Date().toISOString(), message: { content: [{ type: "tool_use", name: "Agent", input: { subagent_type: "wwjd:wwjd-critic" } }] } }) + "\n");
+  assert.equal(critic(), true);
+  // applying its findings: edits after the run
+  p.run("post", { tool_name: "Edit", tool_input: { file_path: join(p.root, "card.html"), old_string: "<p>a</p>", new_string: "<p>b</p>" } });
+  assert.equal(critic(), true);
+  // a new surface
+  p.run("pre", { tool_name: "Write", tool_input: { file_path: join(p.root, "settings.html") } });
+  assert.equal(critic(), false);
+});
+
+test("stop: while the person is exploring (route.mjs), the checks are held", () => {
+  const p = project(3);
+  p.edit("card.html");
+  const f = join(p.state, "wwjd-gate", readdirSync(join(p.state, "wwjd-gate")).find((x) => x.endsWith(".json")));
+  writeFileSync(f, JSON.stringify({ ...p.ledger(), explore: true }));
+  assert.equal(p.run("stop", { stop_hook_active: false }), null);
+  writeFileSync(f, JSON.stringify({ ...p.ledger(), explore: false }));
+  assert.match(p.run("stop", { stop_hook_active: false }).reason, /Strictness 3/);
+});

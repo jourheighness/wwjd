@@ -6,7 +6,7 @@
 import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { artifactRoot } from "../../ux/scripts/paths.mjs";
+import { artifactRoot, logRoot } from "../../ux/scripts/paths.mjs";
 
 export const FILE = "wwjd.flow.json";
 export const KINDS = ["forward", "back", "undo", "error", "destructive"];
@@ -233,7 +233,7 @@ export function check(m, { decisions = [] } = {}) {
 
 /** Parsed decision-log entries; bad lines are skipped. */
 export function readDecisions(root) {
-  const f = join(root, ".wwjd", "decisions.jsonl");
+  const f = join(logRoot(root), ".wwjd", "decisions.jsonl");
   if (!existsSync(f)) return [];
   return readFileSync(f, "utf8").split("\n").filter((l) => l.trim()).flatMap((l) => { try { return [JSON.parse(l)]; } catch { return []; } });
 }

@@ -72,8 +72,24 @@ async function artifactRoot($: EngineInterface, file?: string): Promise<string> 
   }
   return $.session.root()
 }
+// paths.mjs logRoot(): in a git worktree the log is the main checkout's (the same folder there), so every branch and
+// session of a project shares one log.
+async function logHome($: EngineInterface, root: string): Promise<string> {
+  for (let dir = root; dir; ) {
+    if (await $.fs.exists(`${dir}/.git`)) {
+      const head = await $.fs.read(`${dir}/.git`).catch(() => null)
+      const m = head ? /^gitdir:\s*(.+?)[\\/]\.git[\\/]worktrees[\\/][^\\/]+\s*$/m.exec(head) : null
+      const main = m ? `${m[1]}${root.slice(dir.length)}` : null
+      return main && (await $.fs.exists(main)) ? main : root
+    }
+    const up = parent(dir)
+    if (!up || up === dir) break
+    dir = up
+  }
+  return root
+}
 // Where the sidebar reads, keeps and changes: the root the log tool last wrote to, else the one it would write to now.
-const shownRoot = async ($: EngineInterface) => (await read($, logRoot)) || artifactRoot($)
+const shownRoot = async ($: EngineInterface) => (await read($, logRoot)) || logHome($, await artifactRoot($))
 const logFile = (root: string) => `${root}/.wwjd/decisions.jsonl`
 // The pane's last read of disk (see the render), at a log version; a file edit clears it.
 let snap: { ver: number; root: string; canvas: string | null; dirs: Direction[]; all: Entry[] } | null = null
@@ -312,7 +328,7 @@ export const register: Register = (on, options) => {
     await $.command.register({ name: 'wwjd', description: 'Design decisions and assumptions to keep or change; dials under Settings' })
     await $.tool.register({
       name: 'log',
-      description: 'Log one design assumption or choice the person did not ask for (wwjd). One call per item, as it is made.',
+      description: 'Log one design assumption or choice the person did not ask for (wwjd). One call per item, as it is made. Never what the person asked for: that is already in the chat.',
       isDeferred: false,
       inputSchema: {
         type: 'object',
@@ -354,6 +370,11 @@ export const register: Register = (on, options) => {
     if (typeof x.surface !== 'string' || typeof x.text !== 'string' || (x.kind !== 'assumption' && x.kind !== 'choice' && x.kind !== 'save')) {
       return { deny: 'Needs surface, kind (assumption, choice or save) and text.' }
     }
+    // The log holds what nobody asked for: an entry whose reason is the person's own ask repeats the chat.
+    const asked = /^(?:because |as )?(?:the )?(?:owner|user|person|you|johannes|they)(?: had| have)? (?:asked|requested|wanted|said|told)\b/i
+    if (x.kind !== 'save' && [x.why, x.text].some(v => typeof v === 'string' && asked.test(v.trim()))) {
+      return { deny: 'Not logged: the person asked for this, so it is not a decision of yours. Log only assumptions and choices nobody asked for.' }
+    }
     // Strings as given; typed objects kept to their known fields. At most 8, each short.
     const ok = (v: unknown) => typeof v === 'string' && v.trim() !== '' && v.length <= 2048
     const proof = (Array.isArray(x.proof) ? x.proof : []).flatMap((p): (string | Record<string, unknown>)[] => {
@@ -381,7 +402,7 @@ export const register: Register = (on, options) => {
       ...(proof.length ? { proof } : {}),
     }
     const now = await $.clock.now()
-    const root = await artifactRoot($, typeof x.path === 'string' && x.path.trim() ? x.path.trim() : undefined)
+    const root = await logHome($, await artifactRoot($, typeof x.path === 'string' && x.path.trim() ? x.path.trim() : undefined))
     let first = false
     // Read right before the write, inside the queue: entries another session added since are kept.
     const id = await serial(async () => {

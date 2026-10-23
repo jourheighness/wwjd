@@ -14,6 +14,9 @@ wwjd owns the design side: how a product looks, flows and reads is decided here,
 - Static mocks for an interaction concept: make them clickable.
 - Inline Undo in a row or field: undo lives in the toast. A settings toggle gets neither; it just applies.
 - One home read as deleting the setting: it keeps its row.
+- A mock for a renderer with limits (a mod sidebar, PDF, email, native): use only parts that renderer can draw, checked before any variant is shown.
+- An interrupt is a new direction, not a stop: take it, no recap of what was cut off.
+- A fresh ask beats an older project decision: name the clash in one line, do the ask, mark the old one superseded.
 
 ## 0. Entry (once per session)
 1. Run `node <skill>/scripts/wwjd.mjs status`; it prints the dials (`references/dials.md`; never the Floor).
@@ -66,7 +69,8 @@ Persuade: landing, hero, pricing · Showcase: portfolio, case study · Editorial
 - **Log as you go:** each assumption and each choice nobody asked for: one `mcp__wwjd__log` call, a 2–6 word `title` (the sidebar row: what to know at a glance) plus the line in the past tense and plain words, with typed `proof` (kinds in the tool), plus `screen` (its id in `wwjd.flow.json`), `aspect` (`ux` how it works, `ui` how it looks) and `task` (the same words for every entry of one task) when known; `path` when the project edited is not the session's folder. When a wwjd rule changes what you were about to do, a `save`: what it kept you from ("putting the price in a tooltip") and the rule's name. No tool: one JSON line per item in `.wwjd/decisions.jsonl`, the same fields plus `id` and `at` (ISO time).
 - **Canvas:** on with a `canvas` in `.wwjd.json` (status says): each handover puts its screens and decisions on it (`../flow/references/canvas.md`).
 - **Checks** per the Strictness dial (`references/dials.md`); hooks enforce them unless Hooks is quiet or off; the checks are owed either way. Hooks see Edit and Write: change UI files with those, never through Bash or a script. Shoot every new state (focus, hover, editing, open popover) zoomed, both themes, before any "checked"; a check that could not run is reported as not run. A Design canvas (`.dc.html`) renders only in its canvas: no shots or fit; say it was looked at there. Handover lists each `TODO(api)`.
-- **React:** change only what was named. Same correction twice: 3 structurally different options or one question with a default.
+- **React:** change only what was named. Same correction twice: 3 structurally different options or one question with a default. A bug reported twice means the check that passed it looked at the wrong thing (a still of motion, the wrong surface, before data loaded): find that first.
+- **Hand over short:** outcome first, then only what needs the person (≤ ~120 words, bullets). The rest lives in the canvas, the log or the files.
 
 ## 6. Corrections become rules
 "rule", "always", "never" or a repeated correction: write it that turn, dated, quoted. This project: decision log or DESIGN.md; every project: your taste file (`~/.config/wwjd/taste.md`); work: RATCHET.md Backlog `[design]`. The person corrects logged decisions in the `/wwjd` sidebar. Newest wins; mark the old superseded. Cross-project: propose a wwjd change, a principle plus one example.

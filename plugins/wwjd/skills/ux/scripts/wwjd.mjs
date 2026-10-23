@@ -61,12 +61,14 @@ if (cmd === "help") { help(); process.exit(0); }
 
 // hook mode: the edited file comes from the PostToolUse JSON on stdin
 let hookCwd = null;
+let hookInput = {};
 if (opt.hook) {
   let input = {};
   try { input = JSON.parse(readFileSync(0, "utf8") || "{}"); } catch { process.exit(0); }
   const edited = input.tool_input?.file_path ? dirname(resolve(input.cwd || process.cwd(), input.tool_input.file_path)) : input.cwd || process.cwd();
   if (hooksMode(edited) === "off") process.exit(0);
   try { noteEdit(input); } catch { /* the lint still runs */ } // one process per edit: the gate's note and the lint
+  hookInput = input;
   if (process.env.WWJD_HOOK_CHECK === "0") process.exit(0);
   const fp = input.tool_input?.file_path;
   if (!fp) process.exit(0);
@@ -282,8 +284,9 @@ function scan(files) {
     const setsDisplay = /\{[^}]*\bdisplay:\s*(grid|flex|block|inline-flex|inline-grid)/.test(text);
     const guarded = /(^|[\s,}])\[hidden\](:not\([^)]*\))?\s*\{[^}]*display:\s*none/m.test(text);
     const hasDark = /prefers-color-scheme:\s*dark|data-theme=["']?dark|light-dark\(/.test(text);
-    const paintsRoot = /(^|[\s,}])(html|:root)(\[[^\]]*\])?\s*\{[^}]*\bbackground(-color)?\s*:/m.test(text);
-    const paintsBody = /(^|[\s,}])body\s*\{[^}]*\bbackground(-color)?\s*:/m.test(text);
+    // A selector list counts: `html, body { background: … }` paints both.
+    const paintsRoot = /(^|[\s,}])(html|:root)(\[[^\]]*\])?\s*(,[^{}]*)?\{[^}]*\bbackground(-color)?\s*:/m.test(text);
+    const paintsBody = /(^|[\s,}])body\s*(,[^{}]*)?\{[^}]*\bbackground(-color)?\s*:/m.test(text);
     if (!off("root-background", "warn") && /\.(html|css|scss)$/.test(f) && hasDark && paintsBody && !paintsRoot)
       findings.push({ file: f, line: 1, rule: "root-background", severity: level("root-background", "warn"), message: "dark theme paints body but not html; overscroll flashes white. Put the ground colour on html", text: "file" });
     if (!off("timeline-supports", "warn") && /animation-timeline\s*:/.test(text) && !/@supports[^{]*animation-timeline/.test(text))
@@ -517,6 +520,22 @@ if (opt.baseline) {
 const shown = (opt.new ? newOnly(all, readBaseline()) : all).sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "error" ? -1 : 1));
 const errors = shown.filter((x) => x.severity === "error").length;
 if (opt.hook) {
+  // An Edit is judged on the lines it wrote (± 1): old debt elsewhere in the file is not this edit's. File-wide
+  // findings (line 1, "file") count only for a whole-file Write.
+  const t = hookInput.tool_input || {};
+  const wrote = hookInput.tool_name === "Edit" ? [t.new_string] : hookInput.tool_name === "MultiEdit" && Array.isArray(t.edits) ? t.edits.map((e) => e.new_string) : null;
+  if (wrote?.some((w) => typeof w === "string" && w.trim())) {
+    let body = "";
+    try { body = readFileSync(opt.paths[0], "utf8"); } catch { /* gone */ }
+    const spans = wrote.filter((w) => typeof w === "string" && w.trim()).flatMap((w) => {
+      const at = body.indexOf(w);
+      if (at < 0) return [];
+      const start = body.slice(0, at).split("\n").length;
+      return [[start - 1, start + w.split("\n").length]];
+    });
+    const touched = (x) => x.text !== "file" && spans.some(([a, b]) => x.line >= a && x.line <= b);
+    for (let i = shown.length - 1; i >= 0; i--) if (!touched(shown[i])) shown.splice(i, 1);
+  }
   if (!shown.length) process.exit(0);
   const lines = shown.slice(0, 5).map(fmt);
   if (shown.length > 5) lines[4] = `… ${shown.length - 4} more: node wwjd.mjs check ${rel(opt.paths[0])} --new`;

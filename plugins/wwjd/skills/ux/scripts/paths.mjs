@@ -10,6 +10,9 @@ export const UI_EXT = new Set([".tsx", ".jsx", ".vue", ".svelte", ".astro", ".ht
 // Tests and fixtures: never linted, never gated.
 export const TEST = /\.(test|spec)\.|__tests__|__fixtures__|(^|\/)fixtures?\//;
 export const STORY = /\.stories\.|\.story\.|(^|\/)stories\//;
+// Pages about the work, not the product: plans, briefs, reports, reviews and research written as HTML for a person to
+// read. Never linted, never gated (a docs site in docs/ is product and stays in).
+export const NOT_PRODUCT = /(^|\/)(plans?|briefs?|research|notes|reports?|reviews?|handovers?|\.claude|\.wwjd)\/|(^|[\/_.-])(plan|brief|report|review|research|notes|summary|handover|audit|retro|proposal)[\w.-]*\.(html|mdx?)$/i;
 
 const isDir = (p) => { try { return statSync(p).isDirectory(); } catch { return false; } };
 
@@ -43,6 +46,23 @@ export function artifactRoot(cwd) {
     if (dirname(d) === d) break;
   }
   return gitRoot(cwd) || cwd;
+}
+
+/** Where a project's decision log lives: in a git worktree, the same folder in the main checkout, so every branch
+ * and session of a project reads and adds to one log (shots and reports stay per checkout). Else `root` itself. */
+export function logRoot(root) {
+  for (let d = root; ; d = dirname(d)) {
+    const git = join(d, ".git");
+    if (existsSync(git)) {
+      if (isDir(git)) return root;
+      try {
+        const m = /^gitdir:\s*(.+?)[\\/]\.git[\\/]worktrees[\\/][^\\/]+\s*$/m.exec(readFileSync(git, "utf8"));
+        const main = m && join(m[1], root.slice(d.length));
+        return main && isDir(main) ? main : root;
+      } catch { return root; }
+    }
+    if (dirname(d) === d) return root;
+  }
 }
 
 /** Whether `file` sits inside a Claude Code plugin (an ancestor holds .claude-plugin/plugin.json): plugin code, never a

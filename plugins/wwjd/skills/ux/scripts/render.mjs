@@ -21,6 +21,11 @@
 //     hover-shift (layout shift after hovering rows), focus-hidden (Tab stops invisible or under sticky chrome),
 //     reduced-motion (transform animations left under reduce), broken-image, spacing-drift (radii, max-widths, button styles),
 //     target-hole (text above a stretched card link: a text cursor, the hover drops)
+//   Animated pages: fit and runtime load under prefers-reduced-motion and settle every CSS or Web Animation (finite
+//   ones finished, endless ones paused), so they measure the resting frame, never glyphs caught mid-roll; a
+//   script-driven stage (canvas, rAF) rests there only if it honours reduced motion, as the Floor asks.
+//   --wait-for "<css>"  wait for that element before any check or shot (data loaded); .wwjd.json "waitFor" sets it
+//   per project. Web fonts are always awaited.
 //   --json    machine output. Exit 1 on errors.
 //   setup    one-time: npm-installs playwright-core into ~/.cache/wwjd (XDG_CACHE_HOME), for every project.
 // Playwright (playwright or playwright-core), first found: WWJD_PLAYWRIGHT=<module folder>, this script's folder,
@@ -57,7 +62,7 @@ if (!cmd || cmd === "-h" || cmd === "--help" || !["shoot", "fit", "runtime"].inc
 }
 const flag = (k) => args.includes(k);
 const opt = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
-const VALUED = new Set(["--width", "--widths", "--theme", "--out", "--selector", "--register", "--root"]);
+const VALUED = new Set(["--width", "--widths", "--theme", "--out", "--selector", "--register", "--root", "--wait-for"]);
 const target = args.slice(1).find((a, i, xs) => !a.startsWith("--") && !VALUED.has(xs[i - 1]));
 if (!target) { console.error(`usage: render.mjs ${cmd} <url|file> [options]`); process.exit(2); }
 const url = /^[a-z][\w+.-]*:/i.test(target) ? target : pathToFileURL(resolve(target)).href;
@@ -74,6 +79,10 @@ const register = () => {
   try { return JSON.parse(readFileSync(nearestConfig(ROOT), "utf8")).register?.toLowerCase() || null; } catch { return null; }
 };
 const H = (w) => (w < 800 ? 844 : 900);
+const waitFor = (() => {
+  if (opt("--wait-for")) return opt("--wait-for");
+  try { return JSON.parse(readFileSync(nearestConfig(ROOT), "utf8")).waitFor || null; } catch { return null; }
+})();
 
 // shoot: one capture plan, whichever browser takes it
 const plan = (() => {
@@ -237,14 +246,22 @@ catch (e) {
 const findings = [];
 const add = (width, rule, severity, what) => findings.push({ width, rule, severity, what });
 
-// Load, then a short settle; no networkidle (a busy page never idles) and no reload.
+// Load, the fonts and the --wait-for element, then a short settle; no networkidle (a busy page never idles), no reload.
 async function open(page, settle = 300) {
   let res = null;
   try { res = await page.goto(url, { waitUntil: "load", timeout: 30000 }); }
   catch (e) { console.error(`render: ${url} did not finish loading (${e.message.split("\n")[0]}); checking what rendered`); }
   if (res && res.status() >= 400) { console.error(`render: ${url} answered ${res.status()}${res.status() === 404 ? " (not found)" : ""}; nothing checked`); await browser.close(); process.exit(1); }
+  if (waitFor) {
+    try { await page.waitForSelector(waitFor, { state: "visible", timeout: 15000 }); }
+    catch { console.error(`render: ${waitFor} never showed on ${url}; checking what rendered`); }
+  }
+  await page.evaluate(() => Promise.race([document.fonts?.ready, new Promise((r) => setTimeout(r, 3000))])).catch(() => {});
   await page.waitForTimeout(settle);
 }
+
+// The resting frame: finite animations jump to their end, endless ones pause where they are.
+const settle = (page) => page.evaluate(() => { for (const a of document.getAnimations()) { try { a.finish(); } catch { a.pause(); } } });
 
 // ── shoot ──────────────────────────────────────────────────────────
 if (cmd === "shoot") {
@@ -277,8 +294,9 @@ if (cmd === "fit") {
   const widths = opt("--widths", "240,320,480,720").split(",").map(Number);
   const selector = opt("--selector", null);
   for (const w of widths) {
-    const page = await browser.newPage({ viewport: { width: selector ? 1280 : w, height: 900 } });
+    const page = await browser.newPage({ viewport: { width: selector ? 1280 : w, height: 900 }, reducedMotion: "reduce" });
     await open(page, 0);
+    await settle(page);
     if (selector) await page.evaluate(([s, w]) => { const el = document.querySelector(s); if (el) { el.style.inlineSize = w + "px"; el.style.containerType = "inline-size"; } }, [selector, w]);
     await page.waitForTimeout(150);
     const r = await page.evaluate((sel) => {
@@ -301,7 +319,9 @@ if (cmd === "fit") {
         }
         return false;
       };
-      const shown = (el) => el.getClientRects().length && (el.checkVisibility?.({ checkOpacity: true, checkVisibilityCSS: true }) ?? true) && !srOnly(el);
+      // Faint counts as hidden: a placeholder at opacity 0.02 or a glyph mid-fade is not text anyone reads.
+      const faint = (el) => { let o = 1; for (let p = el; p && p !== document.documentElement; p = p.parentElement) o *= parseFloat(getComputedStyle(p).opacity); return o < 0.1; };
+      const shown = (el) => el.getClientRects().length && (el.checkVisibility?.({ checkOpacity: true, checkVisibilityCSS: true }) ?? true) && !srOnly(el) && !faint(el);
       // A text node's line fragments, trimmed to the line box: glyph ink past a tight line-height is not text.
       const textLines = (node) => {
         const r = document.createRange(); r.selectNodeContents(node);
@@ -379,7 +399,7 @@ if (cmd === "fit") {
         const sib = el.parentElement ? [...el.parentElement.children].filter((k) => k.getClientRects().length) : [];
         if (kids.length !== 1 || sib.length < 2 || el.textContent.trim().length > 3 || !el.getClientRects().length || inTable(el)) continue;
         const b = kids[0].getBoundingClientRect(), row = el.getBoundingClientRect();
-        if (b.width < 56 && row.width > b.width * 4 && b.height < 56) { out.push(["orphan-item", "error", (kids[0].getAttribute("aria-label") || kids[0].className || kids[0].tagName) + " sits alone in its own row"]); break; }
+        if (b.width < 56 && row.width > b.width * 4 && b.height < 56) { out.push(["orphan-item", "error", (kids[0].getAttribute("aria-label") || kids[0].getAttribute("class") || kids[0].tagName) + " sits alone in its own row"]); break; }
       }
       // Text cut mid-line by an overflow clip (a fixed-height excerpt whose third line shows half). Scrollers scroll,
       // line-clamp cuts at a line and a mask fades on purpose; sr-only text is meant to be clipped.
@@ -453,7 +473,7 @@ if (cmd === "fit") {
         const cs = getComputedStyle(el);
         if ((cs.clipPath && cs.clipPath !== "none" || cs.maskImage && cs.maskImage !== "none") && el.children.length) {
           const b = el.getBoundingClientRect();
-          if (b.width < 1 || b.height < 1) { out.push(["value-fill-empty", "error", (el.closest("[aria-label],[role]")?.getAttribute("aria-label") || el.className || el.tagName) + " has no box, so its fill shows nothing"]); break; }
+          if (b.width < 1 || b.height < 1) { out.push(["value-fill-empty", "error", (el.closest("[aria-label],[role]")?.getAttribute("aria-label") || el.getAttribute("class") || el.tagName) + " has no box, so its fill shows nothing"]); break; }
         }
       }
       const isCtl = (el) => el.matches("button, input:not([type=checkbox]):not([type=radio]), select, [role=group], [role=spinbutton]") || (getComputedStyle(el).borderTopStyle !== "none" && parseFloat(getComputedStyle(el).borderTopWidth) > 0 && el.querySelector("button, input"));
@@ -465,7 +485,7 @@ if (cmd === "fit") {
         const rows = {};
         for (const k of kids) { const b = k.getBoundingClientRect(); (rows[Math.round(b.top / 8)] ||= []).push(b.height); }
         const bad = Object.values(rows).find((hs) => hs.length > 1 && Math.max(...hs) - Math.min(...hs) > 1.5);
-        if (bad) { out.push(["control-height-mismatch", "error", (p.className || p.tagName) + ": " + bad.map((h) => Math.round(h)).join(" vs ") + "px"]); break; }
+        if (bad) { out.push(["control-height-mismatch", "error", (p.getAttribute("class") || p.tagName) + ": " + bad.map((h) => Math.round(h)).join(" vs ") + "px"]); break; }
       }
       for (const el of root.querySelectorAll("h1,h2,h3,h4,h5,h6,p,li,label,[data-identifier],td,dd,span")) {
         if (!el.offsetParent || el.children.length > 2) continue;
@@ -513,7 +533,7 @@ if (cmd === "fit") {
           if (pc.overflowX === "visible" && pc.overflowY === "visible") continue;
           const pr = p.getBoundingClientRect();
           if (r.left - ring < pr.left - 0.5 || r.right + ring > pr.right + 0.5 || r.top - ring < pr.top - 0.5 || r.bottom + ring > pr.bottom + 0.5)
-            return (el.getAttribute("aria-label") || el.textContent || el.tagName).trim().slice(0, 40) + " inside " + p.tagName.toLowerCase() + (p.className ? "." + String(p.className).split(" ")[0] : "");
+            return (el.getAttribute("aria-label") || el.textContent || el.tagName).trim().slice(0, 40) + " inside " + p.tagName.toLowerCase() + (p.getAttribute("class") ? "." + p.getAttribute("class").split(" ")[0] : "");
           break;
         }
       }
@@ -557,8 +577,9 @@ async function hoverShift(page, selector) {
 if (cmd === "runtime") {
   const widths = opt("--widths", "320,390,768,1440,1920").split(",").map(Number);
   for (const w of widths) {
-    const page = await browser.newPage({ viewport: { width: w, height: H(w) } });
+    const page = await browser.newPage({ viewport: { width: w, height: H(w) }, reducedMotion: "reduce" });
     await open(page, 300);
+    await settle(page);
     const r = await page.evaluate(() => {
       const out = [];
       const vis = (el) => el.getClientRects().length && getComputedStyle(el).visibility !== "hidden";
@@ -574,6 +595,7 @@ if (cmd === "runtime") {
         const st = getComputedStyle(el, "::after"); // a stretched link's target is its card
         const b = (st.content !== "none" && st.position === "absolute" && el.offsetParent ? el.offsetParent : el).getBoundingClientRect();
         if (el.closest("p, li") && el.tagName === "A" && getComputedStyle(el).display === "inline") return false; // links in running text
+        if (b.width <= 1 || b.height <= 1 || b.right <= 0 || b.bottom <= 0 || /inset\(\s*(50|100)%|rect\(0/.test(getComputedStyle(el).clipPath + getComputedStyle(el).clip)) return false; // hidden until focused (a skip link)
         return b.width < 24 || b.height < 24;
       });
       if (small.length) out.push(["small-target", "error", `${small.length} under 24px, e.g. ${(small[0].getAttribute("aria-label") || small[0].textContent || small[0].tagName).trim().slice(0, 30)}`]);
@@ -595,7 +617,7 @@ if (cmd === "runtime") {
           const h = document.elementFromPoint(c.left + c.width * i / 6, c.top + c.height * j / 6);
           if (h && h !== t && t.offsetParent.contains(h) && !h.closest(CTRL)) hole = h;
         }
-        if (hole) { out.push(["target-hole", "error", `${(hole.className || hole.tagName).toString().split(" ")[0]} sits above the stretched link: text cursor, hover drops`]); break; }
+        if (hole) { out.push(["target-hole", "error", `${(hole.getAttribute("class") || hole.tagName).split(" ")[0]} sits above the stretched link: text cursor, hover drops`]); break; }
       }
       return out;
     });

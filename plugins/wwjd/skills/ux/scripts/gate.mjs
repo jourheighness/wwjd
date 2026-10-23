@@ -14,7 +14,8 @@
 //          the first renders only in its canvas, the second is not a web page.
 //          Flow on with a wwjd.flow.json: its check (skills/flow/scripts/flow.mjs) clean and the file newer than the last
 //          page edit. Canvas on with a "canvas" link: an Artifact publish to it after the last edit.
-//          Blocks at most twice per user turn, so a check that can't be done never traps the turn.
+//          Blocks at most twice per user turn, so a check that can't be done never traps the turn. Never while the
+//          person is exploring (hooks/route.mjs sets it: "just exploring", "verify later"; "keep it" ends it).
 //   status the same state as JSON, for the wwjd status band (hooks/status.tsx): stdin { session_id, cwd }.
 // The Hooks setting (paths.mjs hooksMode): "quiet" never blocks (no pre, no stop), "off" runs nothing.
 // Artifacts (.wwjd/) live at the nearest ancestor with .wwjd.json or .wwjd/, else the git root (paths.mjs): of the file
@@ -78,14 +79,14 @@ function sheet(ledger, dirs = [root()]) {
   return fresh.sort((a, b) => mtime(b) - mtime(a))[0]?.split("/").pop() ?? null;
 }
 
-// What the transcript says happened after `since`: a wwjd-critic run, an Artifact publish to the canvas. One pass,
-// read only when a check needs it.
+// When the transcript last shows a wwjd-critic run and an Artifact publish to the canvas (0: never). One pass, read
+// only when a check needs it.
 let seenMemo = null;
-function seenSince(since, canvasId) {
+function lastSeen(canvasId) {
   if (seenMemo) return seenMemo;
   // The status band has no transcript path: it passes what it saw (hooks/status.tsx), as times.
-  if (input.seen) return (seenMemo = { critic: (input.seen.critic || 0) > since, canvas: Boolean(canvasId) && (input.seen.artifact?.[canvasId] || 0) > since });
-  const seen = { critic: false, canvas: false };
+  if (input.seen) return (seenMemo = { critic: input.seen.critic || 0, canvas: canvasId ? input.seen.artifact?.[canvasId] || 0 : 0 });
+  const seen = { critic: 0, canvas: 0 };
   try {
     // A subagent's own calls are in its transcript (SubagentStop's agent_transcript_path), never the parent's.
     for (const line of readFileSync(input.agent_transcript_path || input.transcript_path, "utf8").split("\n")) {
@@ -93,14 +94,14 @@ function seenSince(since, canvasId) {
       if (!critic && !canvas) continue;
       try {
         const row = JSON.parse(line);
-        if (!(Date.parse(row.timestamp) > since)) continue;
+        const at = Date.parse(row.timestamp) || 0;
         for (const b of Array.isArray(row.message?.content) ? row.message.content : []) {
           if (b.type !== "tool_use") continue;
-          if (/wwjd-critic/.test(String(b.input?.subagent_type || ""))) seen.critic = true;
+          if (/wwjd-critic/.test(String(b.input?.subagent_type || ""))) seen.critic = Math.max(seen.critic, at);
           // A publish (no action, or "publish"); a read, open or pin of the canvas changes nothing on it
           // An asset upload (step 3 of a round) is not the publish.
           if (canvasId && b.name === "Artifact" && String(b.input?.url || "").includes(canvasId)
-            && [undefined, "publish"].includes(b.input?.action) && b.input?.asset !== true) seen.canvas = true;
+            && [undefined, "publish"].includes(b.input?.action) && b.input?.asset !== true) seen.canvas = Math.max(seen.canvas, at);
         }
       } catch { /* partial line */ }
     }
@@ -196,10 +197,11 @@ function checks(ledger, s) {
   const canvasUrl = typeof config.canvas === "string" && /^https:\/\/claude\.ai\//.test(config.canvas) ? config.canvas : null;
   const canvasId = canvasUrl ? /artifact\/([\w-]+)/.exec(canvasUrl)?.[1] : null;
   if (s >= 2 && canvasId && canvasMode(projectDir) === "on") out.push({ key: "canvas", label: "Update the project canvas",
-    what: "Claude puts this round's screens and decisions on the project canvas.", done: seenSince(since, canvasId).canvas,
+    what: "Claude puts this round's screens and decisions on the project canvas.", done: lastSeen(canvasId).canvas > since,
     how: `update the project canvas ${canvasUrl}: skills/flow/references/canvas.md; the Canvas setting turns this off` });
-  // A subagent can't start another agent: its runs never owe the critic (the parent's do).
-  if (s >= 5 && !input.agent_id) out.push({ key: "critic", label: "Get a second opinion", what: "A separate reviewer looks at the result with fresh eyes and lists what to fix.", done: seenSince(since, canvasId).critic, how: "a cold review: run the wwjd:wwjd-critic agent on what you built" });
+  // A subagent can't start another agent: its runs never owe the critic (the parent's do). One critic run covers the
+  // surfaces built so far: edits after it (applying its findings, small fixes) owe no second run; a new UI file does.
+  if (s >= 5 && !input.agent_id) out.push({ key: "critic", label: "Get a second opinion", what: "A separate reviewer looks at the result with fresh eyes and lists what to fix.", done: lastSeen(canvasId).critic > (ledger.lastNewFile || ledger.start || 0), how: "a cold review: run the wwjd:wwjd-critic agent on what you built" });
   const skipped = skippedAt(ledger);
   for (const c of out) if ((skipped[c.key] || 0) > since) Object.assign(c, { done: true, skipped: true });
   return out;
@@ -239,6 +241,8 @@ if (mode === "pre") {
       `or quick mode)${canvasMode(project) === "on" ? ", and a project canvas (default yes)" : ""}. Then write ${join(project, ".wwjd.json")} with "start": "variants" or "build" (plus "register" and, ` +
       `once a project canvas exists, "canvas": its link, skills/flow/references/canvas.md), and do what they chose before writing ${fp}.` } });
   }
+  // A new UI file is a new surface: the critic (Strictness 5) is owed again for it.
+  update((l) => { l.lastNewFile = Date.now(); });
   const s = strictness();
   if (!isGated(s)) process.exit(0);
   const ledger = ensured();
@@ -252,7 +256,8 @@ if (mode === "pre") {
 
 if (mode === "stop") {
   const ledger = readLedger();
-  if (!editPending(ledger)) process.exit(0);
+  // Exploring (hooks/route.mjs): the person holds the checks until they say keep.
+  if (!editPending(ledger) || ledger.explore) process.exit(0);
   const s = strictness();
   const missing = checks(ledger, s).filter((c) => !c.done).map((c) => c.how);
   if (!missing.length && !ledger.blocks) process.exit(0);
@@ -270,5 +275,6 @@ if (mode === "stop") {
   if (!block) process.exit(0);
   say({ decision: "block", reason:
     `wwjd Strictness ${s}: before handing over, after your last UI edit:\n- ${missing.join("\n- ")}\n` +
+    (missing.some((m) => m.includes(RENDER)) ? `No Playwright yet? node ${q(RENDER)} setup, once for every project.\n` : "") +
     `Then hand over with what they showed. Can't run one? Say why in the handover.` });
 }

@@ -110,3 +110,13 @@ test("the edit hook is one process: it notes the edit for the gate and lints, an
   assert.equal(run({ WWJD_HOOK_CHECK: "0" }).stdout.trim(), "");
   assert.ok(ledger().lastEdit >= first);
 });
+
+test("the edit hook lints only the lines an Edit wrote; html, body { background } paints the root", () => {
+  const page = '<a href="#">Old debt</a>\n<p>Intro</p>\n<p>More</p>\n<p>Even more</p>\n<button>Save</button>\n';
+  const root = repo({ "card.html": page, "dark.css": "html, body { background: #111 }\n@media (prefers-color-scheme: dark) { body { background: #000 } }\n" });
+  const state = mkdtempSync(join(tmpdir(), "wwjd-state-"));
+  const hook = (tool_input) => spawnSync("bash", [CHECK], { input: JSON.stringify({ session_id: "s2", cwd: root, tool_name: "Edit", tool_input }), env: { ...env, TMPDIR: state }, encoding: "utf8" }).stdout;
+  assert.equal(hook({ file_path: join(root, "card.html"), old_string: "<button>Save</button>", new_string: "<button>Save</button>" }).trim(), "");
+  assert.equal(hook({ file_path: join(root, "dark.css"), old_string: "#111", new_string: "#111" }).trim(), "");
+  assert.equal(check(root, ["dark.css"]).findings.filter((x) => x.rule === "root-background").length, 0);
+});

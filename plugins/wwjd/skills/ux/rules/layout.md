@@ -76,6 +76,10 @@ Size classes come from the slot: wrap it in `.fit`, never a shrink-wrapped flex 
 
 **Test:** wrapper stories at 240, 320, 480, 720 with worst-case data plus one resizable `.probe` (viewport addons test media queries, not containers); then `scripts/render.mjs fit <url>`.
 
+## Table or list
+- **A table** when people compare items on the same 3+ facts, sort, or scan down one column (orders, invoices, runs). **A list** when each item is read on its own: one identifier, ≤ 2 meta, or mixed content (inbox, activity, search results).
+- A table with 1–2 columns is a list; a list whose every row repeats the same 4 labelled facts is a table. On a phone a table keeps its columns in `.table-wrap` or becomes a list of the 2–3 facts that decide (`rules/layout.md` Wide tables); never a card per row with every label repeated.
+
 ## Responsive structure
 - Check 320, 390, 768, 1440, 1920 (runtime `page-overflow`). Container queries for components, viewport queries for pages (lint `viewport-in-component`).
 - **Product UI responds structurally, not with fluid type:** sidebar → rail (56–72px, opt-in; labels stay in the DOM with tooltips) → off-canvas drawer on phones. Panes stack, collapse or resize; three fixed panes never crush main at 1280.

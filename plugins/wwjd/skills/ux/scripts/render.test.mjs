@@ -170,3 +170,13 @@ test("a missing page exits 1 with file not found, never a clean fit or a blank s
     assert.equal(existsSync(join(root, "shots")), false);
   }
 });
+
+test("overlap: an animated stage is measured at rest (a faint placeholder, glyphs mid-roll, an SVG with a class)", (t) => {
+  const rules = fit(`<style>.stage{position:relative;height:80px}.stage span{position:absolute;left:0;top:0;font-size:24px}
+    .ghost{opacity:.02}.roll{animation:roll 4s linear}@keyframes roll{from{transform:translateX(40px)}to{transform:translateX(0)}}
+    @media (prefers-reduced-motion:reduce){.roll{animation:none}}.next{top:40px!important}</style>
+    <div class="stage"><span class="ghost">Hidden copy behind</span><span class="roll">4210 g</span><span class="next">Accept all</span>
+    <svg class="mark" width="20" height="20" style="clip-path:inset(0)"><g><rect width="20" height="20"/></g></svg></div>`);
+  if (!rules) return t.skip("no Playwright");
+  assert.ok(!rules.includes("overlap"), rules.join(", "));
+});

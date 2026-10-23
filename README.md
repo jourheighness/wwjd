@@ -57,7 +57,7 @@ Before designing, building or reviewing any interface, read the `ux` skill (wwjd
 Six dials tune how wwjd designs, never the floor: **Look** (plain ↔ expressive), **Content** (lean ↔ rich), **Spacing** (roomy ↔ compact), **Motion** (still ↔ lively), **Copy** (terse ↔ warm) and **Strictness** (fast ↔ strict: how hard the agent is on its own work). Every stop is listed in `plugins/wwjd/skills/ux/references/dials.md`.
 - **`/wwjd` → Settings:** one row of stops per dial with what the picked stop does, for you or for this project (writes `.wwjd.json`).
 - **Also:** `/plugin configure wwjd@wwjd`, the wwjd rows in `/config`, or `"dials": { "creativity": 4 }` in `.wwjd.json`.
-- **Per request:** words like "bolder", "leaner", "airier", "calmer" or "thorough" move one dial one stop; the prompt hook names the nudge.
+- **Per request:** words like "bolder", "leaner", "airier", "calmer" or "be thorough" move one dial one stop; the prompt hook names the nudge. "Just exploring" or "verify later" holds the handover checks until you say keep.
 
 ## Per project
 - **`.wwjd.json`** (committed, repo-relative paths only):

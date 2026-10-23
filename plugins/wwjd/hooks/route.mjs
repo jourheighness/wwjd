@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import { DIALS, isDefault, stopOf } from "../skills/ux/scripts/dials-spec.mjs";
+import { openLedger } from "../skills/ux/scripts/ledger.mjs";
 import { dialsFor, hooksMode } from "../skills/ux/scripts/paths.mjs";
 
 let input = {};
@@ -32,16 +33,26 @@ const NUDGES = [
   ["motion", -1, "calmer|less (?:motion|animation)|no animations?"],
   ["voice", +1, "warmer|friendlier|more human"],
   ["voice", -1, "terser|drier|less chatty|less wordy"],
-  ["strictness", -1, "quick|quickly|rough|just ship"],
-  ["strictness", +1, "thorough|carefully|polish(?:ed)?|pixel.perfect"],
+  // Strictness moves on instructions only: "too quick" or "really rough" is a complaint asking for more care, not less.
+  ["strictness", -1, "quick (?:fix|draft|pass|mock(?:-?up)?|sketch|and dirty)|rough (?:draft|pass|mock(?:-?up)?|sketch|cut)|just ship(?: it)?|skip the checks"],
+  ["strictness", +1, "be thorough|thoroughly|carefully|pixel.perfect|polish (?:it|this)"],
 ];
 const moves = {};
 for (const [key, step, alts] of NUDGES) if (word(alts).test(prompt)) (moves[key] ??= new Set()).add(step);
 const nudges = Object.entries(moves).filter(([, s]) => s.size === 1).map(([k, s]) => `${k} ${[...s][0] > 0 ? "+1" : "-1"}`);
 // A redesign is explore §5, every time it is asked for: build would keep today's structure.
 const redesign = word("redesign|redo|start over|from scratch|rethink|re-?imagine|clean slate").test(prompt);
+// Exploring: the person says the checks can wait ("just exploring", "verify later", "no wwjd here"); the gate holds its
+// checks for the session until they say it is a keeper ("keep it", "verify now", "lock it in"). gate.mjs reads it.
+const exploring = word("(?:just |we'?re |i'?m )?exploring|explore freely|verify (?:it )?later|check (?:it )?later|(?:no|skip|don'?t (?:need to )?use) wwjd(?: here| for this| now)?").test(prompt);
+const keeper = word("keep (?:it|this|that)|(?:it'?s|that'?s) a keeper|lock (?:it|this) in|verify (?:it )?now|run the checks|check it now").test(prompt);
+let held = "";
+if (exploring !== keeper) {
+  try { openLedger(input).update((l) => { l.explore = exploring; }); } catch { /* no state dir: nothing held */ }
+  held = exploring ? " Exploring: wwjd's handover checks are held until the person says keep; still follow the rules and the Floor." : " Kept: wwjd's handover checks apply again from here.";
+}
 const nudgeText = (nudges.length ? ` Dial nudge for this request only: ${nudges.join("; ")} (references/dials.md).` : "") +
-  (redesign ? " Redesign: commands/explore.md §5 (today's layout is the before, not the brief; 3 directions from the job)." : "");
+  (redesign ? " Redesign: commands/explore.md §5 (today's layout is the before, not the brief; 3 directions from the job)." : "") + held;
 
 const say = (text) => { console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: text } })); process.exit(0); };
 

@@ -6,7 +6,7 @@ import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { artifactRoot } from "./paths.mjs";
+import { artifactRoot, logRoot } from "./paths.mjs";
 
 const PATHS = join(dirname(fileURLToPath(import.meta.url)), "paths.mjs");
 
@@ -33,4 +33,17 @@ test("artifactRoot: a .wwjd/ above the home folder is no project", () => {
   const at = execFileSync("node", ["--input-type=module", "-e", `import { artifactRoot } from ${JSON.stringify(PATHS)}; console.log(artifactRoot(${JSON.stringify(work)}))`],
     { env: { ...process.env, HOME: home }, encoding: "utf8" }).trim();
   assert.equal(at, work);
+});
+
+test("logRoot: a worktree's project logs to the same folder in the main checkout", () => {
+  const base = realpathSync(mkdtempSync(join(tmpdir(), "wwjd-wt-")));
+  const git = (args, cwd) => execFileSync("git", args, { cwd, stdio: "ignore" });
+  mkdirSync(join(base, "main", "app"), { recursive: true });
+  writeFileSync(join(base, "main", "app", ".wwjd.json"), "{}");
+  git(["init", "-q"], join(base, "main"));
+  git(["add", "-A"], join(base, "main"));
+  git(["-c", "user.email=a@b", "-c", "user.name=a", "commit", "-qm", "i"], join(base, "main"));
+  git(["worktree", "add", "-q", join(base, "wt")], join(base, "main"));
+  assert.equal(logRoot(join(base, "wt", "app")), join(base, "main", "app"));
+  assert.equal(logRoot(join(base, "main", "app")), join(base, "main", "app"));
 });
