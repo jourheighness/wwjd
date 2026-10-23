@@ -13,7 +13,8 @@
 //          A Design canvas board (.dc.html) or a file inside a Claude Code plugin asks for no shots, fit or runtime:
 //          the first renders only in its canvas, the second is not a web page.
 //          Flow on with a wwjd.flow.json: its check (skills/flow/scripts/flow.mjs) clean and the file newer than the last
-//          page edit. Canvas on with a "canvas" link: an Artifact publish to it after the last edit.
+//          page edit. Canvas on with a "canvas" link: an Artifact publish to it after the last edit. A motion.beats.json
+//          (wwjd:motion-design) by the edited file or at the root: its check without errors.
 //          Blocks at most twice per user turn, so a check that can't be done never traps the turn. Never while the
 //          person is exploring (hooks/route.mjs sets it: "just exploring", "verify later"; "keep it" ends it).
 //   status the same state as JSON, for the wwjd status band (hooks/status.tsx): stdin { session_id, cwd }.
@@ -35,6 +36,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const RENDER = join(HERE, "render.mjs");
 // The flow model's check (skills/flow); WWJD_FLOW_SCRIPT stands in a stub for tests.
 const FLOW = process.env.WWJD_FLOW_SCRIPT || join(HERE, "..", "..", "flow", "scripts", "flow.mjs");
+// The beat sheet's check (skills/motion-design).
+const BEATS = join(HERE, "..", "..", "motion-design", "scripts", "beats.mjs");
 
 const mode = process.argv[2];
 let input = {};
@@ -192,6 +195,19 @@ function checks(ledger, s) {
     out.push({ key: "flow", label: "Check how the app flows", what: "Claude checks the app's screens and the ways between them for dead ends, traps and missing states.",
       done: errs !== null && errs.length === 0,
       how: `update wwjd.flow.json for what you changed, then: node ${q(FLOW)} check${flowRoot !== root() ? ` --root ${q(flowRoot)}` : ""}${errs?.length ? `; fix: ${errs.slice(0, 3).join("; ")}` : ""}` });
+  }
+  // An art-directed piece's beat sheet (skills/motion-design), next to the edited file or at the project root: owed while
+  // its check reports errors (a rushed line, two movers at once, no final hold), like the flow model.
+  const beatsFile = [ledger.lastFile && dirname(ledger.lastFile), configFile && dirname(configFile), edited].filter(Boolean)
+    .map((d) => join(d, "motion.beats.json")).find((f) => existsSync(f));
+  if (s >= 2 && beatsFile) {
+    let report = null;
+    try { report = JSON.parse(execFileSync(process.execPath, [BEATS, "check", beatsFile, "--json"], { encoding: "utf8", timeout: 4000, stdio: ["ignore", "pipe", "ignore"] })); }
+    catch (e) { try { report = JSON.parse(e.stdout); } catch { /* can't run: not done */ } }
+    const errs = report && Array.isArray(report.findings) ? report.findings.filter((f) => f.severity === "error").map((f) => f.what) : null;
+    out.push({ key: "beats", label: "Check the story's timing", what: "Claude checks the animation's shots for rushed text, things moving at once and a missing final hold.",
+      done: errs !== null && errs.length === 0,
+      how: `fix the beat sheet, then the code: node ${q(BEATS)} check ${q(beatsFile)}${errs?.length ? `; fix: ${errs.slice(0, 3).join("; ")}` : ""}` });
   }
   // The project canvas (skills/flow/references/canvas.md), when the setting is on and the project links one
   const canvasUrl = typeof config.canvas === "string" && /^https:\/\/claude\.ai\//.test(config.canvas) ? config.canvas : null;

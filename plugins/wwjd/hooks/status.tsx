@@ -10,14 +10,14 @@ import type { Gate } from '../types'
 const gate = atom({ plugin: 'wwjd', key: 'gate' } as const, null)
 const isActive = atom({ plugin: 'wwjd', key: 'isActive' } as const, false)
 
-// What can change the gate's state: UI, wwjd.flow.json, .wwjd.json and grade sheet (.wwjd/grade/*.md) edits, the
-// critic, an Artifact publish (the canvas), and the Bash runs of render.mjs, grade.mjs and flow.mjs. A logged decision
+// What can change the gate's state: UI, wwjd.flow.json, motion.beats.json, .wwjd.json and grade sheet (.wwjd/grade/*.md) edits, the
+// critic, an Artifact publish (the canvas), and the Bash runs of render.mjs, grade.mjs, flow.mjs and beats.mjs. A logged decision
 // too, through gateMayHaveChanged below.
 const EDITS = new Set(['Write', 'Edit', 'MultiEdit'])
-const UI = /(\.(tsx|jsx|vue|svelte|astro|html|mdx|css|scss)|(^|\/)wwjd\.flow\.json|(^|\/)\.wwjd\.json|(^|\/)\.wwjd\/grade\/[^/]+\.md)$/
+const UI = /(\.(tsx|jsx|vue|svelte|astro|html|mdx|css|scss)|(^|\/)wwjd\.flow\.json|(^|\/)motion\.beats\.json|(^|\/)\.wwjd\.json|(^|\/)\.wwjd\/grade\/[^/]+\.md)$/
 const changesGate = (e: { tool: string; command?: unknown; file_path?: unknown }) =>
   (EDITS.has(e.tool) && UI.test(String(e.file_path ?? ''))) || e.tool === 'Agent' || e.tool === 'Task' ||
-  e.tool === 'Artifact' || (e.tool === 'Bash' && /\b(render|grade|flow)\.mjs\b/.test(String(e.command ?? '')))
+  e.tool === 'Artifact' || (e.tool === 'Bash' && /\b(render|grade|flow|beats)\.mjs\b/.test(String(e.command ?? '')))
 
 // The dials as the plugin options hold them. The gate applies the edited project's .wwjd.json itself (paths.mjs
 // dialsFor), as the Stop hook does; folding the cwd's file in here would make the two disagree.

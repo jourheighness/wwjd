@@ -1,12 +1,12 @@
 ---
 name: motion
-description: 'Use for any UI animation, transition, micro-interaction, hover or press effect, scroll effect, page or view transition, loading, skeleton or "thinking" state: motion themes per product type and when not to animate (wwjd). Pairs with wwjd:ux; its floor wins. Not for video, canvas games or data-chart animation.'
+description: 'Use for any UI animation, transition, micro-interaction, hover or press effect, scroll effect, page or view transition, loading, skeleton or "thinking" state: motion themes per product type and when not to animate (wwjd). Pairs with wwjd:ux; its floor wins. Not for art-directed pieces people watch (a hero that tells a story, an explainer, a launch film, a scroll story: wwjd:motion-design), video, canvas games or data-chart animation.'
 when_to_use: '"animate this", "make it feel alive", "smoother", "snappier", "add a transition", "loading state", "hover effect".'
 ---
 
 # wwjd:motion
 
-Motion explains a change, or it goes. Refines wwjd:ux's motion rules; never loosens the floor (reduced motion, nothing shifts uncaused, interruptible, transform and opacity).
+Motion explains a change, or it goes. Refines wwjd:ux's motion rules; never loosens the floor (reduced motion, nothing shifts uncaused, interruptible, transform and opacity). A piece people watch rather than use (a story hero, explainer, launch film, scroll story) is `wwjd:motion-design`: load it instead.
 
 ## 1. Decide first: should this move at all?
 1. **How often is it seen?** 100+ a day (palette, shortcuts, context menu): none. Tens a day (hover, list nav, tabs): minimal or none. Occasional (dialog, drawer, toast): standard. Rare (onboarding, first success): may delight.

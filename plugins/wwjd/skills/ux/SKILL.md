@@ -32,6 +32,7 @@ wwjd owns the design side: how a product looks, flows and reads is decided here,
 | "review", "what's wrong", screenshot | `review` |
 | "options", "show me", new flow; "redesign", "start over" | `explore` |
 | `messy` + broad ask, debt | `audit` |
+| a story hero, explainer, launch film or scroll story (a piece people watch) | `wwjd:motion-design` first: story card and beat sheet before any animation code |
 | small change | rules + loop only |
 
 While the Flow setting is on (status says), new apps and new screens go through `wwjd:flow` first (writes `wwjd.flow.json` and checks it).

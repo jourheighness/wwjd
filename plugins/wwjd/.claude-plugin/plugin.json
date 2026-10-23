@@ -1,7 +1,7 @@
 {
   "name": "wwjd",
-  "version": "0.36.0",
-  "description": "What Would Johannes Do: opinionated UI/UX rules and workflow. Four skills (wwjd:ux for structure, behaviour and copy; wwjd:look for the look; wwjd:motion for motion; wwjd:flow for how screens connect, checked for dead ends), a cold critic agent, hooks that route UI prompts, lint UI edits and hold handovers until the Strictness checks ran, the /wwjd sidebar (decisions, corrections, Settings) and a project canvas.",
+  "version": "0.37.0",
+  "description": "What Would Johannes Do: opinionated UI/UX rules and workflow. Five skills (wwjd:ux for structure, behaviour and copy; wwjd:look for the look; wwjd:motion for UI motion; wwjd:motion-design for art-directed story animations, planned as a checked beat sheet; wwjd:flow for how screens connect, checked for dead ends), a cold critic agent, hooks that route UI prompts, lint UI edits and hold handovers until the Strictness checks ran, the /wwjd sidebar (decisions, corrections, Settings) and a project canvas.",
   "author": {
     "name": "Johannes Carlsten"
   },

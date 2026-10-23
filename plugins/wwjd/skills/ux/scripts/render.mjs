@@ -26,6 +26,11 @@
 //   script-driven stage (canvas, rAF) rests there only if it honours reduced motion, as the Floor asks.
 //   --wait-for "<css>"  wait for that element before any check or shot (data loaded); .wwjd.json "waitFor" sets it
 //   per project. Web fonts are always awaited.
+//   frames   an animation sampled over time (wwjd:motion-design): .wwjd/frames/f-<seconds>.png, one contact.png of all
+//            of them, and the stretches where nothing changes (dead time) over 1.2 s, apart from the final rest.
+//     --every 0.25 (default 0.5) --until <s> (default: window.wwjdDuration, else the longest finite animation) or
+//     --at 0,1,3,5 · --width 1440 · --param t (reload with ?t=<s> per frame, for a page that reads its clock there)
+//     Seeks window.wwjdSeek(seconds) when the page has it, else GSAP's global timeline, else every CSS and Web Animation.
 //   --json    machine output. Exit 1 on errors.
 //   setup    one-time: npm-installs playwright-core into ~/.cache/wwjd (XDG_CACHE_HOME), for every project.
 // Playwright (playwright or playwright-core), first found: WWJD_PLAYWRIGHT=<module folder>, this script's folder,
@@ -55,14 +60,14 @@ if (cmd === "setup") {
   console.log(`Playwright in ${CACHE}. Browser: Playwright's Chromium (npx playwright install chromium), PW_EXE, or an installed Chrome.`);
   process.exit(0);
 }
-if (!cmd || cmd === "-h" || cmd === "--help" || !["shoot", "fit", "runtime"].includes(cmd)) {
+if (!cmd || cmd === "-h" || cmd === "--help" || !["shoot", "fit", "runtime", "frames"].includes(cmd)) {
   const head = [];
   for (const l of readFileSync(new URL(import.meta.url), "utf8").split("\n").slice(1)) { if (!l.startsWith("//")) break; head.push(l.replace(/^\/\/ ?/, "")); }
   console.log(head.join("\n")); process.exit(cmd ? 0 : 2);
 }
 const flag = (k) => args.includes(k);
 const opt = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
-const VALUED = new Set(["--width", "--widths", "--theme", "--out", "--selector", "--register", "--root", "--wait-for"]);
+const VALUED = new Set(["--width", "--widths", "--theme", "--out", "--selector", "--register", "--root", "--wait-for", "--every", "--until", "--at", "--param"]);
 const target = args.slice(1).find((a, i, xs) => !a.startsWith("--") && !VALUED.has(xs[i - 1]));
 if (!target) { console.error(`usage: render.mjs ${cmd} <url|file> [options]`); process.exit(2); }
 const url = /^[a-z][\w+.-]*:/i.test(target) ? target : pathToFileURL(resolve(target)).href;
@@ -287,6 +292,68 @@ if (cmd === "shoot") {
   }
   await browser.close();
   process.exit(failed ? 1 : 0);
+}
+
+// ── frames ─────────────────────────────────────────────────────────
+if (cmd === "frames") {
+  const out = opt("--out") ? resolve(opt("--out")) : join(ROOT, ".wwjd", "frames");
+  mkdirSync(out, { recursive: true });
+  for (const f of readdirSync(out)) if (/^f-[\d.]+\.png$|^contact\.png$/.test(f)) rmSync(join(out, f));
+  const w = Number(opt("--width", 1440));
+  const param = opt("--param", null);
+  const page = await browser.newPage({ viewport: { width: w, height: H(w) } });
+  await open(page, 100);
+  // How long the piece runs: --until, else what the page says, else its longest finite animation.
+  const length = Number(opt("--until", 0)) || await page.evaluate(() => Number(window.wwjdDuration) || Math.max(0, ...document.getAnimations().map((a) => {
+    const t = a.effect?.getComputedTiming?.(); return Number.isFinite(t?.endTime) ? t.endTime / 1000 : 0; })));
+  let times = opt("--at") ? opt("--at").split(",").map(Number).filter((n) => n >= 0) : [];
+  if (!times.length) { const step = Number(opt("--every", 0.5)) || 0.5; for (let i = 0; i * step <= length + 1e-6; i++) times.push(Math.round(i * step * 1000) / 1000); }
+  let how = "animations";
+  const seek = async (t) => {
+    if (param) { const u = new URL(url); u.searchParams.set(param, String(t)); await page.goto(u.href, { waitUntil: "load" }); await page.waitForTimeout(200); how = `?${param}=`; return; }
+    how = await page.evaluate(async (t) => {
+      let by = "animations";
+      if (typeof window.wwjdSeek === "function") { await window.wwjdSeek(t); by = "wwjdSeek"; }
+      else if (window.gsap?.globalTimeline) { window.gsap.globalTimeline.pause(); window.gsap.globalTimeline.time(t); by = "gsap"; }
+      if (by !== "wwjdSeek") for (const a of document.getAnimations()) { a.pause(); a.currentTime = t * 1000; }
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      return by;
+    }, t);
+  };
+  const shots = [];
+  for (const t of times) {
+    await seek(t);
+    const file = join(out, `f-${t.toFixed(2)}.png`);
+    const buf = await page.screenshot({ path: file });
+    shots.push({ t, file, buf });
+  }
+  // Dead time: a run of identical frames. One that lasts to the end is the rest, not dead time.
+  const dead = [];
+  for (let i = 0, j; i < shots.length; i = j) {
+    for (j = i + 1; j < shots.length && shots[j].buf.equals(shots[i].buf); j++);
+    const from = shots[i].t, to = shots[j - 1].t;
+    if (j < shots.length && to - from > 1.2) dead.push({ from, to });
+  }
+  const restsFrom = (() => { let k = shots.length - 1; while (k > 0 && shots[k - 1].buf.equals(shots.at(-1).buf)) k--; return k < shots.length - 1 ? shots[k].t : null; })();
+  // One sheet to read instead of many stills: at most 60 tiles, evenly picked.
+  const pick = shots.length <= 60 ? shots : Array.from({ length: 60 }, (_, i) => shots[Math.round((i * (shots.length - 1)) / 59)]);
+  const sheet = await browser.newPage({ viewport: { width: 1600, height: 900 } });
+  const isDead = (t) => dead.some((d) => t > d.from && t <= d.to);
+  await sheet.setContent(`<style>body{margin:0;padding:16px;background:#1b1b1b;font:13px system-ui;color:#ddd;display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+    figure{margin:0}img{width:100%;display:block;border:1px solid #444}figcaption{padding:4px 0}.dead{color:#ff8a80}</style>` +
+    pick.map((s) => `<figure><img src="data:image/png;base64,${s.buf.toString("base64")}"><figcaption class="${isDead(s.t) ? "dead" : ""}">${s.t.toFixed(2)} s${isDead(s.t) ? " · unchanged" : ""}</figcaption></figure>`).join(""));
+  const contact = join(out, "contact.png");
+  await sheet.screenshot({ path: contact, fullPage: true });
+  await browser.close();
+  const report = { url, seek: how, length, frames: shots.length, contact, dead, restsFrom };
+  if (json) console.log(JSON.stringify(report, null, 2));
+  else {
+    console.log(`${contact}  (${shots.length} frames, ${times[0]}-${times.at(-1)} s, seeking by ${how})`);
+    for (const d of dead) console.log(`dead time: nothing changes from ${d.from} to ${d.to} s (fine only while a line is read or a beat is meant to be seen)`);
+    if (restsFrom !== null) console.log(`rests from ${restsFrom} s`);
+    if (shots.length > 1 && shots.every((s) => s.buf.equals(shots[0].buf))) console.log("every frame is the same: the page did not seek (give it window.wwjdSeek, or --param)");
+  }
+  process.exit(0);
 }
 
 // ── fit ────────────────────────────────────────────────────────────

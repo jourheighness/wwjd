@@ -593,3 +593,18 @@ test("stop: while the person is exploring (route.mjs), the checks are held", () 
   writeFileSync(f, JSON.stringify({ ...p.ledger(), explore: false }));
   assert.match(p.run("stop", { stop_hook_active: false }).reason, /Strictness 3/);
 });
+
+test("stop: a motion.beats.json by the edited page is owed while its check has errors", () => {
+  const p = project(2);
+  p.edit("hero.html");
+  p.file(".wwjd/shots/hero-1440-light.png", "png", 5);
+  const sheet = { message: "Publish once", abt: { and: "a", but: "b", therefore: "c" }, end: "x", plays: "once", pause: true,
+    shots: [{ id: "a", at: 0, end: 4, subject: "card", change: "a → b", text: "Publish once", textAt: 3, moves: [{ what: "card", kind: "enter", at: 0.2, dur: 0.8 }] }] };
+  p.file("motion.beats.json", JSON.stringify(sheet));
+  const beats = () => p.run("status", {}).checks.find((c) => c.key === "beats");
+  assert.equal(beats().done, false);
+  assert.match(beats().how, /readable for/);
+  sheet.shots[0].textAt = 0.2;
+  p.file("motion.beats.json", JSON.stringify(sheet));
+  assert.equal(beats().done, true);
+});

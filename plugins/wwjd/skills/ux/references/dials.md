@@ -53,7 +53,8 @@ How hard the agent is on its own work: grading before it builds, checks after. H
 - **2 Light:** Over-budget surfaces graded in your head; after: lint and one screenshot at the main width.
 - **3 Standard (default):** Over-budget surfaces graded in your head; after: lint, screenshots at desktop and phone width and a clean fit check.
 - **4 Careful:** A written grade sheet per over-budget surface before it is built; after: adds dark mode, the key states and render.mjs runtime checks.
-- **5 Strict:** Grade sheets; after: adds the critic agent (one run covers the surfaces built so far; applying its findings owes no second run, a new UI file does), and explore's variants before building.
+- **5 Strict:** Grade sheets; after: adds the critic agent, and explore's variants before building.
+- One critic run covers the surfaces built so far: applying its findings owes no second run, a new UI file does.
 - Nudge words, as instructions only: "be thorough", "carefully", "polish it" / "quick fix", "rough draft", "just ship it". A complaint ("too quick", "really rough") moves nothing: it asks for more care.
 
 ## Using them

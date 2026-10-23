@@ -1,6 +1,6 @@
 # Landing pages: tasteful motion
 
-Register Persuade or Showcase. The page sells the product, so the motion shows the product. Budget: **one orchestrated moment, one scroll-built idea, one live demo.** Everything else is static.
+Register Persuade or Showcase. The page sells the product, so the motion shows the product. Budget: **one orchestrated moment, one scroll-built idea, one live demo.** Everything else is static. A hero or section that tells a story in shots (a scene-led hero, a product demo built in code, a scroll story) is planned and timed with `wwjd:motion-design`; this page covers the motion around it.
 
 ## What the good ones do
 - **One hero moment on load, 400–1200ms:** headline, then the product frame settles in (opacity + 8–16px, `--ease-out`). Text readable from the first frame; the CTA never waits on the animation. Plays once; never replays on scroll back.

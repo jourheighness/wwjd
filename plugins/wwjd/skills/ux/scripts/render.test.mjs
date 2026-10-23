@@ -180,3 +180,21 @@ test("overlap: an animated stage is measured at rest (a faint placeholder, glyph
   if (!rules) return t.skip("no Playwright");
   assert.ok(!rules.includes("overlap"), rules.join(", "));
 });
+
+test("frames: samples a CSS animation over time, flags the dead stretch and the rest", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "wwjd-frames-"));
+  writeFileSync(join(root, ".wwjd.json"), "{}");
+  const page = join(root, "hero.html");
+  writeFileSync(page, `<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#fff}
+    .a,.b{position:absolute;top:40px;width:80px;height:80px;background:#246}
+    .a{left:0;animation:in 1s ease-out both}.b{left:300px;opacity:0;animation:fade .5s 4s ease-out both}
+    @keyframes in{from{transform:translateX(-100px)}to{transform:none}}@keyframes fade{to{opacity:1}}</style>
+    <div class="a"></div><div class="b"></div><script>window.wwjdDuration = 6</script>`);
+  const run = spawnSync("node", [RENDER, "frames", page, "--every", "0.5", "--width", "480", "--json"], { cwd: root, encoding: "utf8", timeout: 90000 });
+  if (run.status === 2) return t.skip("no Playwright");
+  const r = JSON.parse(run.stdout);
+  assert.equal(r.frames, 13);
+  assert.ok(existsSync(r.contact));
+  assert.deepEqual(r.dead, [{ from: 1, to: 4 }]);
+  assert.equal(r.restsFrom, 4.5);
+});

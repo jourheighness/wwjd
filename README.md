@@ -4,10 +4,11 @@ Design skills for coding agents. When an agent builds, simplifies or reviews an 
 
 Works in Claude Code, Codex and any agent that reads skill files.
 
-## Four skills, one plugin
+## Five skills, one plugin
 - **wwjd:ux:** structure, behaviour, copy and workflow. Opinionated. The entry skill.
 - **wwjd:look:** palette, type face, shape and depth from real references; writes `DESIGN.md` and tokens under wwjd's variable names. Neutral, so impeccable, taste or Stitch can replace it.
 - **wwjd:motion:** motion themes and micro-interactions; `motion.css` on the same token names.
+- **wwjd:motion-design:** art-directed pieces people watch (a hero that tells the story, an explainer, a launch film, a scroll story): story, shots, timing and what is on screen at once, written as a beat sheet (`motion.beats.json`) and checked before any animation code; `render.mjs frames` samples the result into a contact sheet.
 - **wwjd:flow:** how the app works as a whole: screens, the ways between them and journeys in `wwjd.flow.json`, checked for dead ends, traps and missing states before screens are built. Keeps the project canvas.
 
 ## What's inside
@@ -21,13 +22,14 @@ plugins/wwjd/
                     converse · transact · flow · native (platform overlay)
     references/     budgets · product-types · layouts · heroes · ai · bans · examples · baseline · glossary
     kit/            tokens.css (look) · base.css (profiles, components, fit) · layouts.css
-    scripts/        wwjd.mjs (status, lint, baseline, debt map, dials) · render.mjs (screenshots, fit, runtime) ·
+    scripts/        wwjd.mjs (status, lint, baseline, debt map, dials) · render.mjs (screenshots, fit, runtime, frames) ·
                     grade.mjs (the grade gate: a sheet per over-budget surface) · gate.mjs (the hooks' gate)
   skills/look/            the look: references, axes, look.mjs (tokens.css + DESIGN.md)
   skills/motion/          motion: themes, moments, motion.css
+  skills/motion-design/   art-directed motion: story, shots, timing, staging, beats.mjs (check, table, init)
   skills/flow/            the flow: rules, patterns per product type, flow.mjs (check, init), canvas.mjs (the project canvas)
   agents/wwjd-critic.md   cold review, on request or at Strictness 5
-  hooks/                  session.sh (hands the settings to Bash) · route.mjs (points UI prompts at wwjd:ux, plus look or motion) ·
+  hooks/                  session.sh (hands the settings to Bash) · route.mjs (points UI prompts at wwjd:ux, plus look, motion or motion-design) ·
                           check.sh (one process per UI edit: notes it for the gate, lints it) · gate.mjs via hooks.json (a new
                           project asks how to begin; from Strictness 4 a grade sheet before a new UI file; checks before the turn
                           ends) · main.tsx (the /wwjd sidebar: decisions, corrections, Settings; a status line and a band naming
@@ -47,7 +49,7 @@ docs/research/            archived research (faux-pas catalogue, layouts, look);
 claude plugin marketplace add jourheighness/wwjd
 claude plugin install wwjd@wwjd
 ```
-**Codex and other agents:** copy or symlink `ux`, `look`, `motion` and `flow` from `plugins/wwjd/skills/` into the agent's skills folder (`~/.agents/skills/` or `.agents/skills/` in a repo), side by side: ux links to `../flow/`. There are no hooks or sidebar there, so the skill runs the lint and checks itself before handover. Backstop in `AGENTS.md`:
+**Codex and other agents:** copy or symlink `ux`, `look`, `motion`, `motion-design` and `flow` from `plugins/wwjd/skills/` into the agent's skills folder (`~/.agents/skills/` or `.agents/skills/` in a repo), side by side: ux links to `../flow/`. There are no hooks or sidebar there, so the skill runs the lint and checks itself before handover. Backstop in `AGENTS.md`:
 ```markdown
 ## UI work
 Before designing, building or reviewing any interface, read the `ux` skill (wwjd) and follow it.

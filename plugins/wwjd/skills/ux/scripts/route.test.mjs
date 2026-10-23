@@ -50,3 +50,15 @@ test("exploring holds the handover checks until the person says keep", () => {
   assert.match(route("nice, keep it and make the cards bolder", session), /apply again/);
   assert.doesNotMatch(route("make the cards bolder") || "", /held|apply again/);
 });
+
+test("art-directed motion routes to wwjd:motion-design, UI motion to wwjd:motion, and a later story ask still gets it once", () => {
+  assert.match(route("make a hero animation that tells the product story"), /wwjd:motion-design/);
+  assert.doesNotMatch(route("add a hover animation to the cards"), /motion-design/);
+  assert.match(route("add a hover animation to the cards"), /wwjd:motion\b/);
+  const session = `t-${Math.random().toString(36).slice(2)}`;
+  const cwd = mkdtempSync(join(tmpdir(), "wwjd-route-"));
+  const run = (prompt) => { const r = spawnSync("node", [ROUTE], { input: JSON.stringify({ prompt, session_id: session, cwd }), encoding: "utf8", env: { ...process.env, TMPDIR: cwd } }); return r.stdout ? JSON.parse(r.stdout).hookSpecificOutput.additionalContext : ""; };
+  assert.match(run("clean up the settings page"), /wwjd:ux/);
+  assert.match(run("now storyboard an explainer for the landing page"), /wwjd:motion-design/);
+  assert.doesNotMatch(run("another explainer tweak"), /motion-design/);
+});
