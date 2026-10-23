@@ -1,5 +1,7 @@
 # wwjd: What Would Johannes Do
 
+> **Moved.** wwjd now lives in Forefront Ignite's internal plugin marketplace as `ig-wwjd` and is developed there. This repository is kept as it was at 0.38.0 and gets no further updates.
+
 Design skills for coding agents. When an agent builds, simplifies or reviews an interface, wwjd tells it how Johannes would do it: what to cut, where actions go, how layouts align and resize, which facts to show, and how to check the result without slowing the loop.
 
 Works in Claude Code, Codex and any agent that reads skill files.
